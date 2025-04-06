@@ -1,5 +1,5 @@
 // Variables
-$primary-color: #0078D7;
+$primary-color: #0078d7;
 $primary-light: rgba(0, 120, 215, 0.1);
 $primary-medium: rgba(0, 120, 215, 0.2);
 $primary-dark: rgba(0, 120, 215, 0.3);
@@ -24,7 +24,7 @@ $gray-900: #212529;
 
 @mixin hover-lift {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -36,492 +36,499 @@ $gray-900: #212529;
   height: 100%;
   background-color: $white;
   overflow-x: hidden;
-  overflow-y: auto; 
+  overflow-y: auto;
 
-
-// Hero Section
-.services-hero {
-  position: relative;
-  height: 100%;
-  background: linear-gradient(135deg, $primary-color, darken($primary-color, 20%));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  
-  .cyber-grid {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+  // Hero Section
+  .services-hero {
+    position: relative;
     height: 100%;
-    background-image: 
-      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
-    animation: gridMove 20s linear infinite;
-    opacity: 0.3;
-    
+    background: linear-gradient(135deg, $primary-color, $primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    .cyber-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(
+          rgba(255, 255, 255, 0.05) 1px,
+          transparent 1px
+        ),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridMove 20s linear infinite;
+      opacity: 0.3;
+
+      &:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+          circle at center,
+          transparent 0%,
+          rgba(0, 0, 0, 0.3) 100%
+        );
+      }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      color: $white;
+      padding: 2rem;
+
+      h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+        @media (max-width: 768px) {
+          font-size: 2.5rem;
+        }
+      }
+
+      p {
+        font-size: 1.25rem;
+        max-width: 600px;
+        margin: 0 auto;
+        opacity: 0.9;
+
+        @media (max-width: 768px) {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+
+  // Category Tabs
+  .category-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    padding: 0 1rem;
+    flex-wrap: wrap;
+
+    .category-tab {
+      position: relative;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      color: $gray-600;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.3s;
+
+      &:hover {
+        color: $primary-color;
+      }
+
+      &.active {
+        color: $primary-color;
+      }
+
+      .tab-indicator {
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: $primary-color;
+      }
+    }
+  }
+
+  // Services Grid
+  .services-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+  }
+
+  // Service Card
+  .service-card {
+    @include glassmorphism;
+    @include hover-lift;
+
+    padding: 2rem;
+    border-radius: 16px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+
     &:before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
-      background: radial-gradient(
-        circle at center,
-        transparent 0%,
-        rgba(0, 0, 0, 0.3) 100%
-      );
+      height: 4px;
+      background: linear-gradient(90deg, $primary-color, $primary-color);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
-  }
-  
-  .hero-content {
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    color: $white;
-    padding: 2rem;
-    
-    h1 {
-      font-size: 3.5rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      
-      @media (max-width: 768px) {
-        font-size: 2.5rem;
+
+    &:hover:before {
+      opacity: 1;
+    }
+
+    .service-icon {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      margin-bottom: 1.5rem;
+
+      svg {
+        position: relative;
+        z-index: 2;
+        width: 30px;
+        height: 30px;
+        color: $primary-color;
+      }
+
+      .icon-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: $primary-light;
+        border-radius: 12px;
+        transform: rotate(45deg);
+        transition: transform 0.3s;
       }
     }
-    
-    p {
+
+    &:hover .service-icon .icon-bg {
+      transform: rotate(90deg);
+    }
+
+    h3 {
       font-size: 1.25rem;
-      max-width: 600px;
-      margin: 0 auto;
-      opacity: 0.9;
-      
-      @media (max-width: 768px) {
-        font-size: 1rem;
-      }
+      font-weight: 600;
+      color: $gray-900;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: $gray-600;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
     }
   }
-}
 
-// Category Tabs
-.category-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin: 2rem 0;
-  padding: 0 1rem;
-  flex-wrap: wrap;
-  
-  .category-tab {
-    position: relative;
-    padding: 0.75rem 1.5rem;
+  // Request Button
+  .request-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #25d366;
+    color: $white;
     border: none;
-    background: none;
-    color: $gray-600;
+    border-radius: 8px;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: color 0.3s;
-    
+    transition: all 0.3s;
+
     &:hover {
-      color: $primary-color;
+      background-color: #25d366;
+      transform: translateY(-2px);
     }
-    
-    &.active {
-      color: $primary-color;
-    }
-    
-    .tab-indicator {
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background-color: $primary-color;
+
+    .whatsapp-icon {
+      width: 18px;
+      height: 18px;
     }
   }
-}
 
-// Services Grid
-.services-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
-  padding: 2rem 0;
-}
-
-// Service Card
-.service-card {
-  @include glassmorphism;
-  @include hover-lift;
-  
-  padding: 2rem;
-  border-radius: 16px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  
-  &:before {
-    content: '';
-    position: absolute;
+  // Modal
+  .modal-overlay {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, $primary-color, lighten($primary-color, 20%));
-    opacity: 0;
-    transition: opacity 0.3s;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
   }
-  
-  &:hover:before {
-    opacity: 1;
+
+  .modal-content {
+    @include glassmorphism;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 16px;
+    overflow: hidden;
   }
-  
-  .service-icon {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin-bottom: 1.5rem;
-    
-    svg {
-      position: relative;
-      z-index: 2;
-      width: 30px;
-      height: 30px;
-      color: $primary-color;
+
+  .modal-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, $primary-color, $primary-color);
+    color: $white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .modal-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
     }
-    
-    .icon-bg {
+
+    h2 {
+      flex: 1;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: $white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+
+    p {
+      color: $gray-600;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: $gray-900;
+    }
+  }
+
+  .steps-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: $gray-100;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+
+      .step-number {
+        width: 24px;
+        height: 24px;
+        background: $primary-color;
+        color: $white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .request-btn-large {
+    width: 100%;
+    padding: 1rem;
+    background-color: #25d366;
+    color: $white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+      background-color: #25d366;
+      transform: translateY(-2px);
+    }
+
+    .whatsapp-icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // CTA Section
+  .services-cta {
+    background: linear-gradient(135deg, $primary-color, $primary-color);
+    padding: 6rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+
+    &:before {
+      content: '';
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: $primary-light;
-      border-radius: 12px;
-      transform: rotate(45deg);
-      transition: transform 0.3s;
+      background-image: radial-gradient(
+          circle at 20% 30%,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 50%
+        ),
+        radial-gradient(
+          circle at 80% 70%,
+          rgba(255, 255, 255, 0.1) 0%,
+          transparent 50%
+        );
     }
-  }
-  
-  &:hover .service-icon .icon-bg {
-    transform: rotate(90deg);
-  }
-  
-  h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: $gray-900;
-    margin-bottom: 1rem;
-  }
-  
-  p {
-    color: $gray-600;
-    font-size: 0.875rem;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-  }
-}
 
-// Request Button
-.request-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #25D366;
-  color: $white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  
-  &:hover {
-    background-color: darken(#25D366, 10%);
-    transform: translateY(-2px);
-  }
-  
-  .whatsapp-icon {
-    width: 18px;
-    height: 18px;
-  }
-}
+    .cta-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 0 auto;
 
-// Modal
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  @include glassmorphism;
-  width: 100%;
-  max-width: 600px;
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, $primary-color, darken($primary-color, 20%));
-  color: $white;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  
-  .modal-icon {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    svg {
-      width: 24px;
-      height: 24px;
-    }
-  }
-  
-  h2 {
-    flex: 1;
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  
-  .close-btn {
-    background: none;
-    border: none;
-    color: $white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.3s;
-    
-    &:hover {
-      opacity: 1;
-    }
-  }
-}
-
-.modal-body {
-  padding: 2rem;
-  
-  p {
-    color: $gray-600;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-  }
-  
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: $gray-900;
-  }
-}
-
-.steps-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 2rem;
-  
-  li {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: $gray-100;
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    
-    .step-number {
-      width: 24px;
-      height: 24px;
-      background: $primary-color;
-      color: $white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-  }
-}
-
-.request-btn-large {
-  width: 100%;
-  padding: 1rem;
-  background-color: #25D366;
-  color: $white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  
-  &:hover {
-    background-color: darken(#25D366, 10%);
-    transform: translateY(-2px);
-  }
-  
-  .whatsapp-icon {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-// CTA Section
-.services-cta {
-  background: linear-gradient(135deg, $primary-color, darken($primary-color, 20%));
-  padding: 6rem 2rem;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: 
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%);
-  }
-  
-  .cta-content {
-    position: relative;
-    z-index: 2;
-    max-width: 800px;
-    margin: 0 auto;
-    
-    h2 {
-      color: $white;
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      
-      @media (max-width: 768px) {
-        font-size: 2rem;
-      }
-    }
-    
-    p {
-      color: rgba(255,255,255,0.9);
-      font-size: 1.25rem;
-      margin-bottom: 2rem;
-      
-      @media (max-width: 768px) {
-        font-size: 1rem;
-      }
-    }
-  }
-  
-  .cta-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    
-    @media (max-width: 768px) {
-      flex-direction: column;
-    }
-    
-    button {
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      font-weight: 500;
-      transition: all 0.3s;
-      
-      &.btn-primary {
-        background: $white;
-        color: $primary-color;
-        border: none;
-        
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-      }
-      
-      &.btn-secondary {
-        background: transparent;
+      h2 {
         color: $white;
-        border: 2px solid rgba(255,255,255,0.5);
-        
-        &:hover {
-          border-color: $white;
-          transform: translateY(-2px);
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+
+        @media (max-width: 768px) {
+          font-size: 2rem;
+        }
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+
+        @media (max-width: 768px) {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+      }
+
+      button {
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s;
+
+        &.btn-primary {
+          background: $white;
+          color: $primary-color;
+          border: none;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          }
+        }
+
+        &.btn-secondary {
+          background: transparent;
+          color: $white;
+          border: 2px solid rgba(255, 255, 255, 0.5);
+
+          &:hover {
+            border-color: $white;
+            transform: translateY(-2px);
+          }
         }
       }
     }
   }
-}
 
-// Animations
-@keyframes gridMove {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(50px);
-  }
-}
-
-// Responsive Design
-@media (max-width: 768px) {
-  .services-hero {
-    height: 300px;
-  }
-  
-  .category-tabs {
-    gap: 0.5rem;
-    
-    .category-tab {
-      padding: 0.5rem 1rem;
-      font-size: 0.75rem;
+  // Animations
+  @keyframes gridMove {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(50px);
     }
   }
-  
-  .services-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .modal-content {
-    margin: 1rem;
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    .services-hero {
+      height: 300px;
+    }
+
+    .category-tabs {
+      gap: 0.5rem;
+
+      .category-tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    .services-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .modal-content {
+      margin: 1rem;
+    }
   }
 }
-}   

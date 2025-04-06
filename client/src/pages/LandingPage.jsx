@@ -1,241 +1,496 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { ShoppingBag, Wrench, Globe, ArrowRight } from "lucide-react"
-import "./landing.scss"
+import { useState, useEffect } from 'react';
+import {
+  ShoppingBag,
+  Wrench,
+  Globe,
+  ArrowRight,
+  Menu,
+  X,
+  User,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import AuthButtons from '../components/common/AuthButtons';
+import { openAuthModal } from '../redux/slices/uiSlice';
 
 export default function LandingPage() {
-  const [activeService, setActiveService] = useState("shop")
-  const [hoveredLinks, setHoveredLinks] = useState({})
+  const [activeService, setActiveService] = useState('shop');
+  const [hoveredLinks, setHoveredLinks] = useState({});
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+
+  const [floatingCardPosition, setFloatingCardPosition] = useState({
+    top: '30%',
+    right: '10%',
+  });
+
+  // Update floating card position based on window size
+  useEffect(() => {
+    const updateCardPosition = () => {
+      if (window.innerWidth >= 1024) {
+        // lg breakpoint
+        setFloatingCardPosition({
+          top: '30%',
+          right: '10%',
+        });
+      } else if (window.innerWidth >= 768) {
+        // md breakpoint
+        setFloatingCardPosition({
+          top: '45%',
+          right: '5%',
+        });
+      } else {
+        setFloatingCardPosition({
+          top: '60%',
+          right: '5%',
+        });
+      }
+    };
+
+    updateCardPosition();
+    window.addEventListener('resize', updateCardPosition);
+    return () => window.removeEventListener('resize', updateCardPosition);
+  }, []);
+
+  // Close mobile menu when window is resized to desktop size
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
 
   const services = {
     shop: {
-      title: "Online Shop",
+      title: 'Online Shop',
       description:
-        "Create and manage your online store with powerful e-commerce tools, inventory management, and secure payment processing.",
-      icon: <ShoppingBag />,
-      link: "/shop",
+        'Create and manage your online store with powerful e-commerce tools, inventory management, and secure payment processing.',
+      icon: <ShoppingBag className="w-6 h-6" />,
+      link: '/shop',
     },
     services: {
-      title: "Digital Services",
+      title: 'Digital Services',
       description:
-        "Offer your services online with booking systems, client management, and automated workflows to streamline your business.",
-      icon: <Wrench />,
-      link: "/services",
+        'Offer your services online with booking systems, client management, and automated workflows to streamline your business.',
+      icon: <Wrench className="w-6 h-6" />,
+      link: '/services',
     },
     websites: {
-      title: "Website Builder",
+      title: 'Website Builder',
       description:
-        "Design and deploy stunning websites with our intuitive builder, custom templates, and powerful SEO tools.",
-      icon: <Globe />,
-      link: "/websites",
+        'Design and deploy stunning websites with our intuitive builder, custom templates, and powerful SEO tools.',
+      icon: <Globe className="w-6 h-6" />,
+      link: '/websites',
     },
-  }
+  };
 
   const handleLinkHover = (linkId, isHovered) => {
-    setHoveredLinks({ ...hoveredLinks, [linkId]: isHovered })
-  }
+    setHoveredLinks({ ...hoveredLinks, [linkId]: isHovered });
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   return (
-    <div className="landing-container">
+    <div className="relative flex flex-col min-h-screen overflow-hidden">
       {/* Background elements */}
-      <div className="bg-circle bg-circle-1"></div>
-      <div className="bg-circle bg-circle-2"></div>
-      <div className="bg-circle bg-circle-3"></div>
+      <div className="absolute top-[-10%] right-[-5%] w-1/2 h-1/2 rounded-full bg-blue-500/10 blur-[60px] z-0"></div>
+      <div className="absolute bottom-[-15%] left-[-10%] w-2/5 h-2/5 rounded-full bg-blue-500/10 blur-[80px] z-0"></div>
+      <div className="absolute top-[40%] left-[30%] w-1/5 h-1/5 rounded-full bg-blue-500/10 blur-[50px] opacity-50 z-0"></div>
 
       {/* Cyber background image */}
-      <div className="cyber-image-container">
+      <div className="absolute inset-0 z-[1] pointer-events-none">
         <img
           src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070"
           alt="Cyber background"
+          className="w-full h-full object-cover opacity-15 filter blur-[1px] brightness-120 contrast-120 mix-blend-overlay"
         />
       </div>
 
       {/* Cyber overlay pattern */}
-      <div className="cyber-overlay"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,120,215,0.05)_25%,transparent_25%,transparent_50%,rgba(0,120,215,0.05)_50%,rgba(0,120,215,0.05)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-30 pointer-events-none z-[2]"></div>
 
       {/* Header */}
-      <header className="header">
-        <div className="logo">
-          <div className="logo-icon">V</div>
-          <span className="logo-text">VoxCyber</span>
+      <header className="relative flex items-center justify-between px-6 py-6 z-10">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold">
+            V
+          </div>
+          <span className="text-xl font-bold">VoxCyber</span>
         </div>
-        <nav className="nav">
-          <a
-            href="#shop"
-            className={`nav-link ${hoveredLinks["shop"] ? "hover" : ""}`}
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveService("shop")
-            }}
-            onMouseEnter={() => handleLinkHover("shop", true)}
-            onMouseLeave={() => handleLinkHover("shop", false)}
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex gap-8">
+          <Link
+            to="/shop"
+            className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
+              hoveredLinks['shop'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('shop', true)}
+            onMouseLeave={() => handleLinkHover('shop', false)}
           >
             Shop
-          </a>
-          <a
-            href="#services"
-            className={`nav-link ${hoveredLinks["services"] ? "hover" : ""}`}
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveService("services")
-            }}
-            onMouseEnter={() => handleLinkHover("services", true)}
-            onMouseLeave={() => handleLinkHover("services", false)}
+          </Link>
+
+          <Link
+            to="/services"
+            className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
+              hoveredLinks['services'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('services', true)}
+            onMouseLeave={() => handleLinkHover('services', false)}
           >
             Services
-          </a>
-          <a
-            href="#websites"
-            className={`nav-link ${hoveredLinks["websites"] ? "hover" : ""}`}
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveService("websites")
-            }}
-            onMouseEnter={() => handleLinkHover("websites", true)}
-            onMouseLeave={() => handleLinkHover("websites", false)}
+          </Link>
+
+          <Link
+            to="/websites"
+            className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
+              hoveredLinks['websites'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('websites', true)}
+            onMouseLeave={() => handleLinkHover('websites', false)}
           >
             Websites
-          </a>
+          </Link>
+
+          {/* Show Admin link if user is admin */}
+          {user?.role === 'admin' && (
+            <Link
+              to="/admin"
+              className="text-sm font-medium text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
+              onMouseEnter={() => handleLinkHover('admin', true)}
+              onMouseLeave={() => handleLinkHover('admin', false)}
+            >
+              Admin
+            </Link>
+          )}
         </nav>
-        <div className="auth-buttons">
-          <button className="btn btn-outline">Log In</button>
-          <button className="btn btn-primary">Sign Up</button>
+
+        {/* Auth Buttons for Desktop */}
+        <div className="hidden md:block">
+          <AuthButtons />
         </div>
-        <button className="menu-toggle">
-          <span></span>
-          <span></span>
-          <span></span>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden flex flex-col gap-1 p-2 focus:outline-none"
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? (
+            <X className="w-6 h-6 text-gray-800" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-800" />
+          )}
         </button>
       </header>
 
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-[72px] left-0 right-0 bg-white shadow-lg z-50 p-4 border-t border-gray-200 animate-slideDown">
+          <div className="flex flex-col space-y-3">
+            <Link
+              to="/shop"
+              className="text-gray-700 hover:text-blue-600 py-2 px-4 rounded-md hover:bg-blue-50 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Shop
+            </Link>
+            <Link
+              to="/services"
+              className="text-gray-700 hover:text-blue-600 py-2 px-4 rounded-md hover:bg-blue-50 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Services
+            </Link>
+            <Link
+              to="/websites"
+              className="text-gray-700 hover:text-blue-600 py-2 px-4 rounded-md hover:bg-blue-50 transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Websites
+            </Link>
+
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="text-white bg-blue-600 py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+            )}
+
+            <div className="pt-3 border-t border-gray-200">
+              {!user ? (
+                <>
+                  <button
+                    onClick={() => {
+                      dispatch(openAuthModal('login'));
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left py-2 px-4 text-gray-700 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => {
+                      dispatch(openAuthModal('register'));
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left py-2 px-4 text-gray-700 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                    {user.name.charAt(0) || <User className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
-      <main className="main-content">
-        <div className="hero-section">
-          <div className="hero-content">
-            <div className="badge">Next-Gen Cyber Solutions</div>
-            <h1 className="hero-title">
-              Welcome to <span className="highlight">VoxCyber</span>
+      <main className="flex flex-1 flex-col lg:flex-row px-6 py-8 relative z-[5]">
+        <div className="hero-section flex flex-1 items-center">
+          <div className="max-w-xl">
+            <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-600 rounded-lg text-xs font-medium mb-4">
+              Next-Gen Cyber Solutions
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
+              Welcome to <span className="text-blue-600">VoxCyber</span>
+              {user && (
+                <span className="text-blue-400 text-2xl ml-2 font-normal">
+                  , {user.name}
+                </span>
+              )}
             </h1>
-            <p className="hero-description">
-              Empowering your digital presence with cutting-edge cybersecurity solutions and comprehensive digital
-              services.
+            <p className="text-gray-600 text-lg leading-relaxed mb-8">
+              Empowering your digital presence with cutting-edge cybersecurity
+              solutions and comprehensive digital services.
             </p>
-            <div className="hero-buttons">
-              <button className="btn btn-primary btn-lg">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                onClick={() => navigate('/shop')}
+              >
                 Get Started
-                <ArrowRight className="btn-icon" />
+                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
               </button>
-              <button className="btn btn-outline btn-lg">Learn More</button>
+              <button className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                Learn More
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="services-section">
-          <div className="services-tabs">
+        <div className="services-section flex flex-1 flex-col justify-center lg:pl-8 mt-12 lg:mt-0">
+          <div className="flex gap-4 mb-8 overflow-x-auto pb-2 sm:justify-center lg:justify-start">
             {Object.keys(services).map((key) => (
               <button
                 key={key}
-                className={`service-tab ${activeService === key ? "active" : ""}`}
+                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
+                  activeService === key
+                    ? 'bg-blue-500/10'
+                    : 'hover:bg-blue-500/5'
+                }`}
                 onClick={() => setActiveService(key)}
               >
-                <div className="service-tab-icon">{services[key].icon}</div>
-                <span className="service-tab-text">{services[key].title}</span>
+                <div
+                  className={`w-12 h-12 flex items-center justify-center rounded-full transition-all ${
+                    activeService === key
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500/10 text-blue-600'
+                  }`}
+                >
+                  {services[key].icon}
+                </div>
+                <span
+                  className={`text-sm font-medium transition-colors ${
+                    activeService === key ? 'text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  {services[key].title}
+                </span>
               </button>
             ))}
           </div>
 
-          <div className="service-details">
-            <div className="service-icon">{services[activeService].icon}</div>
-            <h2 className="service-title">{services[activeService].title}</h2>
-            <p className="service-description">{services[activeService].description}</p>
-            <a
-              href={services[activeService].link}
-              className="service-link"
-              onMouseEnter={() => handleLinkHover("serviceLink", true)}
-              onMouseLeave={() => handleLinkHover("serviceLink", false)}
+          <div className="p-8 bg-white rounded-xl shadow-lg">
+            <div className="w-16 h-16 flex items-center justify-center bg-blue-500/10 text-blue-600 rounded-full mb-6">
+              {services[activeService].icon}
+            </div>
+            <h2 className="text-2xl font-bold mb-4">
+              {services[activeService].title}
+            </h2>
+            <p className="text-gray-600 leading-relaxed mb-6">
+              {services[activeService].description}
+            </p>
+            <Link
+              to={services[activeService].link}
+              className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors"
+              onMouseEnter={() => handleLinkHover('serviceLink', true)}
+              onMouseLeave={() => handleLinkHover('serviceLink', false)}
             >
               Explore {services[activeService].title}
-              <ArrowRight className={`link-icon ${hoveredLinks["serviceLink"] ? "hover" : ""}`} />
-            </a>
+              <ArrowRight
+                className={`ml-2 w-5 h-5 transition-transform ${
+                  hoveredLinks['serviceLink'] ? 'translate-x-1' : ''
+                }`}
+              />
+            </Link>
+          </div>
+        </div>
+
+        {/* Floating service cards */}
+        <div
+          className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
+            activeService === 'shop'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
+          }`}
+          style={{
+            top: floatingCardPosition.top,
+            right: floatingCardPosition.right,
+          }}
+        >
+          <div className="w-12 h-12 flex items-center justify-center bg-blue-500/10 text-blue-600 rounded-full mb-4">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Online Shop</h3>
+            <ul className="space-y-2">
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Product Management
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Secure Payments
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Inventory Tracking
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
+            activeService === 'services'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
+          }`}
+          style={{
+            top: floatingCardPosition.top,
+            right: floatingCardPosition.right,
+          }}
+        >
+          <div className="w-12 h-12 flex items-center justify-center bg-blue-500/10 text-blue-600 rounded-full mb-4">
+            <Wrench className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Digital Services</h3>
+            <ul className="space-y-2">
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Booking System
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Client Management
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Automated Workflows
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
+            activeService === 'websites'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
+          }`}
+          style={{
+            top: floatingCardPosition.top,
+            right: floatingCardPosition.right,
+          }}
+        >
+          <div className="w-12 h-12 flex items-center justify-center bg-blue-500/10 text-blue-600 rounded-full mb-4">
+            <Globe className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Website Builder</h3>
+            <ul className="space-y-2">
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Drag & Drop Builder
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                Responsive Templates
+              </li>
+              <li className="relative pl-5 text-sm text-gray-600 before:content-[''] before:absolute before:left-0 before:top-[0.5rem] before:w-2 before:h-2 before:bg-blue-500/10 before:rounded-full">
+                SEO Tools
+              </li>
+            </ul>
           </div>
         </div>
       </main>
 
-      {/* Floating service cards */}
-      <div className={`service-card service-card-shop ${activeService === "shop" ? "active" : ""}`}>
-        <div className="service-card-icon">
-          <ShoppingBag />
-        </div>
-        <div className="service-card-content">
-          <h3>Online Shop</h3>
-          <ul className="feature-list">
-            <li>Product Management</li>
-            <li>Secure Payments</li>
-            <li>Inventory Tracking</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className={`service-card service-card-services ${activeService === "services" ? "active" : ""}`}>
-        <div className="service-card-icon">
-          <Wrench />
-        </div>
-        <div className="service-card-content">
-          <h3>Digital Services</h3>
-          <ul className="feature-list">
-            <li>Booking System</li>
-            <li>Client Management</li>
-            <li>Automated Workflows</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className={`service-card service-card-websites ${activeService === "websites" ? "active" : ""}`}>
-        <div className="service-card-icon">
-          <Globe />
-        </div>
-        <div className="service-card-content">
-          <h3>Website Builder</h3>
-          <ul className="feature-list">
-            <li>Drag & Drop Builder</li>
-            <li>Responsive Templates</li>
-            <li>SEO Tools</li>
-          </ul>
-        </div>
-      </div>
-
       {/* Footer */}
-      <footer className="footer">
-        <p className="copyright">© {new Date().getFullYear()} VoxCyber. All rights reserved.</p>
-        <div className="footer-links">
+      <footer className="flex flex-col sm:flex-row items-center justify-between px-6 py-6 border-t border-gray-200 relative z-10">
+        <p className="text-xs text-gray-600 mb-4 sm:mb-0">
+          © {new Date().getFullYear()} VoxCyber. All rights reserved.
+        </p>
+        <div className="flex gap-6">
           <a
             href="/terms"
-            className={`footer-link ${hoveredLinks["terms"] ? "hover" : ""}`}
-            onMouseEnter={() => handleLinkHover("terms", true)}
-            onMouseLeave={() => handleLinkHover("terms", false)}
+            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
+              hoveredLinks['terms'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('terms', true)}
+            onMouseLeave={() => handleLinkHover('terms', false)}
           >
             Terms
           </a>
           <a
             href="/privacy"
-            className={`footer-link ${hoveredLinks["privacy"] ? "hover" : ""}`}
-            onMouseEnter={() => handleLinkHover("privacy", true)}
-            onMouseLeave={() => handleLinkHover("privacy", false)}
+            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
+              hoveredLinks['privacy'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('privacy', true)}
+            onMouseLeave={() => handleLinkHover('privacy', false)}
           >
             Privacy
           </a>
           <a
             href="/contact"
-            className={`footer-link ${hoveredLinks["contact"] ? "hover" : ""}`}
-            onMouseEnter={() => handleLinkHover("contact", true)}
-            onMouseLeave={() => handleLinkHover("contact", false)}
+            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
+              hoveredLinks['contact'] ? 'text-blue-600' : ''
+            }`}
+            onMouseEnter={() => handleLinkHover('contact', true)}
+            onMouseLeave={() => handleLinkHover('contact', false)}
           >
             Contact
           </a>
         </div>
       </footer>
     </div>
-  )
+  );
 }
-

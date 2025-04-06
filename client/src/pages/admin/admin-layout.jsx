@@ -1,0 +1,819 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  Link,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  Settings,
+  Bell,
+  Search,
+  Menu,
+  X,
+  LogOut,
+  ChevronRight,
+  Sun,
+  Moon,
+  User,
+  HelpCircle,
+  Home,
+  Calendar,
+  FileText,
+  Activity,
+  CreditCard,
+  LayoutDashboard,
+} from 'lucide-react';
+import { logoutUser } from '../../redux/slices/authSlice';
+import { toggleDarkMode } from '../../redux/slices/uiSlice';
+
+// Import your custom components
+import Dashboard from './custom/dashboard';
+import Products from './custom/products';
+import Orders from './custom/order';
+import Customers from './custom/customers';
+
+const AdminLayout = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+  const { darkMode } = useSelector((state) => state.ui);
+
+  // Persist dark mode preference
+  useEffect(() => {
+    // Check if user has a saved preference
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (savedDarkMode !== darkMode) {
+      dispatch(toggleDarkMode());
+    }
+  }, []);
+
+  // Toggle dark mode
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      // Apply dark mode to MUI and Ant Design components
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      // Remove dark mode from MUI and Ant Design components
+      document.body.removeAttribute('data-theme');
+    }
+
+    // Save preference to localStorage
+    localStorage.setItem('darkMode', darkMode);
+  }, [darkMode]);
+
+  // Add this function to handle dark mode toggle
+  const handleToggleDarkMode = () => {
+    dispatch(toggleDarkMode());
+  };
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    navigate('/');
+  };
+
+  const navigation = [
+    {
+      name: 'Dashboard',
+      id: 'dashboard',
+      icon: LayoutDashboard,
+      path: '/admin/dashboard',
+    },
+    {
+      name: 'Products',
+      id: 'products',
+      icon: Package,
+      path: '/admin/products',
+    },
+    { name: 'Orders', id: 'orders', icon: ShoppingCart, path: '/admin/orders' },
+    {
+      name: 'Customers',
+      id: 'customers',
+      icon: Users,
+      path: '/admin/customers',
+    },
+    {
+      name: 'Analytics',
+      id: 'analytics',
+      icon: Activity,
+      path: '/admin/analytics',
+    },
+    {
+      name: 'Calendar',
+      id: 'calendar',
+      icon: Calendar,
+      path: '/admin/calendar',
+    },
+    {
+      name: 'Documents',
+      id: 'documents',
+      icon: FileText,
+      path: '/admin/documents',
+    },
+    {
+      name: 'Settings',
+      id: 'settings',
+      icon: Settings,
+      path: '/admin/settings',
+    },
+  ];
+
+  // Group navigation items
+  const mainNavItems = navigation.slice(0, 4);
+  const secondaryNavItems = navigation.slice(4);
+
+  // Get the current tab name for breadcrumb
+  const getCurrentTabName = () => {
+    const path = location.pathname.split('/').pop();
+    const currentTab = navigation.find((item) => item.id === path);
+    return currentTab ? currentTab.name : 'Dashboard';
+  };
+
+  // Notifications
+  const notifications = [
+    {
+      id: 1,
+      title: 'New Order',
+      message: 'You have a new order #1234',
+      time: '5 min ago',
+      isRead: false,
+    },
+    {
+      id: 2,
+      title: 'Low Stock Alert',
+      message: 'Product "Wireless Mouse" is low on stock',
+      time: '1 hour ago',
+      isRead: false,
+    },
+    {
+      id: 3,
+      title: 'Payment Received',
+      message: 'Payment for order #1233 has been received',
+      time: '3 hours ago',
+      isRead: true,
+    },
+    {
+      id: 4,
+      title: 'New Customer',
+      message: 'John Doe has registered as a new customer',
+      time: 'Yesterday',
+      isRead: true,
+    },
+  ];
+
+  return (
+    <div
+      className={`flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 ${
+        isCollapsed ? 'sidebar-collapsed' : ''
+      }`}
+    >
+      {/* Sidebar for desktop */}
+      <div
+        className={`hidden md:flex md:flex-col ${
+          isCollapsed ? 'md:w-20' : 'md:w-64'
+        } transition-all duration-300 ease-in-out`}
+      >
+        <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-sm">
+          <div
+            className={`flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700 ${
+              isCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            {!isCollapsed && (
+              <Link
+                to="/"
+                className="text-xl font-bold text-blue-600 dark:text-blue-400"
+              >
+                VoxCyber
+              </Link>
+            )}
+            {isCollapsed && (
+              <Link
+                to="/"
+                className="text-xl font-bold text-blue-600 dark:text-blue-400"
+              >
+                V
+              </Link>
+            )}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+            >
+              <ChevronRight
+                className={`h-5 w-5 transform transition-transform duration-200 ${
+                  isCollapsed ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+            <div className="px-3 py-4">
+              {/* Main Navigation */}
+              <div className="space-y-1">
+                {!isCollapsed && (
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Main
+                  </h3>
+                )}
+                {mainNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    location.pathname === item.path ||
+                    (location.pathname === '/admin' && item.id === 'dashboard');
+
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.path}
+                      className={`group flex items-center ${
+                        isCollapsed ? 'justify-center' : 'justify-start'
+                      } w-full px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Icon
+                        className={`${isCollapsed ? 'mr-0' : 'mr-3'} h-5 w-5 ${
+                          isActive
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                        }`}
+                      />
+                      {!isCollapsed && <span>{item.name}</span>}
+                      {isCollapsed && isActive && (
+                        <span className="absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          {item.name}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Secondary Navigation */}
+              <div className="mt-8 space-y-1">
+                {!isCollapsed && (
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Secondary
+                  </h3>
+                )}
+                {secondaryNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.path}
+                      className={`group flex items-center ${
+                        isCollapsed ? 'justify-center' : 'justify-start'
+                      } w-full px-2 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Icon
+                        className={`${isCollapsed ? 'mr-0' : 'mr-3'} h-5 w-5 ${
+                          isActive
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                        }`}
+                      />
+                      {!isCollapsed && <span>{item.name}</span>}
+                      {isCollapsed && isActive && (
+                        <span className="absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          {item.name}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* User Profile Section */}
+          <div
+            className={`p-4 border-t border-gray-200 dark:border-gray-700 ${
+              isCollapsed ? 'flex justify-center' : ''
+            }`}
+          >
+            {!isCollapsed && (
+              <div className="flex items-center">
+                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                  {user?.name?.charAt(0) || 'A'}
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {user?.name || 'Admin User'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {user?.role || 'Admin'}
+                  </p>
+                </div>
+              </div>
+            )}
+            {isCollapsed && (
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                {user?.name?.charAt(0) || 'A'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity duration-300 ease-in-out"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-800 transition-transform duration-300 ease-in-out transform">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
+              <button
+                type="button"
+                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="sr-only">Close sidebar</span>
+                <X className="h-6 w-6 text-white" />
+              </button>
+            </div>
+            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+              <div className="flex-shrink-0 flex items-center px-4 mb-5">
+                <Link
+                  to="/"
+                  className="text-xl font-bold text-blue-600 dark:text-blue-400"
+                >
+                  VoxCyber
+                </Link>
+              </div>
+              <nav className="mt-5 px-2 space-y-1">
+                <div className="space-y-1 mb-8">
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Main
+                  </h3>
+                  {mainNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      location.pathname === item.path ||
+                      (location.pathname === '/admin' &&
+                        item.id === 'dashboard');
+
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`group flex items-center px-2 py-2 text-base font-medium rounded-md w-full ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Icon
+                          className={`mr-4 h-5 w-5 ${
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                          }`}
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Secondary
+                  </h3>
+                  {secondaryNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.path;
+
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`group flex items-center px-2 py-2 text-base font-medium rounded-md w-full ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Icon
+                          className={`mr-4 h-5 w-5 ${
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                          }`}
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </nav>
+            </div>
+            <div className="flex-shrink-0 flex border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex-shrink-0 group block">
+                <div className="flex items-center">
+                  <div>
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                      {user?.name?.charAt(0) || 'A'}
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                      {user?.name || 'Admin User'}
+                    </p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {user?.role || 'Administrator'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Top navigation */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm z-10 transition-colors duration-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                >
+                  <span className="sr-only">Open sidebar</span>
+                  <Menu className="h-6 w-6" />
+                </button>
+
+                {/* Breadcrumb */}
+                <nav className="hidden md:flex ml-4" aria-label="Breadcrumb">
+                  <ol className="flex items-center space-x-2">
+                    <li>
+                      <div className="flex items-center">
+                        <Link
+                          to="/admin/dashboard"
+                          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          <Home className="h-4 w-4" />
+                          <span className="sr-only">Home</span>
+                        </Link>
+                      </div>
+                    </li>
+                    <li>
+                      <div className="flex items-center">
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {getCurrentTabName()}
+                        </span>
+                      </div>
+                    </li>
+                  </ol>
+                </nav>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {/* Search */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* Dark mode toggle */}
+                <button
+                  onClick={handleToggleDarkMode}
+                  className="p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {darkMode ? (
+                    <Sun className="h-6 w-6" />
+                  ) : (
+                    <Moon className="h-6 w-6" />
+                  )}
+                </button>
+
+                {/* Notifications */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                    className="p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <span className="sr-only">View notifications</span>
+                    <Bell className="h-6 w-6" />
+                    {notifications.some((n) => !n.isRead) && (
+                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                    )}
+                  </button>
+
+                  {/* Notification dropdown */}
+                  {isNotificationOpen && (
+                    <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none transition-all duration-200 ease-in-out">
+                      <div className="py-2 px-4 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            Notifications
+                          </h3>
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-400 cursor-pointer">
+                            Mark all as read
+                          </span>
+                        </div>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${
+                              notification.isRead
+                                ? ''
+                                : 'bg-blue-50 dark:bg-blue-900/20'
+                            }`}
+                          >
+                            <div className="flex items-start">
+                              <div
+                                className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
+                                  notification.isRead
+                                    ? 'bg-gray-200 dark:bg-gray-700'
+                                    : 'bg-blue-100 dark:bg-blue-900/40'
+                                }`}
+                              >
+                                {notification.title.includes('Order') && (
+                                  <ShoppingCart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                )}
+                                {notification.title.includes('Stock') && (
+                                  <Package className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                                )}
+                                {notification.title.includes('Payment') && (
+                                  <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                )}
+                                {notification.title.includes('Customer') && (
+                                  <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                )}
+                              </div>
+                              <div className="ml-3 w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {notification.title}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {notification.message}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                  {notification.time}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="py-2 px-4 border-t border-gray-200 dark:border-gray-700">
+                        <button className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 w-full text-center">
+                          View all notifications
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* User menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center max-w-xs text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <span className="sr-only">Open user menu</span>
+                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+                      {user?.name?.charAt(0) || 'A'}
+                    </div>
+                  </button>
+
+                  {/* User dropdown */}
+                  {isUserMenuOpen && (
+                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none transition-all duration-200 ease-in-out">
+                      <div className="py-1">
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
+                          <User className="mr-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          Profile
+                        </button>
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
+                          <Settings className="mr-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          Settings
+                        </button>
+                        <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center">
+                          <HelpCircle className="mr-3 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          Help
+                        </button>
+                        <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                        >
+                          <LogOut className="mr-3 h-4 w-4 text-red-500 dark:text-red-400" />
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+              {/* Page header */}
+              <div className="md:flex md:items-center md:justify-between mb-6">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {getCurrentTabName()}
+                  </h1>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {location.pathname.includes('dashboard') &&
+                      'Overview of your business performance and key metrics.'}
+                    {location.pathname.includes('products') &&
+                      'Manage your product inventory and catalog.'}
+                    {location.pathname.includes('orders') &&
+                      'Track and manage customer orders.'}
+                    {location.pathname.includes('customers') &&
+                      'View and manage your customer database.'}
+                    {location.pathname.includes('analytics') &&
+                      'Analyze your business data and trends.'}
+                    {location.pathname.includes('calendar') &&
+                      'Manage your schedule and upcoming events.'}
+                    {location.pathname.includes('documents') &&
+                      'Access and organize your important files.'}
+                    {location.pathname.includes('settings') &&
+                      'Configure your application settings.'}
+                  </p>
+                </div>
+                <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    Export
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    {location.pathname.includes('products') && 'Add Product'}
+                    {location.pathname.includes('orders') && 'Create Order'}
+                    {location.pathname.includes('customers') && 'Add Customer'}
+                    {location.pathname.includes('dashboard') && 'Refresh Data'}
+                    {location.pathname.includes('analytics') &&
+                      'Generate Report'}
+                    {location.pathname.includes('calendar') && 'Add Event'}
+                    {location.pathname.includes('documents') && 'Upload File'}
+                    {location.pathname.includes('settings') && 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Content area */}
+              <div className="py-4">
+                <Routes>
+                  <Route
+                    path="/"
+                    element={<Navigate to="dashboard" replace />}
+                  />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="products" element={<Products />} />
+                  <Route path="orders" element={<Orders />} />
+                  <Route path="customers" element={<Customers />} />
+                  <Route
+                    path="analytics"
+                    element={
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                          Analytics Dashboard
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          View your business analytics and insights.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="calendar"
+                    element={
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                          Calendar
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Manage your schedule and events.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="documents"
+                    element={
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                          Documents
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Access and manage your documents.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="settings"
+                    element={
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                          Settings
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Configure your application settings.
+                        </p>
+
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                              Account Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Manage your account preferences
+                            </p>
+                          </div>
+                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                              Notification Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Configure how you receive notifications
+                            </p>
+                          </div>
+                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                              Security Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Manage your security preferences
+                            </p>
+                          </div>
+                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                              Display Settings
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Customize your display preferences
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
+                  <Route path="*" element={<div>404 Not Found</div>} />
+                </Routes>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdminLayout;
