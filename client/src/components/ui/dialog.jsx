@@ -72,3 +72,23 @@ export function DialogDescription({ className, children, ...props }) {
     </div>
   );
 }
+
+export function DialogFooter({ className, children, ...props }) {
+  return (
+    <div className={`mt-6 flex justify-end space-x-3 ${className || ''}`} {...props}>
+      {children}
+    </div>
+  );
+}
+
+export function DialogTrigger({ asChild, children, ...props }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}

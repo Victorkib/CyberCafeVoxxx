@@ -14,6 +14,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import AuthButtons from '../components/common/AuthButtons';
 import { openAuthModal } from '../redux/slices/uiSlice';
+import { fetchFeaturedProducts } from '../redux/slices/productsSlice';
+import { fetchFeaturedCategories } from '../redux/slices/categoriesSlice';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorMessage from '../components/common/ErrorMessage';
 
 export default function LandingPage() {
   const [activeService, setActiveService] = useState('shop');
@@ -22,11 +26,19 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { featuredProducts, loading: productsLoading, error: productsError } = useSelector((state) => state.products);
+  const { featuredCategories, loading: categoriesLoading, error: categoriesError } = useSelector((state) => state.categories);
 
   const [floatingCardPosition, setFloatingCardPosition] = useState({
     top: '30%',
     right: '10%',
   });
+
+  // Fetch featured data
+  useEffect(() => {
+    dispatch(fetchFeaturedProducts());
+    dispatch(fetchFeaturedCategories());
+  }, [dispatch]);
 
   // Update floating card position based on window size
   useEffect(() => {
@@ -99,6 +111,20 @@ export default function LandingPage() {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+  // Handle empty featured products and categories
+  const hasFeaturedProducts = featuredProducts && featuredProducts.length > 0;
+  const hasFeaturedCategories = featuredCategories && featuredCategories.length > 0;
+
+  // Show loading spinner only if both are loading
+  if (productsLoading && categoriesLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show error message only if both have errors
+  if (productsError && categoriesError) {
+    return <ErrorMessage message="Failed to load content. Please try again later." />;
+  }
 
   return (
     <div className="relative flex flex-col min-h-screen overflow-hidden">
@@ -452,6 +478,65 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+      {/* Featured Products Section - Only show if there are featured products */}
+      {hasFeaturedProducts && (
+        <section className="py-16 px-6 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Featured Products</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product) => (
+                <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                    <p className="text-gray-600 mt-1">${product.price.toFixed(2)}</p>
+                    <Link
+                      to={`/product/${product._id}`}
+                      className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Categories Section - Only show if there are featured categories */}
+      {hasFeaturedCategories && (
+        <section className="py-16 px-6 bg-gray-50 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Featured Categories</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {featuredCategories.map((category) => (
+                <div key={category._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                    <Link
+                      to={`/shop?category=${category._id}`}
+                      className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Browse Products
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="flex flex-col sm:flex-row items-center justify-between px-6 py-6 border-t border-gray-200 relative z-10">

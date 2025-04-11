@@ -1,76 +1,27 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
-
-// Simulated API calls - replace with actual API calls in production
-const fakeAuthApi = {
-  login: (credentials) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Simulate admin login
-        if (
-          credentials.email === 'admin@example.com' &&
-          credentials.password === 'admin123'
-        ) {
-          resolve({
-            id: '1',
-            name: 'Admin User',
-            email: 'admin@example.com',
-            role: 'admin',
-            token: 'fake-jwt-token-admin',
-          });
-        }
-        // Simulate regular user login
-        else if (
-          credentials.email === 'user@example.com' &&
-          credentials.password === 'user123'
-        ) {
-          resolve({
-            id: '2',
-            name: 'Regular User',
-            email: 'user@example.com',
-            role: 'user',
-            token: 'fake-jwt-token-user',
-          });
-        } else {
-          reject(new Error('Invalid credentials'));
-        }
-      }, 800);
-    });
-  },
-  register: (userData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: Math.random().toString(36).substr(2, 9),
-          name: userData.name,
-          email: userData.email,
-          role: 'user', // Default role for new users
-          token: 'fake-jwt-token-' + Math.random().toString(36).substr(2, 9),
-        });
-      }, 800);
-    });
-  },
-  logout: () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 300);
-    });
-  },
-};
+import { authAPI } from '../../utils/api';
 
 // Async thunks
 export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const user = await fakeAuthApi.login(credentials);
-      // Store token in localStorage
-      localStorage.setItem('authToken', user.token);
+      const response = await authAPI.login(credentials);
+      const { token, user } = response.data;
+      
+      // Store token and user data
+      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // Show success message
+      toast.success(`Welcome back, ${user.name}!`);
+      
       return user;
     } catch (error) {
-      return rejectWithValue(error.message);
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      return rejectWithValue(message);
     }
   }
 );
@@ -79,13 +30,54 @@ export const registerUser = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const user = await fakeAuthApi.register(userData);
-      // Store token in localStorage
-      localStorage.setItem('authToken', user.token);
+      const response = await authAPI.register(userData);
+      
+      // Show success message
+      toast.success(response.data.message);
+      
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const verifyEmail = createAsyncThunk(
+  'auth/verifyEmail',
+  async (token, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.verifyEmail(token);
+      const { user, token: authToken } = response.data;
+      
+      // Store token and user data
+      localStorage.setItem('token', authToken);
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // Show success message
+      toast.success('Email verified successfully! Welcome to VoxCyber!');
+      
       return user;
     } catch (error) {
-      return rejectWithValue(error.message);
+      const message = error.response?.data?.message || 'Email verification failed';
+      toast.error(message);
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const resendVerification = createAsyncThunk(
+  'auth/resendVerification',
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.resendVerification(email);
+      toast.success('Verification email sent successfully');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to resend verification email';
+      toast.error(message);
+      return rejectWithValue(message);
     }
   }
 );
@@ -94,40 +86,99 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      await fakeAuthApi.logout();
-      // Remove token from localStorage
-      localStorage.removeItem('authToken');
+      // Clear local storage
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
+      
+      // Show success message
+      toast.success('Logged out successfully');
+      
       return null;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Logout failed');
     }
   }
 );
 
-// Check if user is already logged in
-export const checkAuthState = createAsyncThunk(
-  'auth/checkAuthState',
+export const getCurrentUser = createAsyncThunk(
+  'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('authToken');
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
-
-      if (token && user) {
-        return user;
-      }
-      return null;
+      const response = await authAPI.getCurrentUser();
+      return response.data;
     } catch (error) {
-      return rejectWithValue('Session expired');
+      return rejectWithValue(error.response?.data?.message || 'Failed to get user data');
+    }
+  }
+);
+
+export const updatePassword = createAsyncThunk(
+  'auth/updatePassword',
+  async ({ currentPassword, newPassword }, { rejectWithValue }) => {
+    try {
+      await authAPI.updatePassword(currentPassword, newPassword);
+      return true;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update password');
+    }
+  }
+);
+
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email, { rejectWithValue }) => {
+    try {
+      await authAPI.forgotPassword(email);
+      return true;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to send reset email');
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async ({ token, password }, { rejectWithValue }) => {
+    try {
+      await authAPI.resetPassword(token, password);
+      return true;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to reset password');
+    }
+  }
+);
+
+export const checkAuthState = createAsyncThunk(
+  'auth/checkAuthState',
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      if (!token || !user) {
+        return null;
+      }
+      
+      // Verify token and get fresh user data
+      const response = await authAPI.getCurrentUser();
+      return response.data;
+    } catch (error) {
+      // Clear invalid auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return rejectWithValue(error.response?.data?.message || 'Authentication failed');
     }
   }
 );
 
 const initialState = {
-  user: null,
-  isAuthenticated: false,
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token') || null,
+  isAuthenticated: !!localStorage.getItem('token'),
   loading: false,
   error: null,
+  registrationEmail: null,
+  verificationPending: false
 };
 
 const authSlice = createSlice({
@@ -137,60 +188,129 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearRegistrationEmail: (state) => {
+      state.registrationEmail = null;
+    }
   },
   extraReducers: (builder) => {
     builder
-      // Login cases
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
         state.isAuthenticated = true;
-        toast.success('Login successful!');
+        state.user = action.payload;
+        state.token = localStorage.getItem('token');
+        state.verificationPending = false;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        toast.error(action.payload || 'Login failed');
       })
-
-      // Register cases
+      // Register
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
-        state.isAuthenticated = true;
-        toast.success('Registration successful!');
+        state.registrationEmail = action.payload.email;
+        state.verificationPending = true;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        toast.error(action.payload || 'Registration failed');
       })
-
-      // Logout cases
-      .addCase(logoutUser.pending, (state) => {
+      // Verify Email
+      .addCase(verifyEmail.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
+      .addCase(verifyEmail.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-        toast.info('Logged out successfully');
+        state.isAuthenticated = true;
+        state.user = action.payload;
+        state.token = localStorage.getItem('token');
+        state.verificationPending = false;
+        state.registrationEmail = null;
       })
-      .addCase(logoutUser.rejected, (state, action) => {
+      .addCase(verifyEmail.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        toast.error(action.payload || 'Logout failed');
       })
-
-      // Check auth state cases
+      // Resend Verification
+      .addCase(resendVerification.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resendVerification.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(resendVerification.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+      })
+      // Get Current User
+      .addCase(getCurrentUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(getCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Password
+      .addCase(updatePassword.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updatePassword.fulfilled, (state) => {
+        state.loading = false;
+        toast.success('Password updated successfully');
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(action.payload);
+      })
+      // Forgot Password
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+        toast.success('Password reset email sent');
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(action.payload);
+      })
+      // Reset Password
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        toast.success('Password reset successfully');
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        toast.error(action.payload);
+      })
+      // Check Auth State
       .addCase(checkAuthState.pending, (state) => {
         state.loading = true;
       })
@@ -199,14 +319,14 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = !!action.payload;
       })
-      .addCase(checkAuthState.rejected, (state, action) => {
+      .addCase(checkAuthState.rejected, (state) => {
         state.loading = false;
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
-        state.error = action.payload;
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, clearRegistrationEmail } = authSlice.actions;
 export default authSlice.reducer;

@@ -15,6 +15,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import LandingPage from './pages/LandingPage';
 import ServicesPage from './pages/ServicesPage';
 import CyberCafeLandingPage from './pages/CyberCafeLandingPage';
+import ProductDetailsPage from './pages/ProductDetailsPage';
+import ShoppingCartPage from './pages/ShoppingCartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import AdminLayout from './pages/admin/Admin-Layout';
 import NotFound from './pages/NotFound';
 
@@ -39,12 +43,17 @@ function App() {
       {isAuthModalOpen && <AuthModals />}
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/shop" element={<CyberCafeLandingPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/websites" element={<LandingPage />} />
+        <Route path="/product/:productId" element={<ProductDetailsPage />} />
+        <Route path="/cart" element={<ShoppingCartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
 
-        {/* Protected admin routes */}
+        {/* Protected Routes */}
         <Route
           path="/admin/*"
           element={
@@ -54,6 +63,7 @@ function App() {
           }
         />
 
+        {/* Fallback Routes */}
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>

@@ -75,7 +75,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../../ui/card';
+} from '../../../components/ui/card';
 
 // Mock data
 const mockOrders = [

@@ -14,6 +14,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { logoutUser } from '../../redux/slices/authSlice';
+import NotificationDropdown from './NotificationDropdown';
 
 const UserMenu = () => {
   const dispatch = useDispatch();
@@ -75,6 +76,7 @@ const UserMenu = () => {
 
   return (
     <div className="flex items-center gap-2">
+      <NotificationDropdown />
       {/* Notifications */}
       <div className="relative" ref={notificationsRef}>
         <button
