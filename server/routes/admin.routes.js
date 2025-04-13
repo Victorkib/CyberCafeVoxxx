@@ -1,82 +1,129 @@
 import express from 'express';
-import * as adminController from '../controllers/admin.controller.js';
-import { isAdmin, isSuperAdmin, isAdminOrManager } from '../middleware/admin.middleware.js';
-import { authMiddleware, rateLimiter, adminRateLimiter } from '../middleware/auth.middleware.js';
+import {
+  getDashboardStats,
+  getSalesAnalytics,
+  getInventoryStats,
+  getCustomerStats,
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  updateProductStock,
+  updateProductStatus,
+  getAllOrders,
+  getOrderById,
+  updateOrderStatus,
+  updateOrderTracking,
+  cancelOrder,
+  refundOrder,
+  getAllCustomers,
+  getCustomerById,
+  updateCustomerStatus,
+  blockCustomer,
+  unblockCustomer,
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  updateUserRole,
+  updateUserStatus,
+  getAllCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getSettings,
+  updateGeneralSettings,
+  updatePaymentSettings,
+  updateShippingSettings,
+  updateEmailSettings,
+  getSalesReport,
+  getInventoryReport,
+  getCustomerReport,
+  getOrderReport,
+  exportReport,
+  // Admin invitation related controllers
+  inviteAdmin,
+  verifyInvitation,
+  acceptInvitation,
+  cleanupExpiredInvitations
+} from '../controllers/admin.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { isAdmin, isSuperAdmin } from '../middleware/admin.middleware.js';
 
 const router = express.Router();
 
-// Apply authentication middleware to all admin routes
+// Public routes (no auth required)
+router.get('/verify-invitation/:token', verifyInvitation);
+router.post('/accept-invitation', acceptInvitation);
+
+// Apply authentication middleware to protected routes
 router.use(authMiddleware);
-router.use(adminRateLimiter);
 
-// Dashboard Statistics
-router.get('/dashboard/stats', isAdmin, adminController.getDashboardStats);
-router.get('/dashboard/sales-analytics', isAdmin, adminController.getSalesAnalytics);
-router.get('/dashboard/inventory-stats', isAdmin, adminController.getInventoryStats);
-router.get('/dashboard/customer-stats', isAdmin, adminController.getCustomerStats);
+// Admin invitation routes (protected)
+router.post('/invite', isAdmin, inviteAdmin);
+router.post('/cleanup-invitations', isAdmin, cleanupExpiredInvitations);
 
-// Product Management
-router.get('/products', isAdminOrManager, adminController.getAllProducts);
-router.get('/products/:id', isAdminOrManager, adminController.getProductById);
-router.post('/products', isAdmin, adminController.createProduct);
-router.put('/products/:id', isAdmin, adminController.updateProduct);
-router.delete('/products/:id', isAdmin, adminController.deleteProduct);
-router.patch('/products/:id/stock', isAdminOrManager, adminController.updateProductStock);
-router.patch('/products/:id/status', isAdminOrManager, adminController.updateProductStatus);
+// Dashboard routes
+router.get('/dashboard/stats', isAdmin, getDashboardStats);
+router.get('/dashboard/sales-analytics', isAdmin, getSalesAnalytics);
+router.get('/dashboard/inventory-stats', isAdmin, getInventoryStats);
+router.get('/dashboard/customer-stats', isAdmin, getCustomerStats);
 
-// Order Management
-router.get('/orders', isAdminOrManager, adminController.getAllOrders);
-router.get('/orders/:id', isAdminOrManager, adminController.getOrderById);
-router.patch('/orders/:id/status', isAdminOrManager, adminController.updateOrderStatus);
-router.patch('/orders/:id/tracking', isAdminOrManager, adminController.updateOrderTracking);
-router.post('/orders/:id/cancel', isAdminOrManager, adminController.cancelOrder);
-router.post('/orders/:id/refund', isAdmin, adminController.refundOrder);
+// Product management routes
+router.get('/products', isAdmin, getAllProducts);
+router.get('/products/:id', isAdmin, getProductById);
+router.post('/products', isAdmin, createProduct);
+router.put('/products/:id', isAdmin, updateProduct);
+router.delete('/products/:id', isAdmin, deleteProduct);
+router.patch('/products/:id/stock', isAdmin, updateProductStock);
+router.patch('/products/:id/status', isAdmin, updateProductStatus);
 
-// Customer Management
-router.get('/customers', isAdminOrManager, adminController.getAllCustomers);
-router.get('/customers/:id', isAdminOrManager, adminController.getCustomerById);
-router.patch('/customers/:id/status', isAdminOrManager, adminController.updateCustomerStatus);
-router.post('/customers/:id/block', isAdmin, adminController.blockCustomer);
-router.post('/customers/:id/unblock', isAdmin, adminController.unblockCustomer);
+// Order management routes
+router.get('/orders', isAdmin, getAllOrders);
+router.get('/orders/:id', isAdmin, getOrderById);
+router.patch('/orders/:id/status', isAdmin, updateOrderStatus);
+router.patch('/orders/:id/tracking', isAdmin, updateOrderTracking);
+router.post('/orders/:id/cancel', isAdmin, cancelOrder);
+router.post('/orders/:id/refund', isAdmin, refundOrder);
 
-// User Management
-router.get('/users', isAdmin, adminController.getAllUsers);
-router.get('/users/:id', isAdmin, adminController.getUserById);
-router.post('/users', isAdmin, adminController.createUser);
-router.put('/users/:id', isAdmin, adminController.updateUser);
-router.delete('/users/:id', isAdmin, adminController.deleteUser);
-router.patch('/users/:id/role', isAdmin, adminController.updateUserRole);
-router.patch('/users/:id/status', isAdmin, adminController.updateUserStatus);
+// Customer management routes
+router.get('/customers', isAdmin, getAllCustomers);
+router.get('/customers/:id', isAdmin, getCustomerById);
+router.patch('/customers/:id/status', isAdmin, updateCustomerStatus);
+router.post('/customers/:id/block', isAdmin, blockCustomer);
+router.post('/customers/:id/unblock', isAdmin, unblockCustomer);
 
-// Category Management
-router.get('/categories', isAdminOrManager, adminController.getAllCategories);
-router.get('/categories/:id', isAdminOrManager, adminController.getCategoryById);
-router.post('/categories', isAdmin, adminController.createCategory);
-router.put('/categories/:id', isAdmin, adminController.updateCategory);
-router.delete('/categories/:id', isAdmin, adminController.deleteCategory);
+// User management routes
+router.get('/users', isSuperAdmin, getAllUsers);
+router.get('/users/:id', isSuperAdmin, getUserById);
+router.post('/users', isSuperAdmin, createUser);
+router.put('/users/:id', isSuperAdmin, updateUser);
+router.delete('/users/:id', isSuperAdmin, deleteUser);
+router.patch('/users/:id/role', isSuperAdmin, updateUserRole);
+router.patch('/users/:id/status', isSuperAdmin, updateUserStatus);
 
-// Settings Management
-router.get('/settings', isAdmin, adminController.getSettings);
-router.put('/settings/general', isAdmin, adminController.updateGeneralSettings);
-router.put('/settings/payment', isAdmin, adminController.updatePaymentSettings);
-router.put('/settings/shipping', isAdmin, adminController.updateShippingSettings);
-router.put('/settings/email', isAdmin, adminController.updateEmailSettings);
+// Category management routes
+router.get('/categories', isAdmin, getAllCategories);
+router.get('/categories/:id', isAdmin, getCategoryById);
+router.post('/categories', isAdmin, createCategory);
+router.put('/categories/:id', isAdmin, updateCategory);
+router.delete('/categories/:id', isAdmin, deleteCategory);
 
-// Reports
-router.get('/reports/sales', isAdmin, adminController.getSalesReport);
-router.get('/reports/inventory', isAdmin, adminController.getInventoryReport);
-router.get('/reports/customers', isAdmin, adminController.getCustomerReport);
-router.get('/reports/orders', isAdmin, adminController.getOrderReport);
-router.get('/reports/export/:type', isAdmin, adminController.exportReport);
+// Settings management routes
+router.get('/settings', isSuperAdmin, getSettings);
+router.put('/settings/general', isSuperAdmin, updateGeneralSettings);
+router.put('/settings/payment', isSuperAdmin, updatePaymentSettings);
+router.put('/settings/shipping', isSuperAdmin, updateShippingSettings);
+router.put('/settings/email', isSuperAdmin, updateEmailSettings);
 
-// Admin invitation routes
-router.post('/invite', isSuperAdmin, adminController.inviteAdmin);
-router.post('/accept-invitation', adminController.acceptInvitation);
-router.get('/verify-invitation/:token', adminController.verifyInvitation);
-
-// Admin management routes
-router.get('/admins', isSuperAdmin, adminController.getAdmins);
-router.patch('/admins/:id/role', isSuperAdmin, adminController.updateAdminRole);
-router.delete('/admins/:id', isSuperAdmin, adminController.removeAdmin);
+// Report routes
+router.get('/reports/sales', isAdmin, getSalesReport);
+router.get('/reports/inventory', isAdmin, getInventoryReport);
+router.get('/reports/customers', isAdmin, getCustomerReport);
+router.get('/reports/orders', isAdmin, getOrderReport);
+router.get('/reports/export/:type', isAdmin, exportReport);
 
 export default router; 

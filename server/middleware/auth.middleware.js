@@ -11,36 +11,60 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    token = req.headers.authorization.split(' ')[1];
+    try {
+      // Get token from header
+      token = req.headers.authorization.split(' ')[1];
+
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Get user from the token
+      const user = await User.findById(decoded.id).select('-password');
+
+      if (!user) {
+        res.status(401);
+        throw new Error('Not authorized');
+      }
+
+      // Check if account is locked
+      if (user.isLocked) {
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          res.status(403);
+          throw new Error('Account is locked');
+        } else {
+          // Auto-unlock if lock duration has expired
+          await user.unlockAccount();
+        }
+      }
+
+      // Check if password has expired
+      if (user.passwordExpiresAt && user.passwordExpiresAt < new Date()) {
+        res.status(403);
+        throw new Error('Password has expired. Please update your password.');
+      }
+
+      // Check if session is valid
+      const session = user.activeSessions.find(s => s.token === token);
+      if (!session) {
+        res.status(401);
+        throw new Error('Session expired or invalid');
+      }
+
+      // Update session activity
+      await user.updateSessionActivity(token);
+
+      // Add user to request
+      req.user = user;
+      next();
+    } catch (error) {
+      res.status(401);
+      throw new Error('Not authorized');
+    }
   }
 
   if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: 'Not authorized to access this route',
-    });
-  }
-
-  try {
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Get user from token
-    req.user = await User.findById(decoded.id).select('-password');
-
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'User not found',
-      });
-    }
-
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      error: 'Not authorized to access this route',
-    });
+    res.status(401);
+    throw new Error('Not authorized, no token');
   }
 });
 

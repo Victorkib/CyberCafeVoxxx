@@ -15,6 +15,29 @@ import {
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
+
+  // Validate password strength
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    res.status(400);
+    throw new Error('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+  }
+
+  // Check rate limiting (max 10 registrations per 24 hours)
+  const recentRegistrations = await User.countDocuments({
+    createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+  });
+  if (recentRegistrations >= 10) {
+    res.status(429);
+    throw new Error('Too many registrations in the last 24 hours');
+  }
+
   // Check if user exists
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -38,18 +61,26 @@ export const register = asyncHandler(async (req, res) => {
   });
 
   if (user) {
-    // Send verification email
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
     try {
-      await sendVerificationEmail(email, name, verificationUrl);
+      // Send verification email
+      await sendVerificationEmail(
+        user.email,
+        user.name,
+        `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`,
+        false
+      );
+
+      res.status(201).json({
+        message: 'Registration successful. Please check your email to verify your account.',
+        email: user.email
+      });
     } catch (error) {
       console.error('Failed to send verification email:', error);
+      // Cleanup: Delete the user if email fails
+      await User.findByIdAndDelete(user._id);
+      res.status(500);
+      throw new Error('Failed to send verification email');
     }
-
-    res.status(201).json({
-      message: 'Registration successful. Please check your email to verify your account.',
-      email: user.email
-    });
   } else {
     res.status(400);
     throw new Error('Invalid user data');
@@ -114,12 +145,28 @@ export const login = asyncHandler(async (req, res) => {
     throw new Error('Invalid email or password');
   }
 
+  // Check if account is locked
+  if (user.isLocked) {
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / (1000 * 60));
+      res.status(403);
+      throw new Error(`Account is locked. Please try again in ${minutesLeft} minutes. Reason: ${user.lockReason}`);
+    } else {
+      // Auto-unlock if lock duration has expired
+      await user.unlockAccount();
+    }
+  }
+
   // Check if password matches
   const isMatch = await user.matchPassword(password);
   if (!isMatch) {
+    await user.incrementFailedLoginAttempts();
     res.status(401);
     throw new Error('Invalid email or password');
   }
+
+  // Reset failed attempts on successful login
+  await user.resetFailedLoginAttempts();
 
   // Check if email is verified
   if (!user.isEmailVerified) {
@@ -175,6 +222,9 @@ export const login = asyncHandler(async (req, res) => {
   // Generate token
   const loginToken = user.getSignedJwtToken();
 
+  // Add session
+  await user.addSession(loginToken, userAgent, clientIP);
+
   res.json({
     _id: user._id,
     name: user.name,
@@ -198,10 +248,22 @@ export const getMe = asyncHandler(async (req, res) => {
 export const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select('+password');
 
   if (user && (await user.matchPassword(currentPassword))) {
+    // Check if new password is in history
+    if (await user.isPasswordInHistory(newPassword)) {
+      res.status(400);
+      throw new Error('Cannot use a previously used password');
+    }
+
+    // Add current password to history before changing
+    await user.addToPasswordHistory(user.password);
+
+    // Update password
     user.password = newPassword;
+    user.passwordChangedAt = new Date();
+    user.passwordExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
     await user.save();
 
     // Send security alert for password change
@@ -290,6 +352,72 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }
 
   res.json({ message: 'Password reset successful' });
+});
+
+// @desc    Get active sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+export const getActiveSessions = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  res.json(user.activeSessions);
+});
+
+// @desc    Revoke session
+// @route   DELETE /api/auth/sessions/:token
+// @access  Private
+export const revokeSession = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const user = await User.findById(req.user._id);
+  
+  await user.removeSession(token);
+  
+  res.json({ message: 'Session revoked successfully' });
+});
+
+// @desc    Lock account (Admin only)
+// @route   POST /api/auth/lock-account
+// @access  Private/Admin
+export const lockAccount = asyncHandler(async (req, res) => {
+  const { userId, reason, durationMinutes } = req.body;
+
+  // Check if user is admin
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    res.status(403);
+    throw new Error('Not authorized to lock accounts');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  await user.lockAccount(reason, durationMinutes);
+
+  res.json({ message: 'Account locked successfully' });
+});
+
+// @desc    Unlock account (Admin only)
+// @route   POST /api/auth/unlock-account
+// @access  Private/Admin
+export const unlockAccount = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+
+  // Check if user is admin
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    res.status(403);
+    throw new Error('Not authorized to unlock accounts');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  await user.unlockAccount();
+
+  res.json({ message: 'Account unlocked successfully' });
 });
 
 // Generate JWT

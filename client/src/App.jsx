@@ -19,12 +19,17 @@ import ProductDetailsPage from './pages/ProductDetailsPage';
 import ShoppingCartPage from './pages/ShoppingCartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
-import AdminLayout from './pages/admin/Admin-Layout';
+import AdminLayout from './pages/admin/admin-layout';
 import NotFound from './pages/NotFound';
+import VerifyEmail from './pages/VerifyEmail';
+import ResendVerification from './pages/ResendVerification';
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthModals from './components/auth/AuthModals';
+import AdminInvitationAccept from './components/auth/AdminInvitationAccept';
+import MainLayout from './components/layout/MainLayout';
+import ResetPassword from './components/auth/ResetPassword';
 
 // Redux actions
 import { checkAuthState } from './redux/slices/authSlice';
@@ -45,13 +50,17 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/shop" element={<CyberCafeLandingPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/websites" element={<LandingPage />} />
-        <Route path="/product/:productId" element={<ProductDetailsPage />} />
-        <Route path="/cart" element={<ShoppingCartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+        <Route path="/verify-email" element={<MainLayout><VerifyEmail /></MainLayout>} />
+        <Route path="/resend-verification" element={<MainLayout><ResendVerification /></MainLayout>} />
+        <Route path="/admin/invitation/:token" element={<MainLayout><AdminInvitationAccept /></MainLayout>} />
+        <Route path="/shop" element={<MainLayout><CyberCafeLandingPage /></MainLayout>} />
+        <Route path="/services" element={<MainLayout><ServicesPage /></MainLayout>} />
+        <Route path="/websites" element={<MainLayout><LandingPage /></MainLayout>} />
+        <Route path="/product/:productId" element={<MainLayout><ProductDetailsPage /></MainLayout>} />
+        <Route path="/cart" element={<MainLayout><ShoppingCartPage /></MainLayout>} />
+        <Route path="/checkout" element={<MainLayout><CheckoutPage /></MainLayout>} />
+        <Route path="/order-confirmation" element={<MainLayout><OrderConfirmationPage /></MainLayout>} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Protected Routes */}
         <Route
@@ -64,7 +73,7 @@ function App() {
         />
 
         {/* Fallback Routes */}
-        <Route path="/404" element={<NotFound />} />
+        <Route path="/404" element={<MainLayout><NotFound /></MainLayout>} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </Router>

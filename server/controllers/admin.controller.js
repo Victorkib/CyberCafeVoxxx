@@ -813,9 +813,14 @@ export const exportReport = async (req, res, next) => {
 // @desc    Invite a new admin
 // @route   POST /api/admin/invite
 // @access  Private (Admin only)
-export const inviteAdmin = asyncHandler(async (req, res) => {
+export const inviteAdmin = asyncHandler(async (req, res, next) => {
   try {
     const { email, name, role } = req.body;
+
+    // Validate role
+    if (role && role !== 'admin') {
+      throw createError(400, 'Invalid role. Only admin role can be assigned through invitation');
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -832,6 +837,15 @@ export const inviteAdmin = asyncHandler(async (req, res) => {
       throw createError(400, 'An invitation for this email already exists');
     }
 
+    // Check rate limiting (max 5 invitations per 24 hours)
+    const recentInvitations = await AdminInvitation.countDocuments({
+      invitedBy: req.user._id,
+      createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    });
+    if (recentInvitations >= 5) {
+      throw createError(429, 'Too many invitations sent in the last 24 hours');
+    }
+
     // Generate temporary password
     const tempPassword = crypto.randomBytes(8).toString('hex');
 
@@ -839,7 +853,7 @@ export const inviteAdmin = asyncHandler(async (req, res) => {
     const invitation = await AdminInvitation.create({
       email: email.toLowerCase(),
       name,
-      role: role || 'admin',
+      role: 'admin', // Force role to be admin
       tempPassword,
       invitedBy: req.user._id
     });
@@ -867,7 +881,7 @@ export const inviteAdmin = asyncHandler(async (req, res) => {
 // @desc    Accept admin invitation
 // @route   POST /api/admin/accept-invitation
 // @access  Public
-export const acceptInvitation = asyncHandler(async (req, res) => {
+export const acceptInvitation = asyncHandler(async (req, res, next) => {
   try {
     const { token, password } = req.body;
 
@@ -919,10 +933,60 @@ export const acceptInvitation = asyncHandler(async (req, res) => {
 // @desc    Verify admin invitation token
 // @route   GET /api/admin/verify-invitation/:token
 // @access  Public
-export const verifyInvitation = asyncHandler(async (req, res) => {
+export const verifyInvitation = asyncHandler(async (req, res, next) => {
   try {
     const { token } = req.params;
 
+    console.log('verifyInvitation: Token:', token);
+
+    // First check if this is an initial admin verification
+    const initialAdmin = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpire: { $gt: Date.now() },
+      role: 'super_admin'
+    });
+
+    console.log('verifyInvitation: Initial admin:', initialAdmin);
+
+    if (initialAdmin) {
+      // If already verified, return success
+      if (initialAdmin.isEmailVerified) {
+        return res.status(200).json({
+          status: 'success',
+          data: {
+            invitation: {
+              email: initialAdmin.email,
+              name: initialAdmin.name,
+              role: initialAdmin.role,
+              type: 'super_admin',
+              expiresAt: initialAdmin.emailVerificationExpire
+            }
+          }
+        });
+      }
+
+      // Update the user's role to super_admin and mark as verified
+      initialAdmin.role = 'super_admin';
+      initialAdmin.isEmailVerified = true;
+      initialAdmin.emailVerificationToken = undefined;
+      initialAdmin.emailVerificationExpire = undefined;
+      await initialAdmin.save();
+
+      return res.status(200).json({
+        status: 'success',
+        data: {
+          invitation: {
+            email: initialAdmin.email,
+            name: initialAdmin.name,
+            role: initialAdmin.role,
+            type: 'super_admin',
+            expiresAt: initialAdmin.emailVerificationExpire
+          }
+        }
+      });
+    }
+
+    // Check for regular admin invitation
     const invitation = await AdminInvitation.findOne({ token });
     if (!invitation) {
       throw createError(404, 'Invalid invitation token');
@@ -938,7 +1002,7 @@ export const verifyInvitation = asyncHandler(async (req, res) => {
       throw createError(400, 'Invitation has expired');
     }
 
-    // Return invitation details (excluding sensitive information)
+    // Return invitation details
     res.status(200).json({
       status: 'success',
       data: {
@@ -946,6 +1010,7 @@ export const verifyInvitation = asyncHandler(async (req, res) => {
           email: invitation.email,
           name: invitation.name,
           role: invitation.role,
+          type: 'invited_admin',
           expiresAt: invitation.expiresAt
         }
       }
@@ -958,7 +1023,7 @@ export const verifyInvitation = asyncHandler(async (req, res) => {
 // @desc    Get all admin users
 // @route   GET /api/admin/admins
 // @access  Private (Admin only)
-export const getAdmins = asyncHandler(async (req, res) => {
+export const getAdmins = asyncHandler(async (req, res, next) => {
   try {
     const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } })
       .select('-password')
@@ -978,7 +1043,7 @@ export const getAdmins = asyncHandler(async (req, res) => {
 // @desc    Update admin role
 // @route   PUT /api/admin/admins/:adminId
 // @access  Private (Admin only)
-export const updateAdminRole = asyncHandler(async (req, res) => {
+export const updateAdminRole = asyncHandler(async (req, res, next) => {
   try {
     const { role } = req.body;
     const adminId = req.params.id;
@@ -1019,7 +1084,7 @@ export const updateAdminRole = asyncHandler(async (req, res) => {
 // @desc    Remove admin
 // @route   DELETE /api/admin/admins/:adminId
 // @access  Private (Admin only)
-export const removeAdmin = asyncHandler(async (req, res) => {
+export const removeAdmin = asyncHandler(async (req, res, next) => {
   try {
     const adminId = req.params.id;
 
@@ -1046,7 +1111,7 @@ export const removeAdmin = asyncHandler(async (req, res) => {
 // @desc    Update admin profile
 // @route   PUT /api/admin/profile
 // @access  Private (Admin only)
-export const updateAdminProfile = asyncHandler(async (req, res) => {
+export const updateAdminProfile = asyncHandler(async (req, res, next) => {
   const { name, currentPassword, newPassword } = req.body;
 
   const admin = await User.findById(req.user._id).select('+password');
@@ -1084,4 +1149,39 @@ export const updateAdminProfile = asyncHandler(async (req, res) => {
       role: admin.role
     }
   });
+});
+
+// @desc    Cleanup expired invitations
+// @route   POST /api/admin/cleanup-invitations
+// @access  Private (Admin only)
+export const cleanupExpiredInvitations = asyncHandler(async (req, res, next) => {
+  try {
+    // Update expired invitations
+    const updateResult = await AdminInvitation.updateMany(
+      {
+        status: 'pending',
+        expiresAt: { $lt: new Date() }
+      },
+      {
+        $set: { status: 'expired' }
+      }
+    );
+
+    // Delete old expired invitations
+    const deleteResult = await AdminInvitation.deleteMany({
+      status: 'expired',
+      updatedAt: { $lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Invitations cleaned up successfully',
+      data: {
+        expired: updateResult.modifiedCount,
+        deleted: deleteResult.deletedCount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
 }); 

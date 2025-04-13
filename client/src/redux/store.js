@@ -10,6 +10,7 @@ import paymentReducer from './slices/paymentSlice';
 import specialOffersReducer from './slices/specialOffersSlice';
 import heroSlidesReducer from './slices/heroSlidesSlice';
 import notificationReducer from './slices/notificationSlice';
+import adminReducer from './slices/adminSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     specialOffers: specialOffersReducer,
     heroSlides: heroSlidesReducer,
     notifications: notificationReducer,
+    admin: adminReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

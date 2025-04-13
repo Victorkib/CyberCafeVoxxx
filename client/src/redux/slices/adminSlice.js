@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import * as adminApi from '../../utils/adminApi';
+import { apiRequest } from '../../utils/api';
+import axios from 'axios';
 
 // Dashboard Statistics
 export const fetchDashboardStats = createAsyncThunk(
@@ -586,6 +588,54 @@ export const exportReport = createAsyncThunk(
   }
 );
 
+// Admin Invitation Management
+export const verifyAdminInvitation = createAsyncThunk(
+  'admin/verifyInvitation',
+  async (token, { rejectWithValue }) => {
+    console.log('adminSlice: verifyAdminInvitation called with token:', token);
+    try {
+      console.log('adminSlice: Making API request to verify invitation');
+      const response = await adminApi.verifyInvitation(token);
+      console.log('adminSlice: API response received:', response);
+      return response.data;
+    } catch (error) {
+      console.error('adminSlice: Error in verifyAdminInvitation:', error);
+      return rejectWithValue(error.response?.data || {
+        message: 'Invalid or expired invitation',
+        type: error.response?.status === 400 ? 'EXPIRED' : 'ERROR'
+      });
+    }
+  }
+);
+
+export const acceptAdminInvitation = createAsyncThunk(
+  'admin/acceptInvitation',
+  async ({ token, password }, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.acceptInvitation({ token, password });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || {
+        message: 'Failed to accept invitation',
+        type: 'ERROR'
+      });
+    }
+  }
+);
+
+// Async thunks
+export const cleanupExpiredInvitations = createAsyncThunk(
+  'admin/cleanupExpiredInvitations',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post('/api/admin/cleanup-invitations');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to cleanup invitations');
+    }
+  }
+);
+
 const initialState = {
   // Dashboard
   dashboardStats: null,
@@ -628,7 +678,9 @@ const initialState = {
   
   // UI State
   loading: false,
-  error: null
+  error: null,
+  invitation: null,
+  success: false,
 };
 
 const adminSlice = createSlice({
@@ -652,7 +704,13 @@ const adminSlice = createSlice({
     },
     clearCurrentCategory: (state) => {
       state.currentCategory = null;
-    }
+    },
+    clearAdminState: (state) => {
+      state.invitation = null;
+      state.loading = false;
+      state.error = null;
+      state.success = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -1089,6 +1147,52 @@ const adminSlice = createSlice({
       .addCase(fetchOrderReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      // Accept Invitation
+      .addCase(acceptAdminInvitation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(acceptAdminInvitation.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+        state.error = null;
+      })
+      .addCase(acceptAdminInvitation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      })
+      // Verify Invitation
+      .addCase(verifyAdminInvitation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyAdminInvitation.fulfilled, (state, action) => {
+        state.loading = false;
+        state.invitation = action.payload.data.invitation;
+        state.error = null;
+      })
+      .addCase(verifyAdminInvitation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.invitation = null;
+      })
+      // Cleanup Expired Invitations
+      .addCase(cleanupExpiredInvitations.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(cleanupExpiredInvitations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.error = null;
+      })
+      .addCase(cleanupExpiredInvitations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
       });
   }
 });
@@ -1099,7 +1203,8 @@ export const {
   clearCurrentOrder,
   clearCurrentCustomer,
   clearCurrentUser,
-  clearCurrentCategory
+  clearCurrentCategory,
+  clearAdminState
 } = adminSlice.actions;
 
 export default adminSlice.reducer; 

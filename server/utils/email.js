@@ -253,28 +253,39 @@ const emailTemplates = {
 
   // Admin invitation template
   adminInvitation: (data) => `
-  <h2 style="color: #333; text-align: center;">Admin Invitation</h2>
+  <h2 style="color: #333; text-align: center;">Welcome to the Admin Team!</h2>
   <p style="color: #555; font-size: 16px;">Hello ${data.name},</p>
   <p style="color: #555; font-size: 16px;">
-    You have been invited by ${data.inviterName} to join the CyberCafe Shop as an administrator.
+    You have been invited to join the admin team of our e-commerce platform. To complete your registration and set up your account, please follow these steps:
   </p>
-  <p style="color: #555; font-size: 16px;">
-    As an administrator, you will have access to manage products, orders, users, and system settings.
-  </p>
-  <p style="color: #555; font-size: 16px;">
-    To accept this invitation and create your admin account, please click the button below:
-  </p>
+  
+  <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
+    <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${data.tempPassword}</p>
+    <p style="margin: 5px 0;"><strong>Important:</strong> This invitation link will expire in ${data.expiresIn}.</p>
+  </div>
+  
+  <p style="color: #555; font-size: 16px;">Click the button below to accept the invitation and set up your account:</p>
+  
   <div style="text-align: center; margin: 20px 0;">
     <a href="${data.invitationURL}" 
-       style="background-color: #0080ff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+       style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Accept Invitation
     </a>
   </div>
+  
   <p style="color: #555; font-size: 14px;">
-    This invitation link will expire in 7 days.
+    If the button doesn't work, you can copy and paste this link into your browser:
   </p>
+  <p style="color: #555; font-size: 14px; word-break: break-all;">
+    ${data.invitationURL}
+  </p>
+  
   <p style="color: #555; font-size: 14px;">
-    If you did not expect this invitation or believe it was sent in error, please ignore this email.
+    After accepting the invitation, you'll be prompted to set a new password for your account.
+  </p>
+  
+  <p style="color: #555; font-size: 14px;">
+    If you did not expect this invitation, please ignore this email.
   </p>
 `,
 
@@ -357,8 +368,48 @@ const emailTemplates = {
       View Product
     </a>
   </div>
+`,
+
+  // Admin verification template
+  adminVerification: (name, verificationLink) => `
+  <h2 style="color: #333; text-align: center;">Verify Your Admin Account</h2>
+  <p style="color: #555; font-size: 16px;">Hello ${name},</p>
+  <p style="color: #555; font-size: 16px;">
+    Thank you for registering as an admin. Please verify your email address to complete your admin account setup.
+  </p>
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="${verificationLink}" 
+       style="background-color: #0080ff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+      Verify Admin Account
+    </a>
+  </div>
+  <p style="color: #555; font-size: 14px;">
+    This link will expire in 24 hours for security reasons.
+  </p>
+  <p style="color: #555; font-size: 14px;">
+    If you did not request to create an admin account, please ignore this email and contact support immediately.
+  </p>
 `
 };
+
+// Admin verification email template
+const adminVerificationTemplate = (name, verificationUrl) => `
+  <h2 style="color: #333; text-align: center;">Welcome to CyberCafe Admin Panel!</h2>
+  <p style="color: #555; font-size: 16px;">Hello ${name},</p>
+  <p style="color: #555; font-size: 16px;">
+    You have been granted super admin access to the CyberCafe platform. 
+    Please verify your email address to activate your admin account.
+  </p>
+  <div style="text-align: center; margin: 20px 0;">
+    <a href="${verificationUrl}" 
+       style="background-color: #0080ff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+      Verify Email Address
+    </a>
+  </div>
+  <p style="color: #555; font-size: 14px;">
+    If you did not request this, please ignore this email.
+  </p>
+`;
 
 // Send email using Mailjet
 const sendMailjetEmail = async (to, subject, htmlContent) => {
@@ -437,6 +488,9 @@ export const sendEmail = async (options) => {
     case 'verifyEmail':
       htmlContent = emailTemplates.baseTemplate(emailTemplates.verifyEmail(data.verificationLink));
       break;
+    case 'adminVerification':
+      htmlContent = emailTemplates.baseTemplate(emailTemplates.adminVerification(data.name, data.verificationLink));
+      break;
     case 'accountNotification':
       htmlContent = emailTemplates.baseTemplate(emailTemplates.accountNotification(data.message));
       break;
@@ -458,13 +512,7 @@ export const sendEmail = async (options) => {
       );
       break;
     case 'adminInvitation':
-      htmlContent = emailTemplates.baseTemplate(
-        emailTemplates.adminInvitation({
-          name: data.name,
-          invitationURL: data.invitationURL,
-          inviterName: data.inviterName,
-        })
-      );
+      htmlContent = emailTemplates.baseTemplate(emailTemplates.adminInvitation(data));
       break;
     case 'newsletterSubscription':
       htmlContent = emailTemplates.baseTemplate(emailTemplates.newsletterSubscription(data.name));
@@ -510,13 +558,24 @@ export const sendPasswordResetEmail = async (email, resetLink) => {
   });
 };
 
-export const sendVerificationEmail = async (email, verificationLink) => {
-  return sendEmail({
-    to: email,
-    subject: 'Verify Your Email Address',
-    template: 'verifyEmail',
-    data: { verificationLink },
-  });
+export const sendVerificationEmail = async (email, name, verificationUrl, isAdmin = false) => {
+  try {
+    const subject = 'Verify Your Email Address';
+    const template = isAdmin ? 'adminVerification' : 'verifyEmail';
+    
+    await sendEmail({
+      to: email,
+      subject,
+      template,
+      data: { 
+        name,
+        verificationLink: verificationUrl
+      }
+    });
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    throw error;
+  }
 };
 
 export const sendAccountNotification = async (email, message) => {
@@ -574,37 +633,20 @@ export const sendSecurityAlertEmail = async (email, activity, time, location) =>
 };
 
 export const sendAdminInvitationEmail = async (email, name, token, tempPassword) => {
-  const invitationUrl = `${process.env.CLIENT_URL}/admin/accept-invitation/${token}`;
+  const invitationUrl = `${process.env.CLIENT_URL}/admin/invitation/${token}`;
   const subject = 'Admin Invitation - E-commerce Platform';
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Welcome to the Admin Team!</h2>
-      <p>Hello ${name},</p>
-      <p>You have been invited to join the admin team of our e-commerce platform. To complete your registration and set up your account, please follow these steps:</p>
-      
-      <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;">
-        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-        <p><strong>Important:</strong> This invitation link will expire in 24 hours.</p>
-      </div>
-      
-      <p>Click the button below to accept the invitation and set up your account:</p>
-      
-      <a href="${invitationUrl}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">
-        Accept Invitation
-      </a>
-      
-      <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
-      <p style="word-break: break-all;">${invitationUrl}</p>
-      
-      <p>After accepting the invitation, you'll be prompted to set a new password for your account.</p>
-      
-      <p>If you did not expect this invitation, please ignore this email.</p>
-      
-      <p>Best regards,<br>The E-commerce Team</p>
-    </div>
-  `;
-
-  await sendEmail(email, subject, html);
+  
+  return sendEmail({
+    to: email,
+    subject,
+    template: 'adminInvitation',
+    data: {
+      name,
+      invitationURL: invitationUrl,
+      tempPassword,
+      expiresIn: '24 hours'
+    }
+  });
 };
 
 export const sendNewsletterSubscriptionEmail = async (email, name) => {

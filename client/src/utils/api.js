@@ -167,6 +167,13 @@ export const endpoints = {
 
 // API request functions
 export const apiRequest = {
+  // Generic HTTP methods
+  get: (url, config) => api.get(url, config),
+  post: (url, data, config) => api.post(url, data, config),
+  put: (url, data, config) => api.put(url, data, config),
+  delete: (url, config) => api.delete(url, config),
+  patch: (url, data, config) => api.patch(url, data, config),
+
   // Auth
   login: (data) => api.post(endpoints.auth.login, data),
   register: (data) => api.post(endpoints.auth.register, data),
@@ -176,6 +183,7 @@ export const apiRequest = {
   resetPassword: (data) => api.post(endpoints.auth.resetPassword, data),
   getCurrentUser: () => api.get('/auth/me'),
   updatePassword: (data) => api.put('/auth/update-password', data),
+  verifyAdminInvitation: (token) => api.get(`/admin/verify-invitation/${token}`),
 
   // Users
   getProfile: () => api.get(endpoints.users.profile),

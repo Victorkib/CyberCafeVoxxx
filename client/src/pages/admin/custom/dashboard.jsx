@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   Zap,
   Award,
+  Trash2,
 } from 'lucide-react';
 import {
   XAxis,
@@ -42,7 +43,9 @@ import {
   fetchSalesAnalytics,
   fetchInventoryStats,
   fetchCustomerStats,
+  cleanupExpiredInvitations,
 } from '@/redux/slices/adminSlice';
+import { toast } from 'react-hot-toast';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -54,6 +57,15 @@ const Dashboard = () => {
     loading,
     error,
   } = useSelector((state) => state.admin);
+
+  const handleCleanupInvitations = async () => {
+    try {
+      await dispatch(cleanupExpiredInvitations()).unwrap();
+      toast.success('Expired invitations cleaned up successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to cleanup invitations');
+    }
+  };
 
   useEffect(() => {
     // Fetch all dashboard data
@@ -197,6 +209,28 @@ const Dashboard = () => {
                 className="bg-red-600 dark:bg-red-400 h-1.5 rounded-full"
                 style={{ width: `${stats.revenue.growth}%` }}
               ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Cleanup Invitations
+                </p>
+                <button
+                  onClick={handleCleanupInvitations}
+                  className="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Cleanup Expired
+                </button>
+              </div>
+              <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
             </div>
           </CardContent>
         </Card>

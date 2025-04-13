@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import api from './api';
 
 // Dashboard Statistics
 export const getDashboardStats = () => apiRequest.get('/admin/dashboard/stats');
@@ -70,4 +71,8 @@ export const getCustomerReport = (startDate, endDate) =>
 export const getOrderReport = (startDate, endDate) => 
   apiRequest.get('/admin/reports/orders', { params: { startDate, endDate } });
 export const exportReport = (type, startDate, endDate) => 
-  apiRequest.get(`/admin/reports/export/${type}`, { params: { startDate, endDate } }); 
+  apiRequest.get(`/admin/reports/export/${type}`, { params: { startDate, endDate } });
+
+
+export const verifyInvitation = (token) => api.get(`/admin/verify-invitation/${token}`);
+export const acceptInvitation = (invitationData) => api.post('/admin/accept-invitation', invitationData); 

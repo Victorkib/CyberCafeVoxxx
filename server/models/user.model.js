@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'manager', 'staff'],
+      enum: ['user', 'admin', 'super_admin', 'manager', 'staff'],
       default: 'user',
     },
     resetPasswordToken: String,
@@ -45,6 +45,29 @@ const userSchema = new mongoose.Schema(
     knownDevices: [{
       type: String,
     }],
+    failedLoginAttempts: {
+      type: Number,
+      default: 0
+    },
+    isLocked: {
+      type: Boolean,
+      default: false
+    },
+    lockedUntil: Date,
+    lockReason: String,
+    passwordHistory: [{
+      password: String,
+      changedAt: Date
+    }],
+    passwordChangedAt: Date,
+    passwordExpiresAt: Date,
+    activeSessions: [{
+      token: String,
+      deviceInfo: String,
+      ipAddress: String,
+      lastActivity: Date,
+      createdAt: Date
+    }]
   },
   {
     timestamps: true,
@@ -82,12 +105,90 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // Check if user is admin
 userSchema.methods.isAdmin = function () {
-  return this.role === 'admin';
+  return this.role === 'admin' || this.role === 'super_admin';
 };
 
 // Check if user is manager or admin
 userSchema.methods.isManagerOrAdmin = function () {
-  return this.role === 'admin' || this.role === 'manager';
+  return this.role === 'admin' || this.role === 'super_admin';
+};
+
+// Add new methods for security features
+userSchema.methods.incrementFailedLoginAttempts = async function() {
+  this.failedLoginAttempts += 1;
+  if (this.failedLoginAttempts >= 5) { // Lock after 5 failed attempts
+    this.isLocked = true;
+    this.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
+    this.lockReason = 'Too many failed login attempts';
+  }
+  await this.save();
+};
+
+userSchema.methods.resetFailedLoginAttempts = async function() {
+  this.failedLoginAttempts = 0;
+  await this.save();
+};
+
+userSchema.methods.lockAccount = async function(reason, durationMinutes = 30) {
+  this.isLocked = true;
+  this.lockedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+  this.lockReason = reason;
+  await this.save();
+};
+
+userSchema.methods.unlockAccount = async function() {
+  this.isLocked = false;
+  this.lockedUntil = undefined;
+  this.lockReason = undefined;
+  this.failedLoginAttempts = 0;
+  await this.save();
+};
+
+userSchema.methods.addToPasswordHistory = async function(password) {
+  if (this.passwordHistory.length >= 5) { // Keep last 5 passwords
+    this.passwordHistory.shift();
+  }
+  this.passwordHistory.push({
+    password: await bcrypt.hash(password, 10),
+    changedAt: new Date()
+  });
+  await this.save();
+};
+
+userSchema.methods.isPasswordInHistory = async function(password) {
+  for (const history of this.passwordHistory) {
+    if (await bcrypt.compare(password, history.password)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+userSchema.methods.addSession = async function(token, deviceInfo, ipAddress) {
+  if (this.activeSessions.length >= 5) { // Limit to 5 active sessions
+    this.activeSessions.shift();
+  }
+  this.activeSessions.push({
+    token,
+    deviceInfo,
+    ipAddress,
+    lastActivity: new Date(),
+    createdAt: new Date()
+  });
+  await this.save();
+};
+
+userSchema.methods.removeSession = async function(token) {
+  this.activeSessions = this.activeSessions.filter(session => session.token !== token);
+  await this.save();
+};
+
+userSchema.methods.updateSessionActivity = async function(token) {
+  const session = this.activeSessions.find(s => s.token === token);
+  if (session) {
+    session.lastActivity = new Date();
+    await this.save();
+  }
 };
 
 export default mongoose.model('User', userSchema); 
