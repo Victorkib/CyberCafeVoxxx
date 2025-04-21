@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import { isValidPassword, getPasswordValidationMessage } from '../../utils/validation';
 import {
   loginUser,
   registerUser,
@@ -23,8 +25,7 @@ const AuthModals = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { authModalView, isLoading } = useSelector((state) => state.ui);
-  const { error, loginAttempts } = useSelector((state) => state.auth);
-  const { user } = useSelector((state) => state.auth);
+  const { error, loginAttempts, user, isAuthenticated } = useSelector((state) => state.auth);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -46,15 +47,22 @@ const AuthModals = () => {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    if (user) {
-      if (user.role === 'admin' || user.role === 'super_admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-      dispatch(closeAuthModal());
+    if (isAuthenticated && user && localStorage.getItem('token')) {
+      // Add a small delay to ensure token is properly stored
+      const timer = setTimeout(() => {
+        if (user.role === 'admin' || user.role === 'super_admin') {
+          navigate('/admin');
+        } else {
+          // If there's a redirect path in location state, use it
+          const redirectPath = location.state?.from?.pathname || '/';
+          navigate(redirectPath);
+        }
+        dispatch(closeAuthModal());
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [user, navigate, dispatch]);
+  }, [isAuthenticated, user, navigate, dispatch, location.state]);
 
   useEffect(() => {
     if (authModalView) {
@@ -132,8 +140,8 @@ const AuthModals = () => {
 
     if (!registerForm.password) {
       errors.password = 'Password is required';
-    } else if (registerForm.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (!isValidPassword(registerForm.password)) {
+      errors.password = getPasswordValidationMessage();
     }
 
     if (registerForm.password !== registerForm.confirmPassword) {
@@ -159,69 +167,92 @@ const AuthModals = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    
+    if (!validateLoginForm()) {
+      // Display form validation errors
+      Object.entries(formErrors).forEach(([field, error]) => {
+        toast.error(`${field}: ${error}`);
+      });
+      return;
+    }
 
-    if (validateLoginForm()) {
-      try {
-        setFormErrors({});
-        await dispatch(loginUser({
-          email: loginForm.email,
-          password: loginForm.password,
-        })).unwrap();
+    try {
+      setFormErrors({});
+      const result = await dispatch(loginUser({
+        email: loginForm.email,
+        password: loginForm.password,
+      })).unwrap();
 
-        // Reset login attempts on successful login
-        dispatch(resetLoginAttempts());
-      } catch (error) {
-        // Handle account locking
-        if (error.includes('Account is locked')) {
-          const lockExpiry = error.match(/try again in (\d+) minutes/);
-          if (lockExpiry) {
-            setFormErrors({
-              ...formErrors,
-              general: `Account is locked. Please try again in ${lockExpiry[1]} minutes.`
-            });
-          } else {
-            setFormErrors({
-              ...formErrors,
-              general: error
-            });
-          }
+      // Reset login attempts on successful login
+      dispatch(resetLoginAttempts());
+      
+      // Clear form
+      setLoginForm({
+        email: '',
+        password: '',
+      });
+    } catch (error) {
+      // Handle account locking
+      if (error.includes('Account is locked')) {
+        const lockExpiry = error.match(/try again in (\d+) minutes/);
+        if (lockExpiry) {
+          setFormErrors({
+            ...formErrors,
+            general: `Account is locked. Please try again in ${lockExpiry[1]} minutes.`
+          });
         } else {
           setFormErrors({
             ...formErrors,
             general: error
           });
         }
-      }
-    }
-  };
-
-  const handleRegister = (e) => {
-    e.preventDefault();
-
-    if (validateRegisterForm()) {
-      dispatch(
-        registerUser({
-          name: registerForm.name,
-          email: registerForm.email,
-          password: registerForm.password,
-        })
-      );
-    }
-  };
-
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    if (validateForgotPasswordForm()) {
-      try {
-        await dispatch(forgotPassword(forgotPasswordForm.email)).unwrap();
-        toast.success('Password reset instructions have been sent to your email');
-        switchView('login');
-      } catch (error) {
+      } else {
         setFormErrors({
           ...formErrors,
           general: error
         });
       }
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    if (!validateRegisterForm()) {
+      // Display form validation errors
+      Object.entries(formErrors).forEach(([field, error]) => {
+        toast.error(`${field}: ${error}`);
+      });
+      return;
+    }
+
+    await dispatch(registerUser({
+      name: registerForm.name,
+      email: registerForm.email,
+      password: registerForm.password,
+    }));
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+
+    if (!validateForgotPasswordForm()) {
+      // Display form validation errors
+      Object.entries(formErrors).forEach(([field, error]) => {
+        toast.error(`${field}: ${error}`);
+      });
+      return;
+    }
+
+    try {
+      await dispatch(forgotPassword(forgotPasswordForm.email)).unwrap();
+      toast.success('Password reset instructions have been sent to your email');
+      switchView('login');
+    } catch (error) {
+      setFormErrors({
+        ...formErrors,
+        general: error
+      });
     }
   };
 
@@ -374,6 +405,9 @@ const AuthModals = () => {
                       } rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                       placeholder="Enter your password"
                     />
+                    {authModalView === 'register' && (
+                      <PasswordStrengthIndicator password={registerForm.password} />
+                    )}
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}

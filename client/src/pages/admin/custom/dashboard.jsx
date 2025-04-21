@@ -91,7 +91,8 @@ const Dashboard = () => {
     );
   }
 
-  const stats = dashboardStats || {
+  // Default stats object with safe fallbacks
+  const stats = {
     customers: { total: 0, growth: 0 },
     orders: { total: 0, growth: 0 },
     revenue: { total: 0, growth: 0 },
@@ -104,6 +105,7 @@ const Dashboard = () => {
       customerSatisfaction: { current: 0, target: 0, percentage: 0 },
       inventoryTurnover: { current: 0, target: 0, percentage: 0 },
     },
+    ...dashboardStats
   };
 
   const salesData = salesAnalytics?.data || [];

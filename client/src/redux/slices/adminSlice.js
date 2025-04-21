@@ -56,7 +56,7 @@ export const fetchCustomerStats = createAsyncThunk(
 // Product Management
 export const fetchProducts = createAsyncThunk(
   'admin/fetchProducts',
-  async ({ page, limit, sort, filter }, { rejectWithValue }) => {
+  async ({ page, limit, sort, filter } = {}, { rejectWithValue }) => {
     try {
       const response = await adminApi.getAllProducts(page, limit, sort, filter);
       return response.data;
@@ -65,6 +65,7 @@ export const fetchProducts = createAsyncThunk(
     }
   }
 );
+
 
 export const fetchProductById = createAsyncThunk(
   'admin/fetchProductById',
@@ -391,6 +392,71 @@ export const updateUserStatus = createAsyncThunk(
   }
 );
 
+// Admin Invitation Management
+export const inviteAdmin = createAsyncThunk("admin/inviteAdmin", async (inviteData, { rejectWithValue }) => {
+  try {
+    const response = await adminApi.inviteAdmin(inviteData)
+    toast.success("Admin invitation sent successfully")
+    return response.data
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to send invitation")
+    return rejectWithValue(error.response?.data?.message || "Failed to send invitation")
+  }
+})
+
+export const fetchAdminInvitations = createAsyncThunk("admin/fetchAdminInvitations", async (_, { rejectWithValue }) => {
+  try {
+    const response = await adminApi.fetchAdminInvitations()
+    return response.data
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || "Failed to fetch invitations")
+  }
+})
+
+export const resendInvitation = createAsyncThunk("admin/resendInvitation", async (id, { rejectWithValue }) => {
+  try {
+    const response = await adminApi.resendInvitation(id)
+    toast.success("Invitation resent successfully")
+    return response.data
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to resend invitation")
+    return rejectWithValue(error.response?.data?.message || "Failed to resend invitation")
+  }
+})
+
+export const cancelInvitation = createAsyncThunk("admin/cancelInvitation", async (id, { rejectWithValue }) => {
+  try {
+    await adminApi.cancelInvitation(id)
+    toast.success("Invitation cancelled successfully")
+    return id
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to cancel invitation")
+    return rejectWithValue(error.response?.data?.message || "Failed to cancel invitation")
+  }
+})
+
+export const lockAccount = createAsyncThunk("admin/lockAccount", async (lockData, { rejectWithValue }) => {
+  try {
+    const response = await adminApi.lockAccount(lockData)
+    toast.success("Account locked successfully")
+    return response.data
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to lock account")
+    return rejectWithValue(error.response?.data?.message || "Failed to lock account")
+  }
+})
+
+export const unlockAccount = createAsyncThunk("admin/unlockAccount", async (unlockData, { rejectWithValue }) => {
+  try {
+    const response = await adminApi.unlockAccount(unlockData)
+    toast.success("Account unlocked successfully")
+    return response.data
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to unlock account")
+    return rejectWithValue(error.response?.data?.message || "Failed to unlock account")
+  }
+})
+
 // Category Management
 export const fetchCategories = createAsyncThunk(
   'admin/fetchCategories',
@@ -628,10 +694,39 @@ export const cleanupExpiredInvitations = createAsyncThunk(
   'admin/cleanupExpiredInvitations',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/admin/cleanup-invitations');
+      const response = await apiRequest.post('/admin/cleanup-invitations');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to cleanup invitations');
+    }
+  }
+);
+
+// Bulk Product Operations
+export const bulkDeleteProducts = createAsyncThunk(
+  'admin/bulkDeleteProducts',
+  async (productIds, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.bulkDeleteProducts(productIds);
+      toast.success('Products deleted successfully');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete products');
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete products');
+    }
+  }
+);
+
+export const bulkUpdateProductStatus = createAsyncThunk(
+  'admin/bulkUpdateProductStatus',
+  async ({ ids, status, ...otherUpdates }, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.bulkUpdateProductStatus({ ids, status, ...otherUpdates });
+      toast.success(`${ids.length} products updated successfully`);
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update product statuses');
+      return rejectWithValue(error.response?.data?.message || 'Failed to update product statuses');
     }
   }
 );
@@ -647,6 +742,8 @@ const initialState = {
   products: [],
   totalProducts: 0,
   currentProduct: null,
+  currentPage: 1,
+  totalPages: 1,
   
   // Orders
   orders: [],
@@ -662,6 +759,7 @@ const initialState = {
   users: [],
   totalUsers: 0,
   currentUser: null,
+  invitations: [],
   
   // Categories
   categories: [],
@@ -775,11 +873,13 @@ const adminSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchProducts.fulfilled, (state, action) => {
+    .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
         state.products = action.payload.products;
-        state.totalProducts = action.payload.totalPages * action.payload.currentPage;
-      })
+        state.totalProducts = action.payload.totalProducts;
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
+    })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -1017,6 +1117,51 @@ const adminSlice = createSlice({
           state.currentUser = action.payload;
         }
       })
+
+      //users admin
+        .addCase(fetchAdminInvitations.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchAdminInvitations.fulfilled, (state, action) => {
+        state.loading = false
+        state.invitations = action.payload
+      })
+      .addCase(fetchAdminInvitations.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+      .addCase(inviteAdmin.fulfilled, (state, action) => {
+        if (action.payload) {
+          state.invitations.unshift(action.payload)
+        }
+      })
+
+      .addCase(resendInvitation.fulfilled, (state, action) => {
+        const index = state.invitations.findIndex((invitation) => invitation._id === action.payload._id)
+        if (index !== -1) {
+          state.invitations[index] = action.payload
+        }
+      })
+
+      .addCase(cancelInvitation.fulfilled, (state, action) => {
+        state.invitations = state.invitations.filter((invitation) => invitation._id !== action.payload)
+      })
+
+      .addCase(lockAccount.fulfilled, (state, action) => {
+        const index = state.users.findIndex((user) => user._id === action.payload._id)
+        if (index !== -1) {
+          state.users[index] = action.payload
+        }
+      })
+
+      .addCase(unlockAccount.fulfilled, (state, action) => {
+        const index = state.users.findIndex((user) => user._id === action.payload._id)
+        if (index !== -1) {
+          state.users[index] = action.payload
+        }
+      })
       
       // Categories
       .addCase(fetchCategories.pending, (state) => {
@@ -1171,7 +1316,7 @@ const adminSlice = createSlice({
       })
       .addCase(verifyAdminInvitation.fulfilled, (state, action) => {
         state.loading = false;
-        state.invitation = action.payload.data.invitation;
+        state.invitation = action.payload?.data?.invitation || null;
         state.error = null;
       })
       .addCase(verifyAdminInvitation.rejected, (state, action) => {

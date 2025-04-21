@@ -301,7 +301,7 @@ export default function EnhancedLandingPage() {
           </Link>
 
           {/* Show Admin link if user is admin */}
-          {user?.role === "admin" && (
+          {user?.role === "admin" || user?.role === "super_admin" && (
             <Link
               to="/admin"
               className="text-sm font-medium text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
@@ -354,7 +354,7 @@ export default function EnhancedLandingPage() {
               Websites
             </Link>
 
-            {user?.role === "admin" && (
+            {user?.role === "admin" || user?.role === "super_admin" && (
               <Link
                 to="/admin"
                 className="text-white bg-blue-600 py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"

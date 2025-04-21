@@ -15,12 +15,15 @@ const uiSlice = createSlice({
     openAuthModal: (state, action) => {
       state.isAuthModalOpen = true;
       state.authModalView = action.payload || 'login';
+      state.isLoading = false;
     },
     closeAuthModal: (state) => {
       state.isAuthModalOpen = false;
+      state.isLoading = false;
     },
     setAuthModalView: (state, action) => {
       state.authModalView = action.payload;
+      state.isLoading = false;
     },
     toggleDarkMode: (state) => {
       state.darkMode = !state.darkMode;
@@ -35,11 +38,11 @@ const uiSlice = createSlice({
       // Close modal on successful login/register
       .addCase(loginUser.fulfilled, (state) => {
         state.isAuthModalOpen = false;
-        state.isLoading = false; // Fix: Combined the loading state here instead of adding a separate case
+        state.isLoading = false;
       })
       .addCase(registerUser.fulfilled, (state) => {
         state.isAuthModalOpen = false;
-        state.isLoading = false; // Fix: Combined the loading state here instead of adding a separate case
+        state.isLoading = false;
       })
       // Set loading states
       .addCase(loginUser.pending, (state) => {

@@ -1,0 +1,31 @@
+client/
+├── components/
+│   ├── common/
+│   │   └── PageHeader.jsx
+│   ├── notifications/
+│   │   ├── user/
+│   │   │   ├── NotificationBell.jsx        # User notification bell component
+│   │   │   └── NotificationsList.jsx       # Reusable notification list for users
+│   │   └── admin/
+│   │       ├── NotificationBell.jsx        # Admin notification bell component
+│   │       ├── NotificationAnalytics.jsx   # Analytics component for admin
+│   │       └── NotificationBroadcast.jsx   # Component for sending broadcasts
+│   └── ui/                                 # UI components (buttons, etc.)
+├── pages/
+│   ├── user/
+│   │   └── NotificationsPage.jsx           # User notifications page
+│   └── admin/
+│       └── NotificationsManagement.jsx     # Admin notifications management
+├── redux/
+│   ├── slices/
+│   │   ├── notificationSlice.js            # User notification slice
+│   │   └── adminNotificationSlice.js       # Admin notification slice
+│   └── store.js                            # Redux store configuration
+├── services/
+│   ├── notification.service.js             # Shared notification service
+│   └── api.js                              # API service with endpoints
+├── contexts/
+│   └── NotificationContext.jsx             # Context for notification state
+├── utils/
+│   └── notificationTemplates.js            # Shared notification templates
+└── App.jsx                                 # Main app component

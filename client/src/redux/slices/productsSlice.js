@@ -8,7 +8,7 @@ export const fetchProducts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getProducts();
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -20,7 +20,7 @@ export const fetchProductById = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getProduct(productId);
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -82,7 +82,7 @@ export const fetchFeaturedProducts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getProducts({ featured: true });
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Error fetching featured products:', error);
       return rejectWithValue(error.response?.data || { message: 'Failed to fetch featured products' });
@@ -95,7 +95,7 @@ export const fetchProductsByCategory = createAsyncThunk(
   async (categoryId, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getProducts({ category: categoryId });
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -107,7 +107,7 @@ export const searchProducts = createAsyncThunk(
   async (searchTerm, { rejectWithValue }) => {
     try {
       const response = await apiRequest.searchProducts(searchTerm);
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -119,7 +119,7 @@ export const fetchNewArrivals = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getNewArrivals();
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -131,7 +131,7 @@ export const fetchSaleProducts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getSaleProducts();
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -143,7 +143,7 @@ export const fetchRelatedProducts = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getRelatedProducts(productId);
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }

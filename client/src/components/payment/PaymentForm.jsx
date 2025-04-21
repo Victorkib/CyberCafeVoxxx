@@ -1,93 +1,57 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardFooter,
-  Typography,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Box,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material';
-import { 
-  CreditCard, 
-  Wallet, 
-  Smartphone, 
-  CheckCircle,
-  Cancel,
-  AlertCircle,
-  Info
-} from 'lucide-react';
-import { paymentAPI } from '../../utils/api';
-import { useNotification } from '../../contexts/NotificationContext';
+import React, { useState } from 'react';
+import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
+import { PAYMENT_METHODS, PAYMENT_VALIDATION, PAYMENT_ERROR_MESSAGES } from '../../constants/payment';
+import PaymentMethodSelector from './PaymentMethodSelector';
+import PaymentStatus from './PaymentStatus';
 
-const PaymentForm = ({ orderId, amount, onSuccess }) => {
-  const dispatch = useDispatch();
-  const { showNotification } = useNotification();
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const PaymentForm = ({ order, onPaymentComplete, onPaymentError }) => {
   const [selectedMethod, setSelectedMethod] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState(null);
   const [formData, setFormData] = useState({
     phoneNumber: '',
     email: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchPaymentMethods();
-  }, []);
-
-  const fetchPaymentMethods = async () => {
-    try {
-      setLoading(true);
-      const methods = await paymentAPI.getMethods();
-      setPaymentMethods(methods);
-    } catch (error) {
-      setError(error.message || 'Failed to load payment methods');
-      showNotification('error', 'Failed to load payment methods');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePaymentMethodChange = (event) => {
-    setSelectedMethod(event.target.value);
-    setPaymentStatus(null);
+  const handleMethodChange = (method) => {
+    setSelectedMethod(method);
     setError(null);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const validateForm = () => {
     if (!selectedMethod) {
-      setError('Please select a payment method');
+      setError(PAYMENT_ERROR_MESSAGES.NO_METHOD_SELECTED);
       return false;
     }
 
-    if (selectedMethod === 'mpesa' && !formData.phoneNumber) {
-      setError('Please enter your M-Pesa phone number');
-      return false;
+    if (selectedMethod === PAYMENT_METHODS.MPESA) {
+      if (!formData.phoneNumber) {
+        setError(PAYMENT_ERROR_MESSAGES.MISSING_PHONE);
+        return false;
+      }
+      if (!PAYMENT_VALIDATION.MPESA_PHONE.test(formData.phoneNumber)) {
+        setError(PAYMENT_ERROR_MESSAGES.INVALID_PHONE);
+        return false;
+      }
     }
 
-    if (selectedMethod === 'paystack' && !formData.email) {
-      setError('Please enter your email address');
-      return false;
+    if (selectedMethod === PAYMENT_METHODS.PAYSTACK) {
+      if (!formData.email) {
+        setError(PAYMENT_ERROR_MESSAGES.MISSING_EMAIL);
+        return false;
+      }
+      if (!PAYMENT_VALIDATION.EMAIL.test(formData.email)) {
+        setError(PAYMENT_ERROR_MESSAGES.INVALID_EMAIL);
+        return false;
+      }
     }
 
     return true;
@@ -95,203 +59,127 @@ const PaymentForm = ({ orderId, amount, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      setError(null);
-      setPaymentStatus('processing');
+      const response = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order._id,
+          method: selectedMethod,
+          ...formData,
+        }),
+      });
 
-      const paymentData = {
-        orderId,
-        amount,
-        method: selectedMethod,
-        ...formData
-      };
+      const data = await response.json();
 
-      const result = await paymentAPI.initialize(paymentData);
-      
-      if (result.redirectUrl) {
-        // For payment methods that require redirect (PayPal, etc.)
-        window.location.href = result.redirectUrl;
-      } else if (result.paymentUrl) {
-        // For payment methods that provide a payment URL (M-Pesa, etc.)
-        window.open(result.paymentUrl, '_blank');
-      } else {
-        // For direct payment methods (Paystack, etc.)
-        if (result.status === 'success') {
-          setPaymentStatus('success');
-          showNotification('success', 'Payment successful!');
-          onSuccess && onSuccess(result);
-        } else {
-          setPaymentStatus('failed');
-          setError(result.message || 'Payment failed. Please try again.');
-          showNotification('error', 'Payment failed. Please try again.');
-        }
+      if (!response.ok) {
+        throw new Error(data.message || PAYMENT_ERROR_MESSAGES.INITIALIZATION_FAILED);
       }
-    } catch (error) {
-      setPaymentStatus('failed');
-      setError(error.message || 'Payment failed. Please try again.');
-      showNotification('error', error.message || 'Payment failed. Please try again.');
+
+      // Handle different payment methods
+      switch (selectedMethod) {
+        case PAYMENT_METHODS.MPESA:
+          // Redirect to M-Pesa payment page or handle STK push
+          window.location.href = data.paymentUrl;
+          break;
+        case PAYMENT_METHODS.PAYSTACK:
+          // Initialize Paystack payment
+          const handler = PaystackPop.setup({
+            key: data.publicKey,
+            email: formData.email,
+            amount: order.total * 100, // Convert to cents
+            currency: 'KES',
+            ref: data.reference,
+            callback: (response) => {
+              onPaymentComplete(response);
+            },
+            onClose: () => {
+              setLoading(false);
+            },
+          });
+          handler.openIframe();
+          break;
+        case PAYMENT_METHODS.PAYPAL:
+          // Redirect to PayPal
+          window.location.href = data.paymentUrl;
+          break;
+        default:
+          throw new Error(PAYMENT_ERROR_MESSAGES.UNSUPPORTED_METHOD);
+      }
+    } catch (err) {
+      setError(err.message);
+      onPaymentError?.(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderPaymentForm = () => {
-    switch (selectedMethod) {
-      case 'mpesa':
-        return (
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              id="phoneNumber"
-              name="phoneNumber"
-              label="Phone Number"
-              type="tel"
-              placeholder="254XXXXXXXXX"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-              required
-              error={!!error && error.includes('phone number')}
-              helperText={error && error.includes('phone number') ? error : "Enter your M-Pesa registered phone number"}
-            />
-          </Box>
-        );
-      
-      case 'paystack':
-        return (
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              id="email"
-              name="email"
-              label="Email Address"
-              type="email"
-              placeholder="your@email.com"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              error={!!error && error.includes('email')}
-              helperText={error && error.includes('email') ? error : "Enter your email address for payment confirmation"}
-            />
-          </Box>
-        );
-      
-      case 'paypal':
-        return (
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              You will be redirected to PayPal to complete your payment
-            </Typography>
-          </Box>
-        );
-      
-      default:
-        return (
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Please select a payment method
-            </Typography>
-          </Box>
-        );
-    }
-  };
-
   return (
-    <Card sx={{ maxWidth: 500, mx: 'auto' }}>
-      <CardHeader
-        title="Payment Details"
-        subheader="Complete your payment to process your order"
+    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 600, mx: 'auto' }}>
+      <PaymentMethodSelector
+        selectedMethod={selectedMethod}
+        onMethodChange={handleMethodChange}
+        disabled={loading}
       />
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Payment Method</InputLabel>
-            <Select
-              value={selectedMethod}
-              onChange={handlePaymentMethodChange}
-              label="Payment Method"
-              error={!!error && error.includes('select')}
-            >
-              {paymentMethods.map((method) => (
-                <MenuItem key={method.id} value={method.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {method.id === 'mpesa' && <Smartphone size={16} />}
-                    {method.id === 'paystack' && <CreditCard size={16} />}
-                    {method.id === 'paypal' && <Wallet size={16} />}
-                    {method.name}
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
-          {renderPaymentForm()}
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AlertCircle size={16} />
-                {error}
-              </Box>
-            </Alert>
-          )}
-
-          {paymentStatus === 'processing' && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 2 }}>
-              <CircularProgress size={16} />
-              <Typography variant="body2" color="text.secondary">
-                Processing payment...
-              </Typography>
-            </Box>
-          )}
-
-          {paymentStatus === 'success' && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircle size={16} />
-                Payment successful!
-              </Box>
-            </Alert>
-          )}
-
-          {paymentStatus === 'failed' && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Cancel size={16} />
-                Payment failed. Please try again.
-              </Box>
-            </Alert>
-          )}
-        </form>
-      </CardContent>
-      <Divider />
-      <CardFooter>
-        <Button
+      {selectedMethod === PAYMENT_METHODS.MPESA && (
+        <TextField
           fullWidth
-          variant="contained"
+          label="M-Pesa Phone Number"
+          name="phoneNumber"
+          value={formData.phoneNumber}
+          onChange={handleInputChange}
+          placeholder="e.g., 254712345678"
+          margin="normal"
+          disabled={loading}
+          error={!!error && error.includes('phone')}
+          helperText={error && error.includes('phone') ? error : 'Format: 254XXXXXXXXX'}
+        />
+      )}
+
+      {selectedMethod === PAYMENT_METHODS.PAYSTACK && (
+        <TextField
+          fullWidth
+          label="Email Address"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          margin="normal"
+          disabled={loading}
+          error={!!error && error.includes('email')}
+          helperText={error && error.includes('email') ? error : 'For payment receipt'}
+        />
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6">
+          Total: KES {order.total.toFixed(2)}
+        </Typography>
+        <Button
           type="submit"
-          disabled={!selectedMethod || loading || paymentStatus === 'processing'}
-          onClick={handleSubmit}
+          variant="contained"
+          size="large"
+          disabled={loading || !selectedMethod}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {loading ? (
-            <>
-              <CircularProgress size={16} sx={{ mr: 1 }} />
-              Processing...
-            </>
-          ) : (
-            `Pay ${amount.toLocaleString('en-US', {
-              style: 'currency',
-              currency: 'KES'
-            })}`
-          )}
+          {loading ? 'Processing...' : 'Pay Now'}
         </Button>
-      </CardFooter>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

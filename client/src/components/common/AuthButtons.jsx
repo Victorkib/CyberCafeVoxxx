@@ -1,39 +1,55 @@
 'use client';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Button, Box } from '@mui/material';
 import { openAuthModal } from '../../redux/slices/uiSlice';
-import UserMenu from './UserMenu';
+import { User } from 'lucide-react';
 
 const AuthButtons = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const handleLogin = () => {
     dispatch(openAuthModal('login'));
   };
 
-  const handleSignUp = () => {
+  const handleRegister = () => {
     dispatch(openAuthModal('register'));
   };
 
-  if (isAuthenticated) {
-    return <UserMenu />;
+  if (user) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+            {user.name ? user.name.charAt(0) : <User className="w-4 h-4" />}
+          </div>
+          <div>
+            <p className="font-medium text-sm">{user.name || 'User'}</p>
+            <p className="text-xs text-gray-500">{user.email || ''}</p>
+          </div>
+        </div>
+      </Box>
+    );
   }
 
   return (
-    <div className="flex space-x-2">
-      <button
+    <Box sx={{ display: 'flex', gap: 2 }}>
+      <Button
+        variant="outlined"
+        color="inherit"
         onClick={handleLogin}
-        className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
       >
-        Log In
-      </button>
-      <button
-        onClick={handleSignUp}
-        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        Login
+      </Button>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleRegister}
       >
-        Sign Up
-      </button>
-    </div>
+        Register
+      </Button>
+    </Box>
   );
 };
 

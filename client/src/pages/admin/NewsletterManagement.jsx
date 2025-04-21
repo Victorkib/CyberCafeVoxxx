@@ -181,13 +181,21 @@ const NewsletterManagement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {subscribers.map((subscriber) => (
-                <TableRow key={subscriber._id}>
-                  <TableCell>{subscriber.email}</TableCell>
-                  <TableCell>{subscriber.status}</TableCell>
-                  <TableCell>{new Date(subscriber.createdAt).toLocaleDateString()}</TableCell>
+              {Array.isArray(subscribers) && subscribers.length > 0 ? (
+                subscribers.map((subscriber) => (
+                  <TableRow key={subscriber._id}>
+                    <TableCell>{subscriber.email}</TableCell>
+                    <TableCell>{subscriber.status}</TableCell>
+                    <TableCell>{new Date(subscriber.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">
+                    No subscribers found
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>

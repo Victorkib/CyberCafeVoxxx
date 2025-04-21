@@ -8,7 +8,7 @@ export const fetchSpecialOffers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await specialOfferAPI.getAll();
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch special offers');
     }

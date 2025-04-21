@@ -36,16 +36,19 @@ import {
 } from 'lucide-react';
 import { logoutUser } from '../../redux/slices/authSlice';
 import { toggleDarkMode } from '../../redux/slices/uiSlice';
-import NotificationsDropdown from '../../components/notifications/NotificationsDropdown';
 
 // Import your custom components
 import Dashboard from './custom/dashboard';
 import Products from './custom/products';
-import Orders from './custom/order';
+import  Order from './custom/order';
 import Customers from './custom/customers';
 import UsersManagement from './custom/users';
 import NewsletterManagement from './NewsletterManagement';
-import NotificationsManagement from './NotificationsManagement';
+import PaymentAnalyticsPage from './PaymentAnalyticsPage';
+import PaymentManagementPage from './PaymentManagementPage';
+import NotificationBell from './notifications/NotificationBell';
+import NotificationsManagement from './notifications/NotificationsManagement';
+import CategoryManagement from './categories/CategoryManagement';
 
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -119,6 +122,19 @@ const AdminLayout = () => {
       id: 'customers',
       icon: Users,
       path: '/admin/customers',
+    },
+    {
+      name: 'Categories',
+      id: 'categories',
+      icon: Users,
+      path: '/admin/categories',
+    },
+    {
+      name: 'Payments',
+      id: 'payments',
+      icon: CreditCard,
+      path: '/admin/payments',
+      group: 'main'
     },
     {
       name: 'Users',
@@ -339,7 +355,7 @@ const AdminLayout = () => {
                     {user?.name || 'Admin User'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.role || 'Admin'}
+                    {user?.role || 'Admin' || 'Super Admin'}
                   </p>
                 </div>
               </div>
@@ -462,7 +478,7 @@ const AdminLayout = () => {
                       {user?.name || 'Admin User'}
                     </p>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {user?.role || 'Administrator'}
+                      {user?.role || 'Administrator' || 'Super Admin' || 'Admin'}
                     </p>
                   </div>
                 </div>
@@ -515,7 +531,7 @@ const AdminLayout = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <NotificationsDropdown />
+                <NotificationBell />
                 <button
                   onClick={handleToggleDarkMode}
                   className="p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -542,7 +558,7 @@ const AdminLayout = () => {
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               {/* Page header */}
-              <div className="md:flex md:items-center md:justify-between mb-6">
+              <div className="md:flex md:items-center md:justify-between mb-2">
                 <div className="flex-1 min-w-0">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {getCurrentTabName()}
@@ -556,6 +572,8 @@ const AdminLayout = () => {
                       'Track and manage customer orders.'}
                     {location.pathname.includes('customers') &&
                       'View and manage your customer database.'}
+                    {location.pathname.includes('categories') &&
+                      'View and manage your categories database.'}
                     {location.pathname.includes('analytics') &&
                       'Analyze your business data and trends.'}
                     {location.pathname.includes('calendar') &&
@@ -580,6 +598,7 @@ const AdminLayout = () => {
                     {location.pathname.includes('products') && 'Add Product'}
                     {location.pathname.includes('orders') && 'Create Order'}
                     {location.pathname.includes('customers') && 'Add Customer'}
+                    {location.pathname.includes('categories') && 'Add Categories'}
                     {location.pathname.includes('dashboard') && 'Refresh Data'}
                     {location.pathname.includes('analytics') &&
                       'Generate Report'}
@@ -593,106 +612,18 @@ const AdminLayout = () => {
               {/* Content area */}
               <div className="py-4">
                 <Routes>
-                  <Route
-                    path="/"
-                    element={<Navigate to="dashboard" replace />}
-                  />
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="products" element={<Products />} />
-                  <Route path="orders" element={<Orders />} />
-                  <Route path="customers" element={<Customers />} />
-                  <Route path="users" element={<UsersManagement />} />
-                  <Route path="newsletter" element={<NewsletterManagement />} />
-                  <Route path="notifications" element={<NotificationsManagement />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route
-                    path="analytics"
-                    element={
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                          Analytics Dashboard
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          View your business analytics and insights.
-                        </p>
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="calendar"
-                    element={
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                          Calendar
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Manage your schedule and events.
-                        </p>
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="documents"
-                    element={
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                          Documents
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Access and manage your documents.
-                        </p>
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="settings"
-                    element={
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                          Settings
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Configure your application settings.
-                        </p>
-
-                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                              Account Settings
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Manage your account preferences
-                            </p>
-                          </div>
-                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                              Notification Settings
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Configure how you receive notifications
-                            </p>
-                          </div>
-                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                              Security Settings
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Manage your security preferences
-                            </p>
-                          </div>
-                          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                              Display Settings
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Customize your display preferences
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  />
-                  <Route path="*" element={<div>404 Not Found</div>} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/orders" element={<Order />} />
+                  <Route path="/customers" element={<Customers />} />
+                  <Route path="/categories" element={<CategoryManagement />} />
+                  <Route path="/payments" element={<PaymentManagementPage />} />
+                  <Route path="/payments/analytics" element={<PaymentAnalyticsPage />} />
+                  <Route path="/users" element={<UsersManagement />} />
+                  <Route path="/newsletter" element={<NewsletterManagement />} />
+                  <Route path="/notifications" element={<NotificationsManagement />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
                 </Routes>
               </div>
             </div>

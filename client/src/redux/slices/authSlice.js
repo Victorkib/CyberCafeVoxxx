@@ -1,58 +1,54 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toast } from 'react-toastify';
 import { apiRequest } from '../../utils/api';
+import axios from 'axios'; // SOLUTION: Added for direct axios calls
 
 // Constants
 export const PASSWORD_EXPIRY_DAYS = 90;
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const LOCK_DURATION_MINUTES = 30;
 
-// Async thunks
+// SOLUTION: Added refresh token thunk
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('Refreshing token...');
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh-token`,
+        {},
+        { withCredentials: true }
+      );
+      
+      const { token } = response.data;
+      
+      if (token) {
+        console.log('Token refreshed successfully');
+        localStorage.setItem('token', token);
+        localStorage.setItem('sessionStart', new Date().toISOString());
+        return { token };
+      } else {
+        throw new Error('No token received');
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to refresh token');
+    }
+  }
+);
+// Existing async thunks...
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue, dispatch }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
       const response = await apiRequest.post('/auth/login', credentials);
+      // Only store the necessary data from the response
       const { token, user } = response.data;
-      
-      // Check account status
-      if (user.isLocked) {
-        const lockExpiry = new Date(user.lockExpiresAt);
-        if (lockExpiry > new Date()) {
-          const minutesLeft = Math.ceil((lockExpiry - new Date()) / (1000 * 60));
-          throw new Error(`Account is locked. Please try again in ${minutesLeft} minutes.`);
-        }
-      }
-
-      // Check password expiration
-      const passwordLastChanged = new Date(user.passwordLastChanged || user.createdAt);
-      const daysUntilExpiry = PASSWORD_EXPIRY_DAYS - Math.floor((new Date() - passwordLastChanged) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilExpiry <= 7 && daysUntilExpiry > 0) {
-        toast.warning(`Your password will expire in ${daysUntilExpiry} days. Please change it soon.`);
-      } else if (daysUntilExpiry <= 0) {
-        throw new Error('Your password has expired. Please reset your password.');
-      }
-      
-      // Store token in localStorage
       localStorage.setItem('token', token);
-      localStorage.setItem('sessionStart', new Date().toISOString());
-      
-      // Create session
-      dispatch(createSession());
-      
-      toast.success(`Welcome back, ${user.name}!`);
-      return { user, token };
+      localStorage.setItem('user', JSON.stringify(user));
+      return { token, user };
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Login failed';
-      toast.error(message);
-      
-      // Handle failed login attempts
-      if (error.response?.status === 401) {
-        dispatch(incrementLoginAttempts());
-      }
-      
-      return rejectWithValue(message);
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -62,8 +58,8 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await apiRequest.post('/auth/register', userData);
-      toast.success(response.data.message);
-      return response.data;
+      toast.success(response.message || 'Registration successful');
+      return response;
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
@@ -79,7 +75,7 @@ export const verifyEmail = createAsyncThunk(
       const response = await apiRequest.post('/auth/verify-email', {
         verificationToken: token
       });
-      const { user, token: authToken } = response.data;
+      const { user, token: authToken } = response;
       
       // Store token and user data
       localStorage.setItem('token', authToken);
@@ -100,7 +96,7 @@ export const resendVerification = createAsyncThunk(
     try {
       const response = await apiRequest.post('/auth/resendVerification', { email });
       toast.success('Verification email sent successfully');
-      return response.data;
+      return response;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to resend verification email';
       toast.error(message);
@@ -131,7 +127,7 @@ export const getCurrentUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.get('/auth/me');
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to get user data');
     }
@@ -142,12 +138,8 @@ export const updatePassword = createAsyncThunk(
   'auth/updatePassword',
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.put('/auth/updatePassword', { currentPassword, newPassword }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      toast.success('Password updated successfully');
+      const response = await apiRequest.put('/auth/update-password', { currentPassword, newPassword });
+      toast.success(response.message || 'Password updated successfully');
       return true;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update password');
@@ -159,44 +151,65 @@ export const forgotPassword = createAsyncThunk(
   'auth/forgotPassword',
   async (email, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.post('/auth/forgotPassword', { email });
-      toast.success('Password reset email sent');
-      return true;
+      const response = await apiRequest.post('/auth/forgot-password', { email });
+      if (response.message) {
+        toast.success(response.message);
+      }
+      return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to send reset email');
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to send reset email');
     }
   }
 );
 
+// Only showing the resetPassword function that needs to be fixed
 export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ token, password }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.post('/auth/resetPassword', { token, password });
-      toast.success('Password reset successfully');
-      return true;
+      // Validate token
+      if (!token) {
+        return rejectWithValue('Invalid or missing reset token');
+      }
+      
+      // Validate password
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        return rejectWithValue('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+      }
+      
+      const response = await apiRequest.post('/auth/reset-password', { token, password });
+      if (response.message) {
+        toast.success(response.message);
+      }
+      return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to reset password');
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to reset password');
     }
   }
 );
 
 export const checkAuthState = createAsyncThunk(
-  'auth/checkState',
+  'auth/checkAuth',
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        return null;
+        throw new Error('No token found');
       }
-
-      // Verify token and get user data
-      const response = await apiRequest.get('/auth/me');
-      return response.data;
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
+      });
+      // Only store the necessary data from the response
+      const { user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      return { token, user };
     } catch (error) {
-      // Clear invalid token
       localStorage.removeItem('token');
-      return rejectWithValue('Session expired');
+      localStorage.removeItem('user');
+      return rejectWithValue(error.response?.data?.message || 'Authentication failed');
     }
   }
 );
@@ -216,7 +229,7 @@ export const createSession = createAsyncThunk(
     };
     
     const response = await apiRequest.post('/auth/sessions', sessionData);
-    return response.data;
+    return response;
   }
 );
 
@@ -238,7 +251,7 @@ export const validatePasswordHistory = createAsyncThunk(
   async (newPassword, { rejectWithValue }) => {
     try {
       const response = await apiRequest.post('/auth/validate-password-history', { newPassword });
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Password validation failed');
     }
@@ -249,8 +262,8 @@ const initialState = {
   user: null,
   token: localStorage.getItem('token'),
   isAuthenticated: false,
-  loading: false,
   error: null,
+  loading: false,
   registrationEmail: null,
   verificationPending: false,
   loginAttempts: 0,
@@ -258,12 +271,22 @@ const initialState = {
   sessions: [],
   passwordExpiryDays: null,
   securityAlerts: [],
+  isLocked: false,
+  lockExpiresAt: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -273,21 +296,17 @@ const authSlice = createSlice({
     clearVerificationPending: (state) => {
       state.verificationPending = false;
     },
-    incrementLoginAttempts: (state) => {
-      state.loginAttempts += 1;
-      state.lastLoginAttempt = new Date().toISOString();
-      
-      if (state.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        state.user = {
-          ...state.user,
-          isLocked: true,
-          lockExpiresAt: new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000).toISOString(),
-        };
-      }
-    },
     resetLoginAttempts: (state) => {
       state.loginAttempts = 0;
-      state.lastLoginAttempt = null;
+      state.isLocked = false;
+      state.lockExpiresAt = null;
+    },
+    incrementLoginAttempts: (state) => {
+      state.loginAttempts += 1;
+      if (state.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        state.isLocked = true;
+        state.lockExpiresAt = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000).toISOString();
+      }
     },
     addSecurityAlert: (state, action) => {
       state.securityAlerts.push({
@@ -299,6 +318,22 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+     // SOLUTION: Add cases for refreshToken
+      .addCase(refreshToken.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.error = null;
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+      })
       // Login
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
@@ -309,8 +344,6 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.token;
-        state.error = null;
-        state.verificationPending = false;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -415,10 +448,16 @@ const authSlice = createSlice({
       // Reset Password
       .addCase(resetPassword.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(resetPassword.fulfilled, (state) => {
         state.loading = false;
-        toast.success('Password reset successfully');
+        state.error = null;
+        // Clear any existing auth state since user needs to login again
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        localStorage.removeItem('token');
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
@@ -428,19 +467,20 @@ const authSlice = createSlice({
       // Check Auth State
       .addCase(checkAuthState.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(checkAuthState.fulfilled, (state, action) => {
         state.loading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload;
-        state.error = null;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
       })
       .addCase(checkAuthState.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
-        state.error = action.payload;
       })
       // Create Session
       .addCase(createSession.fulfilled, (state, action) => {
@@ -463,8 +503,9 @@ export const {
   clearError,
   clearRegistrationEmail,
   clearVerificationPending,
-  incrementLoginAttempts,
   resetLoginAttempts,
+  incrementLoginAttempts,
+  logout,
   addSecurityAlert,
 } = authSlice.actions;
 

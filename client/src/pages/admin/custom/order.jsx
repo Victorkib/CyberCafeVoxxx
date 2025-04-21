@@ -203,7 +203,7 @@ const formatDate = (dateString) => {
 };
 
 // Orders Component
-export const Orders = () => {
+export const Order = () => {
   const [orders, setOrders] = useState(mockOrders);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({
@@ -1349,4 +1349,4 @@ export const Orders = () => {
   );
 };
 
-export default Orders;
+export default Order;

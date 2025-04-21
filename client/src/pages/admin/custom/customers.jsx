@@ -28,27 +28,40 @@ import {
 } from 'lucide-react';
 import {
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
   Avatar,
   Tooltip,
+  Tabs,
+  Tab,
+  Box,
+  Chip,
   Snackbar,
   Alert,
-  Chip,
-  IconButton,
-  Box,
-  Tab,
-  Tabs,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Grid,
   CircularProgress,
-  Divider,
 } from '@mui/material';
 import {
-  Table,
-  Input,
-  Select,
   Popconfirm,
   DatePicker,
   Timeline,
@@ -68,7 +81,12 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { Card, CardContent } from '../../../components/ui/card';
+import {
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../components/ui/select';
 import {
   fetchCustomers,
   updateCustomerStatus,
@@ -160,6 +178,20 @@ const mockCustomers = [
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
   return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
+// Status color helper
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'text-green-600 dark:text-green-400';
+    case 'inactive':
+      return 'text-gray-600 dark:text-gray-400';
+    case 'blocked':
+      return 'text-red-600 dark:text-red-400';
+    default:
+      return 'text-gray-600 dark:text-gray-400';
+  }
 };
 
 const Customers = () => {
@@ -586,256 +618,208 @@ const Customers = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Box sx={{ p: 3 }}>
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                <User className="mr-2 h-6 w-6 text-blue-600 dark:text-blue-400" />
-                Customers
-              </CardTitle>
-              <CardDescription className="text-gray-500 dark:text-gray-400">
-                Manage customer accounts
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+        <CardHeader
+          title={
+            <Box display="flex" alignItems="center" gap={1}>
+              <User />
+              <Typography variant="h5">Customers</Typography>
+            </Box>
+          }
+          subheader="Manage customer accounts"
+        />
         <CardContent>
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
+          <Box display="flex" gap={2} mb={3}>
+            <TextField
                   placeholder="Search customers..."
                   value={searchTerm}
-                  onChange={handleSearch}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={handleStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-              </SelectContent>
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              sx={{ flexGrow: 1 }}
+            />
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                label="Status"
+              >
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="blocked">Blocked</MenuItem>
             </Select>
-          </div>
+            </FormControl>
+          </Box>
 
-          <div className="rounded-md border">
+          <TableContainer component={Paper}>
             <Table>
-              <TableHeader>
+              <TableHead>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Orders</TableHead>
-                  <TableHead>Total Spent</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Phone</TableCell>
+                  <TableCell>Orders</TableCell>
+                  <TableCell>Total Spent</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              </TableHeader>
+              </TableHead>
               <TableBody>
                 {filteredCustomers.map((customer) => (
                   <TableRow key={customer._id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Avatar src={customer.avatar}>
+                          {customer.name.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2">{customer.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {customer.email}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
                     <TableCell>{customer.email}</TableCell>
                     <TableCell>{customer.phone}</TableCell>
                     <TableCell>{customer.orderCount}</TableCell>
                     <TableCell>${customer.totalSpent.toFixed(2)}</TableCell>
                     <TableCell>
+                      <FormControl size="small">
                       <Select
                         value={customer.status}
-                        onValueChange={(value) => handleUpdateStatus(customer._id, value)}
-                      >
-                        <SelectTrigger className={`w-[130px] ${getStatusColor(customer.status)}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="blocked">Blocked</SelectItem>
-                        </SelectContent>
+                          onChange={(e) => handleUpdateStatus(customer._id, e.target.value)}
+                          sx={{ minWidth: 120 }}
+                        >
+                          <MenuItem value="active">Active</MenuItem>
+                          <MenuItem value="inactive">Inactive</MenuItem>
+                          <MenuItem value="blocked">Blocked</MenuItem>
                       </Select>
+                      </FormControl>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
+                      <Box display="flex" gap={1}>
+                        <Tooltip title="View Customer">
+                          <IconButton
+                            size="small"
                           onClick={() => handleViewCustomer(customer)}
                         >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                            <Eye />
+                          </IconButton>
+                        </Tooltip>
                         {customer.status !== 'blocked' ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <Tooltip title="Block Customer">
+                            <IconButton
+                              size="small"
                             onClick={() => handleBlockCustomer(customer._id)}
                           >
-                            <Ban className="h-4 w-4 text-red-500" />
-                          </Button>
+                              <Ban />
+                            </IconButton>
+                          </Tooltip>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <Tooltip title="Unblock Customer">
+                            <IconButton
+                              size="small"
                             onClick={() => handleUnblockCustomer(customer._id)}
                           >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </Button>
+                              <CheckCircle />
+                            </IconButton>
+                          </Tooltip>
                         )}
-                      </div>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </TableContainer>
         </CardContent>
       </Card>
 
       {/* View Customer Dialog */}
-      <Dialog open={isViewCustomerModalOpen} onOpenChange={setIsViewCustomerModalOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+      <Dialog
+        open={isViewCustomerModalOpen}
+        onClose={() => setIsViewCustomerModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
             <DialogTitle>Customer Details</DialogTitle>
-            <DialogDescription>
-              View customer information and order history
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent>
           {selectedCustomer && (
-            <div className="space-y-6">
-              {/* Customer Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-medium mb-2">Personal Information</h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Name:</span>{' '}
-                      {selectedCustomer.name}
-                    </p>
-                    <p>
-                      <span className="font-medium">Email:</span>{' '}
-                      {selectedCustomer.email}
-                    </p>
-                    <p>
-                      <span className="font-medium">Phone:</span>{' '}
-                      {selectedCustomer.phone}
-                    </p>
-                    <p>
-                      <span className="font-medium">Status:</span>{' '}
-                      <span className={getStatusColor(selectedCustomer.status)}>
-                        {selectedCustomer.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-medium mb-2">Account Statistics</h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Total Orders:</span>{' '}
-                      {selectedCustomer.orderCount}
-                    </p>
-                    <p>
-                      <span className="font-medium">Total Spent:</span>{' '}
-                      ${selectedCustomer.totalSpent.toFixed(2)}
-                    </p>
-                    <p>
-                      <span className="font-medium">Member Since:</span>{' '}
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    Personal Information
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Name:</strong> {selectedCustomer.name}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Email:</strong> {selectedCustomer.email}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Phone:</strong> {selectedCustomer.phone}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Status:</strong>{' '}
+                      <Chip
+                        label={selectedCustomer.status}
+                        color={
+                          selectedCustomer.status === 'active'
+                            ? 'success'
+                            : selectedCustomer.status === 'blocked'
+                            ? 'error'
+                            : 'default'
+                        }
+                        size="small"
+                      />
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    Account Statistics
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Total Orders:</strong> {selectedCustomer.orderCount}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Total Spent:</strong> ${selectedCustomer.totalSpent.toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Member Since:</strong>{' '}
                       {new Date(selectedCustomer.createdAt).toLocaleDateString()}
-                    </p>
-                    <p>
-                      <span className="font-medium">Last Login:</span>{' '}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Last Login:</strong>{' '}
                       {new Date(selectedCustomer.lastLogin).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping Addresses */}
-              <div>
-                <h3 className="font-medium mb-2">Shipping Addresses</h3>
-                <div className="space-y-4">
-                  {selectedCustomer.addresses.map((address, index) => (
-                    <div
-                      key={index}
-                      className="p-4 border rounded-lg space-y-1 text-sm"
-                    >
-                      <p>
-                        <span className="font-medium">Address {index + 1}:</span>{' '}
-                        {address.street}, {address.city}, {address.state}{' '}
-                        {address.zipCode}
-                      </p>
-                      <p>
-                        <span className="font-medium">Country:</span>{' '}
-                        {address.country}
-                      </p>
-                      {address.isDefault && (
-                        <p className="text-green-600 dark:text-green-400">
-                          Default Address
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Orders */}
-              <div>
-                <h3 className="font-medium mb-2">Recent Orders</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order #</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedCustomer.recentOrders.map((order) => (
-                      <TableRow key={order._id}>
-                        <TableCell className="font-medium">
-                          {order.orderNumber}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>${order.total.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <span className={getStatusColor(order.status)}>
-                            {order.status}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewCustomerModalOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsViewCustomerModalOpen(false)}>Close</Button>
+        </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Customer Modal */}
+      {/* Add/Edit Customer Dialog */}
       <Dialog
         open={isAddCustomerModalOpen}
         onClose={() => setIsAddCustomerModalOpen(false)}
@@ -843,126 +827,98 @@ const Customers = () => {
         fullWidth
       >
         <DialogTitle>
-          <div className="flex items-center">
-            <FilePlus className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-            <span>
+          <Box display="flex" alignItems="center" gap={1}>
+            <FilePlus />
+            <Typography>
               {selectedCustomer ? 'Edit Customer' : 'Add New Customer'}
-            </span>
-          </div>
+            </Typography>
+          </Box>
         </DialogTitle>
         <DialogContent>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
               <TextField
+                  fullWidth
                 label="Full Name"
                 name="name"
                 value={newCustomer.name}
                 onChange={handleInputChange}
-                fullWidth
                 required
-                variant="outlined"
-                placeholder="John Doe"
               />
+              </Grid>
+              <Grid item xs={12} md={6}>
               <TextField
+                  fullWidth
                 label="Email Address"
                 name="email"
+                  type="email"
                 value={newCustomer.email}
                 onChange={handleInputChange}
-                fullWidth
                 required
-                variant="outlined"
-                placeholder="john.doe@example.com"
-                type="email"
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              </Grid>
+              <Grid item xs={12} md={6}>
               <TextField
+                  fullWidth
                 label="Phone Number"
                 name="phone"
                 value={newCustomer.phone}
                 onChange={handleInputChange}
-                fullWidth
-                variant="outlined"
-                placeholder="(555) 123-4567"
               />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
               <Select
-                placeholder="Status"
-                style={{ width: '100%' }}
                 value={newCustomer.status}
-                onChange={(value) =>
-                  setNewCustomer((prev) => ({ ...prev, status: value }))
-                }
-                options={[
-                  { value: 'Active', label: 'Active' },
-                  { value: 'Inactive', label: 'Inactive' },
-                ]}
-              />
-            </div>
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({ ...prev, status: e.target.value }))
+                    }
+                    label="Status"
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                    <MenuItem value="blocked">Blocked</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
             <TextField
+                  fullWidth
               label="Address"
               name="address"
               value={newCustomer.address}
               onChange={handleInputChange}
-              fullWidth
-              variant="outlined"
-              placeholder="123 Main St, New York, NY 10001"
-              multiline
-              rows={2}
-            />
-            <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                Tags
-              </p>
-              <Select
-                mode="multiple"
-                placeholder="Select tags"
-                style={{ width: '100%' }}
-                value={newCustomer.tags}
-                onChange={handleTagChange}
-                options={[
-                  { value: 'New', label: 'New' },
-                  { value: 'Loyal', label: 'Loyal' },
-                  { value: 'High Value', label: 'High Value' },
-                  { value: 'Repeat', label: 'Repeat' },
-                  { value: 'VIP', label: 'VIP' },
-                ]}
-              />
-            </div>
+                />
+              </Grid>
+              <Grid item xs={12}>
             <TextField
+                  fullWidth
               label="Notes"
               name="notes"
               value={newCustomer.notes}
               onChange={handleInputChange}
-              fullWidth
-              variant="outlined"
-              placeholder="Add any notes about this customer"
               multiline
               rows={3}
             />
-          </div>
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddCustomerModalOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setIsAddCustomerModalOpen(false)}>Cancel</Button>
           <Button
-            variant="contained"
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
             onClick={handleSaveCustomer}
+            variant="contained"
             disabled={loading}
           >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : selectedCustomer ? (
-              'Update Customer'
-            ) : (
-              'Add Customer'
-            )}
+            {loading ? 'Saving...' : selectedCustomer ? 'Update Customer' : 'Add Customer'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Notification */}
+      {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
@@ -977,7 +933,7 @@ const Customers = () => {
           {notification.message}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 };
 

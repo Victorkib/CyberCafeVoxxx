@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { paymentAPI } from '../../utils/api';
+import { toast } from 'react-toastify';
 
 // User payment thunks
 export const getPaymentMethods = createAsyncThunk(
@@ -9,6 +10,7 @@ export const getPaymentMethods = createAsyncThunk(
       const response = await paymentAPI.getMethods();
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch payment methods');
       return rejectWithValue(error.response?.data || 'Failed to fetch payment methods');
     }
   }
@@ -21,6 +23,7 @@ export const initializePayment = createAsyncThunk(
       const response = await paymentAPI.initialize(paymentData);
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to initialize payment');
       return rejectWithValue(error.response?.data || 'Failed to initialize payment');
     }
   }
@@ -35,9 +38,11 @@ export const retryPayment = createAsyncThunk(
         method,
         ...paymentData,
       });
-      return response;
+      toast.success('Payment retry initiated');
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: 'Failed to retry payment' });
+      toast.error(error.response?.data?.message || 'Failed to retry payment');
+      return rejectWithValue(error.response?.data || 'Failed to retry payment');
     }
   }
 );
@@ -49,6 +54,7 @@ export const checkPaymentStatus = createAsyncThunk(
       const response = await paymentAPI.checkStatus(orderId);
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to check payment status');
       return rejectWithValue(error.response?.data || 'Failed to check payment status');
     }
   }
@@ -59,9 +65,10 @@ export const getPaymentHistory = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.getHistory();
-      return response;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: 'Failed to get payment history' });
+      toast.error(error.response?.data?.message || 'Failed to get payment history');
+      return rejectWithValue(error.response?.data || 'Failed to get payment history');
     }
   }
 );
@@ -71,9 +78,10 @@ export const getPaymentDetails = createAsyncThunk(
   async (paymentId, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.getDetails(paymentId);
-      return response;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: 'Failed to get payment details' });
+      toast.error(error.response?.data?.message || 'Failed to get payment details');
+      return rejectWithValue(error.response?.data || 'Failed to get payment details');
     }
   }
 );
@@ -86,6 +94,7 @@ export const getPaymentAnalytics = createAsyncThunk(
       const response = await paymentAPI.getAnalytics(params);
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to fetch payment analytics');
       return rejectWithValue(error.response?.data || 'Failed to fetch payment analytics');
     }
   }
@@ -96,8 +105,10 @@ export const processRefund = createAsyncThunk(
   async ({ paymentId, reason }, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.refund(paymentId, reason);
+      toast.success('Refund processed successfully');
       return response.data;
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to process refund');
       return rejectWithValue(error.response?.data || 'Failed to process refund');
     }
   }
@@ -105,48 +116,40 @@ export const processRefund = createAsyncThunk(
 
 export const getRefundHistory = createAsyncThunk(
   'payment/getRefundHistory',
-  async (params, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await paymentAPI.getRefundHistory(params);
+      const response = await paymentAPI.getRefundHistory();
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch refund history');
+      toast.error(error.response?.data?.message || 'Failed to get refund history');
+      return rejectWithValue(error.response?.data || 'Failed to get refund history');
     }
   }
 );
 
 export const getPaymentSettings = createAsyncThunk(
   'payment/getSettings',
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // Check if user is admin
-      const { auth } = getState();
-      if (auth.user?.role !== 'admin') {
-        return rejectWithValue({ message: 'Unauthorized: Admin access required' });
-      }
-      
       const response = await paymentAPI.getSettings();
-      return response;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: 'Failed to get payment settings' });
+      toast.error(error.response?.data?.message || 'Failed to get payment settings');
+      return rejectWithValue(error.response?.data || 'Failed to get payment settings');
     }
   }
 );
 
 export const updatePaymentSettings = createAsyncThunk(
   'payment/updateSettings',
-  async (settings, { rejectWithValue, getState }) => {
+  async (settings, { rejectWithValue }) => {
     try {
-      // Check if user is admin
-      const { auth } = getState();
-      if (auth.user?.role !== 'admin') {
-        return rejectWithValue({ message: 'Unauthorized: Admin access required' });
-      }
-      
       const response = await paymentAPI.updateSettings(settings);
-      return response;
+      toast.success('Payment settings updated successfully');
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || { message: 'Failed to update payment settings' });
+      toast.error(error.response?.data?.message || 'Failed to update payment settings');
+      return rejectWithValue(error.response?.data || 'Failed to update payment settings');
     }
   }
 );
@@ -155,32 +158,24 @@ const initialState = {
   methods: [],
   currentPayment: null,
   paymentHistory: [],
-  paymentDetails: null,
-  analytics: null,
   refundHistory: [],
+  analytics: null,
   settings: null,
   loading: false,
   error: null,
-  environment: null,
-  isAdmin: false, // Track if current user is admin
+  status: 'idle'
 };
 
 const paymentSlice = createSlice({
   name: 'payment',
   initialState,
   reducers: {
-    clearCurrentPayment: (state) => {
-      state.currentPayment = null;
-    },
-    setPaymentError: (state, action) => {
-      state.error = action.payload;
-    },
     clearPaymentError: (state) => {
       state.error = null;
     },
-    setAdminStatus: (state, action) => {
-      state.isAdmin = action.payload;
-    },
+    resetPaymentState: (state) => {
+      return initialState;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -195,7 +190,7 @@ const paymentSlice = createSlice({
       })
       .addCase(getPaymentMethods.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to get payment methods';
+        state.error = action.payload;
       })
       // Initialize Payment
       .addCase(initializePayment.pending, (state) => {
@@ -208,20 +203,7 @@ const paymentSlice = createSlice({
       })
       .addCase(initializePayment.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to initialize payment';
-      })
-      // Retry Payment
-      .addCase(retryPayment.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(retryPayment.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentPayment = action.payload;
-      })
-      .addCase(retryPayment.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || 'Failed to retry payment';
+        state.error = action.payload;
       })
       // Check Payment Status
       .addCase(checkPaymentStatus.pending, (state) => {
@@ -236,7 +218,7 @@ const paymentSlice = createSlice({
       })
       .addCase(checkPaymentStatus.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to check payment status';
+        state.error = action.payload;
       })
       // Get Payment History
       .addCase(getPaymentHistory.pending, (state) => {
@@ -249,22 +231,9 @@ const paymentSlice = createSlice({
       })
       .addCase(getPaymentHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to get payment history';
+        state.error = action.payload;
       })
-      // Get Payment Details
-      .addCase(getPaymentDetails.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(getPaymentDetails.fulfilled, (state, action) => {
-        state.loading = false;
-        state.paymentDetails = action.payload;
-      })
-      .addCase(getPaymentDetails.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || 'Failed to get payment details';
-      })
-      // Get Payment Analytics (Admin only)
+      // Get Payment Analytics
       .addCase(getPaymentAnalytics.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -275,27 +244,26 @@ const paymentSlice = createSlice({
       })
       .addCase(getPaymentAnalytics.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to get payment analytics';
+        state.error = action.payload;
       })
-      // Refund Payment (Admin only)
+      // Process Refund
       .addCase(processRefund.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(processRefund.fulfilled, (state, action) => {
         state.loading = false;
-        // Update payment details if it's the current payment
-        if (state.paymentDetails && state.paymentDetails._id === action.payload.paymentId) {
-          state.paymentDetails.status = 'refunded';
-          state.paymentDetails.refundReason = action.payload.reason;
-          state.paymentDetails.refundedAt = new Date().toISOString();
+        // Update payment history if needed
+        const index = state.paymentHistory.findIndex(p => p._id === action.payload._id);
+        if (index !== -1) {
+          state.paymentHistory[index] = action.payload;
         }
       })
       .addCase(processRefund.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to process refund';
+        state.error = action.payload;
       })
-      // Get Refund History (Admin only)
+      // Get Refund History
       .addCase(getRefundHistory.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -306,9 +274,9 @@ const paymentSlice = createSlice({
       })
       .addCase(getRefundHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to get refund history';
+        state.error = action.payload;
       })
-      // Get Payment Settings (Admin only)
+      // Get Payment Settings
       .addCase(getPaymentSettings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -319,9 +287,9 @@ const paymentSlice = createSlice({
       })
       .addCase(getPaymentSettings.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to get payment settings';
+        state.error = action.payload;
       })
-      // Update Payment Settings (Admin only)
+      // Update Payment Settings
       .addCase(updatePaymentSettings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -332,10 +300,10 @@ const paymentSlice = createSlice({
       })
       .addCase(updatePaymentSettings.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to update payment settings';
+        state.error = action.payload;
       });
-  },
+  }
 });
 
-export const { clearCurrentPayment, setPaymentError, clearPaymentError, setAdminStatus } = paymentSlice.actions;
+export const { clearPaymentError, resetPaymentState } = paymentSlice.actions;
 export default paymentSlice.reducer; 

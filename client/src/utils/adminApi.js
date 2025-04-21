@@ -9,14 +9,22 @@ export const getInventoryStats = () => apiRequest.get('/admin/dashboard/inventor
 export const getCustomerStats = () => apiRequest.get('/admin/dashboard/customer-stats');
 
 // Product Management
+//the first get products needs special attention. 
 export const getAllProducts = (page = 1, limit = 10, sort, filter) => 
-  apiRequest.get('/admin/products', { params: { page, limit, sort, filter } });
+  apiRequest.get('/products', { params: { page, limit, sort, filter } });
 export const getProductById = (id) => apiRequest.get(`/admin/products/${id}`);
 export const createProduct = (productData) => apiRequest.post('/admin/products', productData);
 export const updateProduct = (id, productData) => apiRequest.put(`/admin/products/${id}`, productData);
 export const deleteProduct = (id) => apiRequest.delete(`/admin/products/${id}`);
 export const updateProductStock = (id, stock) => apiRequest.patch(`/admin/products/${id}/stock`, { stock });
 export const updateProductStatus = (id, status) => apiRequest.patch(`/admin/products/${id}/status`, { status });
+
+// Bulk Product Operations
+export const bulkDeleteProducts = (productIds) => 
+  apiRequest.post('/admin/products/bulk-delete', { productIds });
+
+export const bulkUpdateProductStatus = (data) => 
+  apiRequest.post('/admin/products/bulk-update-status', data);
 
 // Order Management
 export const getAllOrders = (page = 1, limit = 10, status) => 
@@ -37,6 +45,14 @@ export const updateCustomerStatus = (id, status) =>
   apiRequest.patch(`/admin/customers/${id}/status`, { status });
 export const blockCustomer = (id) => apiRequest.post(`/admin/customers/${id}/block`);
 export const unblockCustomer = (id) => apiRequest.post(`/admin/customers/${id}/unblock`);
+
+// Admin Invitation Management
+export const inviteAdmin = (inviteData) => apiRequest.post("/admin/invite", inviteData)
+export const fetchAdminInvitations = () => apiRequest.get("/admin/invitations")
+export const resendInvitation = (id) => apiRequest.post(`/admin/invitations/${id}/resend`)
+export const cancelInvitation = (id) => apiRequest.delete(`/admin/invitations/${id}`)
+export const lockAccount = (lockData) => apiRequest.post("/admin/lock-account", lockData)
+export const unlockAccount = (unlockData) => apiRequest.post("/admin/unlock-account", unlockData)
 
 // User Management
 export const getAllUsers = (page = 1, limit = 10) => 
@@ -73,6 +89,72 @@ export const getOrderReport = (startDate, endDate) =>
 export const exportReport = (type, startDate, endDate) => 
   apiRequest.get(`/admin/reports/export/${type}`, { params: { startDate, endDate } });
 
+// Notification Management
+export const getAdminNotifications = async ({ page = 1, limit = 10, type, priority, startDate, endDate } = {}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...(type && { type }),
+    ...(priority && { priority }),
+    ...(startDate && { startDate }),
+    ...(endDate && { endDate })
+  });
+  return api.get(`/admin/notifications?${params.toString()}`);
+};
+
+export const createAdminNotification = async (notificationData) => {
+  return api.post('/admin/notifications', notificationData);
+};
+
+export const deleteAdminNotification = async (id) => {
+  return api.delete(`/admin/notifications/${id}`);
+};
+
+export const deleteAllAdminNotifications = async () => {
+  return api.delete('/admin/notifications');
+};
+
+export const getNotificationStats = async () => {
+  return api.get('/admin/notifications/stats');
+};
 
 export const verifyInvitation = (token) => api.get(`/admin/verify-invitation/${token}`);
-export const acceptInvitation = (invitationData) => api.post('/admin/accept-invitation', invitationData); 
+export const acceptInvitation = (invitationData) => api.post('/admin/accept-invitation', invitationData);
+
+// Payment Management
+export const getPaymentMethods = () => api.get('/payments/methods');
+
+export const initializePayment = (paymentData) => 
+  api.post('/payments/initialize', paymentData);
+
+export const processPaymentCallback = (callbackData) => 
+  api.post('/payments/callback', callbackData);
+
+export const processRefund = (refundData) => 
+  api.post('/payments/refund', refundData);
+
+export const getPaymentAnalytics = (dateRange) => {
+  const params = new URLSearchParams();
+  if (dateRange?.startDate) {
+    params.append('startDate', dateRange.startDate.toISOString());
+  }
+  if (dateRange?.endDate) {
+    params.append('endDate', dateRange.endDate.toISOString());
+  }
+  return api.get(`/payments/analytics?${params.toString()}`);
+};
+
+// Export all admin API functions
+export default {
+  getAdminNotifications,
+  createAdminNotification,
+  deleteAdminNotification,
+  deleteAllAdminNotifications,
+  getNotificationStats,
+  // Payment Management
+  getPaymentMethods,
+  initializePayment,
+  processPaymentCallback,
+  processRefund,
+  getPaymentAnalytics
+};

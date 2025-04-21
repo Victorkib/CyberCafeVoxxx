@@ -4,10 +4,15 @@ export const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-// Password validation (min 8 chars, at least one number and one letter)
+export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// Password validation (min 8 chars, uppercase, lowercase, number, special char)
 export const isValidPassword = (password) => {
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-  return passwordRegex.test(password);
+  return PASSWORD_REGEX.test(password);
+};
+
+export const getPasswordValidationMessage = () => {
+  return 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character';
 };
 
 // Phone number validation (basic format)
@@ -134,4 +139,13 @@ export const validateForm = (values, rules) => {
   });
   
   return errors;
+};
+
+export const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+export const validateResetToken = (token) => {
+  return /^[a-f0-9]{64}$/.test(token);
 }; 

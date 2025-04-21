@@ -8,7 +8,7 @@ export const fetchHeroSlides = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await heroSlideAPI.getAll();
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch hero slides');
     }
@@ -20,7 +20,7 @@ export const fetchActiveSlides = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await heroSlideAPI.getActive();
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch active slides');
     }

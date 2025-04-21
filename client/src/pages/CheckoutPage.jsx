@@ -126,6 +126,8 @@ export default function CheckoutPage() {
         case 'mpesa':
           // M-Pesa payment is initiated via STK Push
           toast.success('Please check your phone for the M-Pesa prompt');
+          // Start polling for payment status
+          startPaymentStatusCheck(orderResult._id);
           break;
 
         case 'paystack':
@@ -159,6 +161,36 @@ export default function CheckoutPage() {
     } catch (error) {
       toast.error(error.message || 'Failed to process payment');
     }
+  };
+
+  // Add payment status polling
+  const startPaymentStatusCheck = (orderId) => {
+    const checkStatus = async () => {
+      try {
+        const result = await dispatch(checkPaymentStatus(orderId)).unwrap();
+        if (result.status === 'paid') {
+          toast.success('Payment successful!');
+          navigate('/order-confirmation');
+          return true;
+        } else if (result.status === 'failed') {
+          toast.error('Payment failed');
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        return true;
+      }
+    };
+
+    const poll = async () => {
+      const shouldStop = await checkStatus();
+      if (!shouldStop) {
+        setTimeout(poll, 5000); // Check every 5 seconds
+      }
+    };
+
+    poll();
   };
 
   if (!items.length) {

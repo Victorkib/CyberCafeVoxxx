@@ -12,10 +12,11 @@ import {
   ShoppingBag,
   CreditCard,
   User,
-  Mail
+  Mail,
+  BarChart2,
+  Filter
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { notificationAPI } from '../../utils/api';
 import PageHeader from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/button';
 import {
@@ -34,13 +35,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import {
+  fetchAdminNotifications,
+  createAdminNotification,
+  deleteAdminNotification,
+  deleteAllAdminNotifications,
+  fetchNotificationStats
+} from '../../redux/slices/adminNotificationSlice';
 
 const NotificationsManagement = () => {
   const dispatch = useDispatch();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { notifications, stats, pagination, loading, error } = useSelector(
+    (state) => state.adminNotifications || {
+      notifications: [],
+      stats: {
+        totalCount: 0,
+        typeStats: []
+      },
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
+      },
+      loading: false,
+      error: null
+    }
+  );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    type: '',
+    priority: '',
+    startDate: '',
+    endDate: ''
+  });
   const [newNotification, setNewNotification] = useState({
     title: '',
     message: '',
@@ -51,27 +80,21 @@ const NotificationsManagement = () => {
   });
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    fetchData();
+  }, [filters]);
 
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const response = await notificationAPI.getAdminNotifications();
-      setNotifications(response.data);
-    } catch (error) {
-      setError(error.message);
-      toast.error('Failed to fetch notifications');
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = () => {
+    dispatch(fetchAdminNotifications({
+      page: pagination.page,
+      limit: pagination.limit,
+      ...filters
+    }));
+    dispatch(fetchNotificationStats());
   };
 
   const handleCreateNotification = async () => {
     try {
-      setLoading(true);
-      await notificationAPI.create(newNotification);
-      toast.success('Notification created successfully');
+      await dispatch(createAdminNotification(newNotification)).unwrap();
       setIsCreateDialogOpen(false);
       setNewNotification({
         title: '',
@@ -81,34 +104,46 @@ const NotificationsManagement = () => {
         link: '',
         expiresAt: ''
       });
-      fetchNotifications();
+      fetchData();
     } catch (error) {
-      toast.error(error.message || 'Failed to create notification');
-    } finally {
-      setLoading(false);
+      toast.error(error);
     }
   };
 
   const handleDeleteNotification = async (id) => {
     try {
-      await notificationAPI.deleteAdmin(id);
-      toast.success('Notification deleted successfully');
-      fetchNotifications();
+      await dispatch(deleteAdminNotification(id)).unwrap();
+      fetchData();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete notification');
+      toast.error(error);
     }
   };
 
   const handleDeleteAll = async () => {
     if (window.confirm('Are you sure you want to delete all notifications?')) {
       try {
-        await notificationAPI.deleteAllAdmin();
-        toast.success('All notifications deleted successfully');
-        fetchNotifications();
+        await dispatch(deleteAllAdminNotifications()).unwrap();
+        fetchData();
       } catch (error) {
-        toast.error(error.message || 'Failed to delete all notifications');
+        toast.error(error);
       }
     }
+  };
+
+  const handleApplyFilters = () => {
+    setIsFilterDialogOpen(false);
+    fetchData();
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      type: '',
+      priority: '',
+      startDate: '',
+      endDate: ''
+    });
+    setIsFilterDialogOpen(false);
+    fetchData();
   };
 
   const getNotificationIcon = (type) => {
@@ -134,6 +169,15 @@ const NotificationsManagement = () => {
     }
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <PageHeader
@@ -144,137 +188,287 @@ const NotificationsManagement = () => {
         ]}
       />
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchNotifications}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Notification
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Notification</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <label className="text-sm font-medium">Title</label>
-                    <Input
-                      value={newNotification.title}
-                      onChange={(e) =>
-                        setNewNotification({ ...newNotification, title: e.target.value })
-                      }
-                      placeholder="Notification title"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Message</label>
-                    <Textarea
-                      value={newNotification.message}
-                      onChange={(e) =>
-                        setNewNotification({ ...newNotification, message: e.target.value })
-                      }
-                      placeholder="Notification message"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Type</label>
-                    <Select
-                      value={newNotification.type}
-                      onValueChange={(value) =>
-                        setNewNotification({ ...newNotification, type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="system">System</SelectItem>
-                        <SelectItem value="order">Order</SelectItem>
-                        <SelectItem value="payment">Payment</SelectItem>
-                        <SelectItem value="promotion">Promotion</SelectItem>
-                        <SelectItem value="security">Security</SelectItem>
-                        <SelectItem value="product">Product</SelectItem>
-                        <SelectItem value="review">Review</SelectItem>
-                        <SelectItem value="wishlist">Wishlist</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Priority</label>
-                    <Select
-                      value={newNotification.priority}
-                      onValueChange={(value) =>
-                        setNewNotification({ ...newNotification, priority: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Link (optional)</label>
-                    <Input
-                      value={newNotification.link}
-                      onChange={(e) =>
-                        setNewNotification({ ...newNotification, link: e.target.value })
-                      }
-                      placeholder="Notification link"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Expires At (optional)</label>
-                    <Input
-                      type="datetime-local"
-                      value={newNotification.expiresAt}
-                      onChange={(e) =>
-                        setNewNotification({ ...newNotification, expiresAt: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateNotification} disabled={loading}>
-                    Create
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteAll}
-              disabled={notifications.length === 0}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All
-            </Button>
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center">
+            <BarChart2 className="h-8 w-8 text-blue-500 mr-2" />
+            <div>
+              <p className="text-sm text-gray-500">Total Notifications</p>
+              <p className="text-2xl font-semibold">{stats?.totalCount || 0}</p>
+            </div>
           </div>
         </div>
+        {Array.isArray(stats?.typeStats) && stats.typeStats.map((stat) => (
+          <div key={stat._id} className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              {getNotificationIcon(stat._id)}
+              <div className="ml-2">
+                <p className="text-sm text-gray-500">{stat._id}</p>
+                <p className="text-2xl font-semibold">{stat.count}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFilterDialogOpen(true)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Notification
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Notification</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Title
+                      </label>
+                      <Input
+                        value={newNotification.title}
+                        onChange={(e) => setNewNotification({
+                          ...newNotification,
+                          title: e.target.value
+                        })}
+                        placeholder="Notification title"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Message
+                      </label>
+                      <Textarea
+                        value={newNotification.message}
+                        onChange={(e) => setNewNotification({
+                          ...newNotification,
+                          message: e.target.value
+                        })}
+                        placeholder="Notification message"
+                        rows={4}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Type
+                      </label>
+                      <Select
+                        value={newNotification.type}
+                        onValueChange={(value) => setNewNotification({
+                          ...newNotification,
+                          type: value
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="order">Order</SelectItem>
+                          <SelectItem value="payment">Payment</SelectItem>
+                          <SelectItem value="system">System</SelectItem>
+                          <SelectItem value="promotion">Promotion</SelectItem>
+                          <SelectItem value="security">Security</SelectItem>
+                          <SelectItem value="product">Product</SelectItem>
+                          <SelectItem value="review">Review</SelectItem>
+                          <SelectItem value="wishlist">Wishlist</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Priority
+                      </label>
+                      <Select
+                        value={newNotification.priority}
+                        onValueChange={(value) => setNewNotification({
+                          ...newNotification,
+                          priority: value
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Link (optional)
+                      </label>
+                      <Input
+                        value={newNotification.link}
+                        onChange={(e) => setNewNotification({
+                          ...newNotification,
+                          link: e.target.value
+                        })}
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Expires At (optional)
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={newNotification.expiresAt}
+                        onChange={(e) => setNewNotification({
+                          ...newNotification,
+                          expiresAt: e.target.value
+                        })}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsCreateDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateNotification} disabled={loading}>
+                        Create
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteAll}
+                disabled={notifications.length === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Dialog */}
+        <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filter Notifications</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type
+                </label>
+                <Select
+                  value={filters.type}
+                  onValueChange={(value) => setFilters({
+                    ...filters,
+                    type: value
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All types</SelectItem>
+                    <SelectItem value="order">Order</SelectItem>
+                    <SelectItem value="payment">Payment</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="promotion">Promotion</SelectItem>
+                    <SelectItem value="security">Security</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="wishlist">Wishlist</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priority
+                </label>
+                <Select
+                  value={filters.priority}
+                  onValueChange={(value) => setFilters({
+                    ...filters,
+                    priority: value
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All priorities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All priorities</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <Input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    startDate: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date
+                </label>
+                <Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({
+                    ...filters,
+                    endDate: e.target.value
+                  })}
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleClearFilters}
+                >
+                  Clear Filters
+                </Button>
+                <Button onClick={handleApplyFilters}>
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {error && (
           <div className="p-4 bg-red-50 text-red-700">
@@ -352,6 +546,35 @@ const NotificationsManagement = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <div className="px-4 py-3 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-700">
+                Showing page {pagination.page} of {pagination.pages}
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}
+                  disabled={pagination.page === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}
+                  disabled={pagination.page === pagination.pages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

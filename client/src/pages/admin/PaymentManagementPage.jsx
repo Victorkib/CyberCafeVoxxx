@@ -1,20 +1,18 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  Clock,
-} from 'lucide-react';
-import { fetchOrders } from '../../redux/slices/orderSlice';
-import { toast } from 'react-hot-toast';
+  getPaymentHistory,
+  getRefundHistory,
+  processRefund
+} from '../../redux/slices/paymentSlice';
 import {
-  Box,
-  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   Typography,
   Button,
   TextField,
@@ -22,210 +20,180 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   IconButton,
-  InputAdornment,
-  TablePagination,
-  Skeleton,
+  Tooltip,
+  Box,
   Chip,
+  Pagination,
+  CircularProgress
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  fontWeight: 'bold',
-  backgroundColor: theme.palette.grey[50],
-}));
-
-const StatusIcon = styled(Box)(({ theme, status }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  color: status === 'paid' 
-    ? theme.palette.success.main 
-    : status === 'pending'
-    ? theme.palette.warning.main
-    : status === 'failed'
-    ? theme.palette.error.main
-    : theme.palette.grey[500],
-}));
-
-const LoadingSkeleton = () => (
-  <TableRow>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-    <TableCell><Skeleton animation="wave" /></TableCell>
-  </TableRow>
-);
+import { DatePicker } from '@mui/x-date-pickers';
+import { format } from 'date-fns';
+import { toast } from 'react-toastify';
+import { 
+  Eye, 
+  RefreshCw, 
+  Search, 
+  Filter, 
+  Download,
+  CreditCard,
+  AlertCircle
+} from 'lucide-react';
+import { PAYMENT_METHODS, PAYMENT_STATUS } from '../../constants/payment';
 
 export default function PaymentManagementPage() {
   const dispatch = useDispatch();
-  const { orders, loading } = useSelector((state) => state.order);
+  const { paymentHistory, refundHistory, loading } = useSelector((state) => state.payment);
   const [filters, setFilters] = useState({
     status: 'all',
     paymentMethod: 'all',
-    dateRange: 'all',
+    startDate: null,
+    endDate: null,
+    search: ''
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [activeFilters, setActiveFilters] = useState([]);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [page, setPage] = useState(1);
+  const [rowsPerPage] = useState(10);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchOrders());
+    dispatch(getPaymentHistory());
+    dispatch(getRefundHistory());
   }, [dispatch]);
 
-  useEffect(() => {
-    // Update active filters
-    const newActiveFilters = [];
-    if (filters.status !== 'all') newActiveFilters.push({ key: 'status', value: filters.status });
-    if (filters.paymentMethod !== 'all') newActiveFilters.push({ key: 'method', value: filters.paymentMethod });
-    if (filters.dateRange !== 'all') newActiveFilters.push({ key: 'date', value: filters.dateRange });
-    if (searchTerm) newActiveFilters.push({ key: 'search', value: searchTerm });
-    setActiveFilters(newActiveFilters);
-  }, [filters, searchTerm]);
-
   const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setPage(0); // Reset to first page when filter changes
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setPage(1); // Reset to first page when filters change
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+  const handleRefund = async () => {
+    if (!refundReason.trim()) {
+      toast.error('Please provide a reason for the refund');
+      return;
+    }
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    toast.info('Export functionality coming soon');
-  };
-
-  const handleRemoveFilter = (key) => {
-    if (key === 'search') {
-      setSearchTerm('');
-    } else {
-      setFilters(prev => ({
-        ...prev,
-        [key]: 'all'
-      }));
+    try {
+      await dispatch(processRefund({
+        paymentId: selectedPayment._id,
+        reason: refundReason
+      })).unwrap();
+      setRefundDialogOpen(false);
+      setRefundReason('');
+      setSelectedPayment(null);
+      toast.success('Refund processed successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to process refund');
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'paid':
-        return <CheckCircle2 size={20} />;
-      case 'pending':
-        return <Clock size={20} />;
-      case 'failed':
-        return <XCircle size={20} />;
-      default:
-        return <AlertCircle size={20} />;
-    }
+  const handleViewDetails = (payment) => {
+    setSelectedPayment(payment);
+    setDetailsDialogOpen(true);
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      filters.status === 'all' || order.paymentStatus === filters.status;
-
-    const matchesPaymentMethod =
-      filters.paymentMethod === 'all' ||
-      order.paymentMethod === filters.paymentMethod;
-
-    // Add date range filtering logic here
-    const matchesDateRange = filters.dateRange === 'all' || (() => {
-      const orderDate = new Date(order.createdAt);
-      const today = new Date();
-      switch (filters.dateRange) {
-        case 'today':
-          return orderDate.toDateString() === today.toDateString();
-        case 'week':
-          const weekAgo = new Date(today.setDate(today.getDate() - 7));
-          return orderDate >= weekAgo;
-        case 'month':
-          const monthAgo = new Date(today.setMonth(today.getMonth() - 1));
-          return orderDate >= monthAgo;
-        default:
-          return true;
-      }
-    })();
+  const filteredPayments = paymentHistory.filter(payment => {
+    const matchesSearch = payment.orderId.toLowerCase().includes(filters.search.toLowerCase()) ||
+      payment.transactionId.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesStatus = filters.status === 'all' || payment.status === filters.status;
+    const matchesPaymentMethod = filters.paymentMethod === 'all' || payment.method === filters.paymentMethod;
+    
+    const paymentDate = new Date(payment.createdAt);
+    const matchesDateRange = (!filters.startDate || paymentDate >= filters.startDate) &&
+      (!filters.endDate || paymentDate <= filters.endDate);
 
     return matchesSearch && matchesStatus && matchesPaymentMethod && matchesDateRange;
   });
 
-  const paginatedOrders = filteredOrders.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+  const paginatedPayments = filteredPayments.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
   );
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case PAYMENT_STATUS.PAID:
+        return 'success';
+      case PAYMENT_STATUS.PENDING:
+        return 'warning';
+      case PAYMENT_STATUS.FAILED:
+        return 'error';
+      case PAYMENT_STATUS.REFUNDED:
+        return 'info';
+      case PAYMENT_STATUS.CANCELLED:
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case PAYMENT_STATUS.PAID:
+        return 'Paid';
+      case PAYMENT_STATUS.PENDING:
+        return 'Pending';
+      case PAYMENT_STATUS.FAILED:
+        return 'Failed';
+      case PAYMENT_STATUS.REFUNDED:
+        return 'Refunded';
+      case PAYMENT_STATUS.CANCELLED:
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    switch (method) {
+      case PAYMENT_METHODS.MPESA:
+        return 'M-Pesa';
+      case PAYMENT_METHODS.PAYSTACK:
+        return 'Paystack';
+      case PAYMENT_METHODS.PAYPAL:
+        return 'PayPal';
+        default:
+        return method;
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES'
+    }).format(amount);
+  };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">Payment Management</Typography>
-        <Box display="flex" gap={2}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshCw size={20} />}
-            onClick={() => dispatch(fetchOrders())}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Download size={20} />}
-            onClick={handleExport}
-            disabled={loading}
-          >
-            Export
-          </Button>
-        </Box>
-      </Box>
+    <div className="p-6">
+      <Typography variant="h4" component="h1" gutterBottom>
+        Payment Management
+      </Typography>
 
       {/* Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(4, 1fr)' }} gap={2}>
+      <Paper className="p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <TextField
+            label="Search"
+            variant="outlined"
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
             fullWidth
-            placeholder="Search by order ID or email"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={20} />
-                </InputAdornment>
-              ),
+              startAdornment: <Search className="mr-2 h-5 w-5 text-gray-400" />
             }}
           />
+          
           <FormControl fullWidth>
             <InputLabel>Status</InputLabel>
             <Select
@@ -233,12 +201,15 @@ export default function PaymentManagementPage() {
               onChange={(e) => handleFilterChange('status', e.target.value)}
               label="Status"
             >
-              <MenuItem value="all">All Status</MenuItem>
-              <MenuItem value="paid">Paid</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="failed">Failed</MenuItem>
+              <MenuItem value="all">All Statuses</MenuItem>
+              <MenuItem value={PAYMENT_STATUS.PAID}>Paid</MenuItem>
+              <MenuItem value={PAYMENT_STATUS.PENDING}>Pending</MenuItem>
+              <MenuItem value={PAYMENT_STATUS.FAILED}>Failed</MenuItem>
+              <MenuItem value={PAYMENT_STATUS.REFUNDED}>Refunded</MenuItem>
+              <MenuItem value={PAYMENT_STATUS.CANCELLED}>Cancelled</MenuItem>
             </Select>
           </FormControl>
+
           <FormControl fullWidth>
             <InputLabel>Payment Method</InputLabel>
             <Select
@@ -247,116 +218,307 @@ export default function PaymentManagementPage() {
               label="Payment Method"
             >
               <MenuItem value="all">All Payment Methods</MenuItem>
-              <MenuItem value="mpesa">M-Pesa</MenuItem>
-              <MenuItem value="paystack">Paystack</MenuItem>
-              <MenuItem value="paypal">PayPal</MenuItem>
+              <MenuItem value={PAYMENT_METHODS.MPESA}>M-Pesa</MenuItem>
+              <MenuItem value={PAYMENT_METHODS.PAYSTACK}>Paystack</MenuItem>
+              <MenuItem value={PAYMENT_METHODS.PAYPAL}>PayPal</MenuItem>
             </Select>
           </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>Date Range</InputLabel>
-            <Select
-              value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-              label="Date Range"
-            >
-              <MenuItem value="all">All Time</MenuItem>
-              <MenuItem value="today">Today</MenuItem>
-              <MenuItem value="week">This Week</MenuItem>
-              <MenuItem value="month">This Month</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+        </div>
 
-        {/* Active Filters */}
-        {activeFilters.length > 0 && (
-          <Box display="flex" gap={1} mt={2} flexWrap="wrap">
-            {activeFilters.map(({ key, value }) => (
-              <Chip
-                key={key}
-                label={`${key}: ${value}`}
-                onDelete={() => handleRemoveFilter(key)}
-                size="small"
-              />
-            ))}
-          </Box>
-        )}
+        <div className="flex flex-col md:flex-row gap-4">
+          <DatePicker
+            label="Start Date"
+            value={filters.startDate}
+            onChange={(date) => handleFilterChange('startDate', date)}
+            renderInput={(params) => <TextField {...params} fullWidth />}
+          />
+          <DatePicker
+            label="End Date"
+            value={filters.endDate}
+            onChange={(date) => handleFilterChange('endDate', date)}
+            renderInput={(params) => <TextField {...params} fullWidth />}
+          />
+          <Button 
+            variant="outlined" 
+            startIcon={<RefreshCw className="h-4 w-4" />}
+            onClick={() => {
+              setFilters({
+                status: 'all',
+                paymentMethod: 'all',
+                startDate: null,
+                endDate: null,
+                search: ''
+              });
+              setPage(1);
+            }}
+            className="h-14"
+          >
+            Reset Filters
+          </Button>
+        </div>
       </Paper>
 
-      {/* Payment Transactions Table */}
-      <TableContainer component={Paper}>
+      {/* Payment Table */}
+      <Paper className="overflow-hidden">
+        <TableContainer>
         <Table>
           <TableHead>
             <TableRow>
-              <StyledTableCell>Order ID</StyledTableCell>
-              <StyledTableCell>Customer</StyledTableCell>
-              <StyledTableCell>Amount</StyledTableCell>
-              <StyledTableCell>Payment Method</StyledTableCell>
-              <StyledTableCell>Status</StyledTableCell>
-              <StyledTableCell>Date</StyledTableCell>
-              <StyledTableCell>Actions</StyledTableCell>
+                <TableCell>Order ID</TableCell>
+                <TableCell>Transaction ID</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Method</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
-              Array.from({ length: rowsPerPage }).map((_, index) => (
-                <LoadingSkeleton key={index} />
-              ))
-            ) : paginatedOrders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  <Typography color="text.secondary">No payments found</Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedOrders.map((order) => (
-                <TableRow key={order._id}>
-                  <TableCell>{order._id}</TableCell>
-                  <TableCell>{order.user.email}</TableCell>
-                  <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={order.paymentMethod}
-                      size="small"
-                      color="default"
-                    />
+                    <Box display="flex" justifyContent="center" p={3}>
+                      <CircularProgress />
+                    </Box>
                   </TableCell>
-                  <TableCell>
-                    <StatusIcon status={order.paymentStatus}>
-                      {getStatusIcon(order.paymentStatus)}
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        {order.paymentStatus}
+                </TableRow>
+              ) : paginatedPayments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Box display="flex" flexDirection="column" alignItems="center" p={3}>
+                      <AlertCircle className="h-10 w-10 text-gray-400 mb-2" />
+                      <Typography variant="body1" color="textSecondary">
+                        No payments found matching your criteria
                       </Typography>
-                    </StatusIcon>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedPayments.map((payment) => (
+                  <TableRow key={payment._id}>
+                    <TableCell>{payment.orderId}</TableCell>
+                    <TableCell>{payment.transactionId}</TableCell>
+                    <TableCell>{format(new Date(payment.createdAt), 'MMM dd, yyyy HH:mm')}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        {getPaymentMethodLabel(payment.method)}
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                  <TableCell>
+                      <Chip 
+                        label={getStatusLabel(payment.status)} 
+                        color={getStatusColor(payment.status)}
+                        size="small"
+                      />
                   </TableCell>
                   <TableCell>
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Button
+                      <div className="flex space-x-2">
+                        <Tooltip title="View Details">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleViewDetails(payment)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
+                        {payment.status === PAYMENT_STATUS.PAID && !payment.refundedAt && (
+                          <Tooltip title="Process Refund">
+                            <IconButton 
                       size="small"
                       onClick={() => {
-                        // TODO: Implement view details functionality
-                        toast.info('View details functionality coming soon');
-                      }}
-                    >
-                      View Details
-                    </Button>
+                                setSelectedPayment(payment);
+                                setRefundDialogOpen(true);
+                              }}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </div>
                   </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredOrders.length}
-          rowsPerPage={rowsPerPage}
+        </TableContainer>
+        
+        {!loading && filteredPayments.length > 0 && (
+          <Box display="flex" justifyContent="center" p={2}>
+            <Pagination 
+              count={Math.ceil(filteredPayments.length / rowsPerPage)} 
           page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </TableContainer>
-    </Container>
+              onChange={handlePageChange} 
+              color="primary" 
+            />
+          </Box>
+        )}
+      </Paper>
+
+      {/* Refund Dialog */}
+      <Dialog open={refundDialogOpen} onClose={() => setRefundDialogOpen(false)}>
+        <DialogTitle>Process Refund</DialogTitle>
+        <DialogContent>
+          <div className="mt-4">
+            <Typography variant="subtitle1" gutterBottom>
+              Payment Details
+            </Typography>
+            <div className="bg-gray-50 p-4 rounded-md mb-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Typography variant="body2" color="textSecondary">Order ID:</Typography>
+                <Typography variant="body2">{selectedPayment?.orderId}</Typography>
+                <Typography variant="body2" color="textSecondary">Transaction ID:</Typography>
+                <Typography variant="body2">{selectedPayment?.transactionId}</Typography>
+                <Typography variant="body2" color="textSecondary">Amount:</Typography>
+                <Typography variant="body2">{formatCurrency(selectedPayment?.amount)}</Typography>
+                <Typography variant="body2" color="textSecondary">Method:</Typography>
+                <Typography variant="body2">{getPaymentMethodLabel(selectedPayment?.method)}</Typography>
+              </div>
+            </div>
+            
+            <Typography variant="subtitle1" gutterBottom>
+              Refund Reason
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              variant="outlined"
+              placeholder="Please provide a reason for the refund"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRefundDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleRefund} variant="contained" color="primary">
+            Process Refund
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Payment Details Dialog */}
+      <Dialog 
+        open={detailsDialogOpen} 
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Payment Details</DialogTitle>
+        <DialogContent>
+          {selectedPayment && (
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Basic Information
+                  </Typography>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Typography variant="body2" color="textSecondary">Order ID:</Typography>
+                      <Typography variant="body2">{selectedPayment.orderId}</Typography>
+                      <Typography variant="body2" color="textSecondary">Transaction ID:</Typography>
+                      <Typography variant="body2">{selectedPayment.transactionId}</Typography>
+                      <Typography variant="body2" color="textSecondary">Amount:</Typography>
+                      <Typography variant="body2">{formatCurrency(selectedPayment.amount)}</Typography>
+                      <Typography variant="body2" color="textSecondary">Method:</Typography>
+                      <Typography variant="body2">{getPaymentMethodLabel(selectedPayment.method)}</Typography>
+                      <Typography variant="body2" color="textSecondary">Status:</Typography>
+                      <Chip 
+                        label={getStatusLabel(selectedPayment.status)} 
+                        color={getStatusColor(selectedPayment.status)}
+                        size="small"
+                      />
+                      <Typography variant="body2" color="textSecondary">Date:</Typography>
+                      <Typography variant="body2">
+                        {format(new Date(selectedPayment.createdAt), 'MMM dd, yyyy HH:mm:ss')}
+                      </Typography>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Customer Information
+                  </Typography>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Typography variant="body2" color="textSecondary">Customer ID:</Typography>
+                      <Typography variant="body2">{selectedPayment.userId}</Typography>
+                      <Typography variant="body2" color="textSecondary">Email:</Typography>
+                      <Typography variant="body2">{selectedPayment.metadata?.email || 'N/A'}</Typography>
+                      <Typography variant="body2" color="textSecondary">Phone:</Typography>
+                      <Typography variant="body2">{selectedPayment.metadata?.phone || 'N/A'}</Typography>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {selectedPayment.error && (
+                <div className="mt-6">
+                  <Typography variant="subtitle1" gutterBottom>
+                    Error Information
+                  </Typography>
+                  <div className="bg-red-50 p-4 rounded-md">
+                    <Typography variant="body2" color="error">
+                      {selectedPayment.error.message}
+                    </Typography>
+                    {selectedPayment.error.details && (
+                      <pre className="mt-2 text-xs overflow-auto">
+                        {JSON.stringify(selectedPayment.error.details, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {selectedPayment.refundedAt && (
+                <div className="mt-6">
+                  <Typography variant="subtitle1" gutterBottom>
+                    Refund Information
+                  </Typography>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Typography variant="body2" color="textSecondary">Refund Date:</Typography>
+                      <Typography variant="body2">
+                        {format(new Date(selectedPayment.refundedAt), 'MMM dd, yyyy HH:mm:ss')}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">Refund Reason:</Typography>
+                      <Typography variant="body2">{selectedPayment.refundReason || 'N/A'}</Typography>
+                      <Typography variant="body2" color="textSecondary">Refunded By:</Typography>
+                      <Typography variant="body2">{selectedPayment.refundedBy || 'System'}</Typography>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-6">
+                <Typography variant="subtitle1" gutterBottom>
+                  Additional Metadata
+                </Typography>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <pre className="text-xs overflow-auto">
+                    {JSON.stringify(selectedPayment.metadata, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            startIcon={<Download className="h-4 w-4" />}
+          >
+            Export Details
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   );
 } 
