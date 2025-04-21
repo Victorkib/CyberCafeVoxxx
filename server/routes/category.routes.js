@@ -17,8 +17,8 @@ router.get('/featured', getFeaturedCategories);
 router.get('/:id', getCategoryById);
 
 // Admin routes
-router.post('/', authMiddleware, authorize('admin'), createCategory);
-router.put('/:id', authMiddleware, authorize('admin'), updateCategory);
-router.delete('/:id', authMiddleware, authorize('admin'), deleteCategory);
+router.post('/', authMiddleware, authorize('admin', 'super_admin'), createCategory);
+router.put('/:id', authMiddleware, authorize('admin', 'super_admin'), updateCategory);
+router.delete('/:id', authMiddleware, authorize('admin', 'super_admin'), deleteCategory);
 
 export default router; 

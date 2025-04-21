@@ -19,8 +19,8 @@ router.get('/verify/:token', verifySubscription);
 router.get('/unsubscribe/:token', unsubscribe);
 
 // Protected routes (admin only)
-router.get('/subscribers', authMiddleware, authorize('admin'), getSubscribers);
-router.get('/stats', authMiddleware, authorize('admin'), getSubscriptionStats);
-router.post('/send', authMiddleware, authorize('admin'), sendNewsletter);
+router.get('/subscribers', authMiddleware, authorize('admin', 'super_admin'), getSubscribers);
+router.get('/stats', authMiddleware, authorize('admin', 'super_admin'), getSubscriptionStats);
+router.post('/send', authMiddleware, authorize('admin', 'super_admin'), sendNewsletter);
 
 export default router; 

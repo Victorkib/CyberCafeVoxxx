@@ -12,10 +12,10 @@ import { authMiddleware, authorize } from '../middleware/auth.middleware.js';
 const router = express.Router();
 
 // Admin routes
-router.get('/', authMiddleware, authorize('admin'), getUsers);
-router.get('/stats', authMiddleware, authorize('admin'), getUserStats);
-router.get('/:id', authMiddleware, authorize('admin'), getUser);
-router.delete('/:id', authMiddleware, authorize('admin'), deleteUser);
+router.get('/', authMiddleware, authorize('admin', 'super_admin'), getUsers);
+router.get('/stats', authMiddleware, authorize('admin', 'super_admin'), getUserStats);
+router.get('/:id', authMiddleware, authorize('admin', 'super_admin'), getUser);
+router.delete('/:id', authMiddleware, authorize('admin', 'super_admin'), deleteUser);
 
 // User routes
 router.put('/profile', authMiddleware, updateProfile);

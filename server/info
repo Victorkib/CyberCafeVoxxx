@@ -1,0 +1,24 @@
+server/
+├── models/
+│   └── notification.model.js         # Notification database schema
+├── services/
+│   └── unified-notification.service.js  # Core notification service
+├── controllers/
+│   ├── notification.controller.js    # User notification endpoints
+│   └── admin-notification.controller.js # Admin notification endpoints
+├── routes/
+│   ├── notification.routes.js        # User notification routes
+│   └── admin.routes.js               # Admin routes (including notifications)
+├── utils/
+│   └── notification-templates.js     # Reusable notification templates
+└── server.js                         # Main server file with Socket.io setup
+
+client/
+├── services/
+│   └── notification.service.js       # Client-side notification service
+├── components/
+│   ├── NotificationBell.jsx          # User notification bell component
+│   ├── NotificationCenter.jsx        # User notification center
+│   └── AdminNotificationCenter.jsx   # Admin notification dashboard
+└── contexts/
+    └── NotificationContext.jsx       # (Optional) React context for notifications

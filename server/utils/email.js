@@ -550,12 +550,20 @@ export const sendWelcomeEmail = async (email, name) => {
 };
 
 export const sendPasswordResetEmail = async (email, resetLink) => {
-  return sendEmail({
-    to: email,
-    subject: 'Reset Your Password',
-    template: 'resetPassword',
-    data: { resetLink },
-  });
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Reset Your Password',
+      template: 'resetPassword',
+      data: { 
+        resetLink,
+        name: 'User' // We'll update this with the actual name in the controller
+      }
+    });
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
 };
 
 export const sendVerificationEmail = async (email, name, verificationUrl, isAdmin = false) => {

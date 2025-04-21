@@ -18,12 +18,12 @@ router.post('/apply', authMiddleware, applyCoupon);
 
 // Admin routes
 router.route('/')
-  .get(authMiddleware, authorize('admin'), getCoupons)
-  .post(authMiddleware, authorize('admin'), createCoupon);
+  .get(authMiddleware, authorize('admin', 'super_admin'), getCoupons)
+  .post(authMiddleware, authorize('admin', 'super_admin'), createCoupon);
 
 router.route('/:id')
-  .get(authMiddleware, authorize('admin'), getCouponById)
-  .put(authMiddleware, authorize('admin'), updateCoupon)
-  .delete(authMiddleware, authorize('admin'), deleteCoupon);
+  .get(authMiddleware, authorize('admin', 'super_admin'), getCouponById)
+  .put(authMiddleware, authorize('admin', 'super_admin'), updateCoupon)
+  .delete(authMiddleware, authorize('admin', 'super_admin'), deleteCoupon);
 
 export default router; 

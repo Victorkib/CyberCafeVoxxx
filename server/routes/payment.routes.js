@@ -2,18 +2,9 @@ import express from 'express';
 import {
   getPaymentMethods,
   initializePayment,
-  mpesaCallback,
-  paystackCallback,
-  paypalCallback,
-  checkPaymentStatus,
-  retryPayment,
-  getPaymentAnalytics,
-  getPaymentHistory,
-  getPaymentDetails,
-  refundPayment,
-  getRefundHistory,
-  fetchPaymentSettings,
-  updatePaymentSettings
+  processPaymentCallback,
+  processRefund,
+  getPaymentAnalytics
 } from '../controllers/payment.controller.js';
 import { authMiddleware, authorize } from '../middleware/auth.middleware.js';
 
@@ -22,23 +13,18 @@ const router = express.Router();
 // Public routes
 router.get('/methods', getPaymentMethods);
 
-// Callback routes (no auth required as they're called by payment providers)
-router.post('/mpesa/callback', mpesaCallback);
-router.post('/paystack/callback', paystackCallback);
-router.post('/paypal/callback', paypalCallback);
+// Protected routes (require authentication)
+router.use(authMiddleware);
 
-// User routes (authenticated)
-router.post('/initialize', authMiddleware, initializePayment);
-router.post('/retry', authMiddleware, retryPayment);
-router.get('/status/:orderId', authMiddleware, checkPaymentStatus);
-router.get('/history', authMiddleware, getPaymentHistory);
-router.get('/details/:paymentId', authMiddleware, getPaymentDetails);
+// Payment initialization and processing
+router.post('/initialize', initializePayment);
+router.post('/callback', processPaymentCallback);
 
-// Admin routes
-router.get('/analytics', authMiddleware, authorize('admin'), getPaymentAnalytics);
-router.post('/refund/:paymentId', authMiddleware, authorize('admin'), refundPayment);
-router.get('/refund-history', authMiddleware, authorize('admin'), getRefundHistory);
-router.get('/settings', authMiddleware, authorize('admin'), fetchPaymentSettings);
-router.put('/settings', authMiddleware, authorize('admin'), updatePaymentSettings);
+// Admin routes (require admin authorization)
+router.use(authorize(['admin']));
+
+// Payment management
+router.post('/refund', processRefund);
+router.get('/analytics', getPaymentAnalytics);
 
 export default router; 

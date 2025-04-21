@@ -1020,6 +1020,117 @@ export const verifyInvitation = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Get all admin invitations
+// @route   GET /api/admin/invitations
+// @access  Private (Admin only)
+export const getAdminInvitations = asyncHandler(async (req, res, next) => {
+  try {
+    const invitations = await AdminInvitation.find()
+      .populate('invitedBy', 'name email')
+      .sort('-createdAt');
+
+    res.json(invitations);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Resend admin invitation
+// @route   POST /api/admin/invitations/:id/resend
+// @access  Private (Admin only)
+export const resendInvitation = asyncHandler(async (req, res, next) => {
+  try {
+    const invitation = await AdminInvitation.findById(req.params.id);
+    
+    if (!invitation) {
+      throw createError(404, 'Invitation not found');
+    }
+    
+    if (invitation.status !== 'pending') {
+      throw createError(400, 'Cannot resend invitation that is not pending');
+    }
+    
+    // Update expiration date
+    invitation.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await invitation.save();
+    
+    // Resend invitation email
+    await sendAdminInvitationEmail(
+      invitation.email, 
+      invitation.name, 
+      invitation.token, 
+      invitation.tempPassword
+    );
+    
+    res.json(invitation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Cancel admin invitation
+// @route   DELETE /api/admin/invitations/:id
+// @access  Private (Admin only)
+export const cancelInvitation = asyncHandler(async (req, res, next) => {
+  try {
+    const invitation = await AdminInvitation.findById(req.params.id);
+    
+    if (!invitation) {
+      throw createError(404, 'Invitation not found');
+    }
+    
+    if (invitation.status !== 'pending') {
+      throw createError(400, 'Cannot cancel invitation that is not pending');
+    }
+    
+    await invitation.remove();
+    
+    res.json({ message: 'Invitation cancelled successfully', id: req.params.id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Lock user account
+// @route   POST /api/admin/lock-account
+// @access  Private (Admin only)
+export const lockAccount = asyncHandler(async (req, res, next) => {
+  try {
+    const { userId, reason, durationMinutes } = req.body;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      throw createError(404, 'User not found');
+    }
+    
+    await user.lockAccount(reason, durationMinutes);
+    
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Unlock user account
+// @route   POST /api/admin/unlock-account
+// @access  Private (Admin only)
+export const unlockAccount = asyncHandler(async (req, res, next) => {
+  try {
+    const { userId } = req.body;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      throw createError(404, 'User not found');
+    }
+    
+    await user.unlockAccount();
+    
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @desc    Get all admin users
 // @route   GET /api/admin/admins
 // @access  Private (Admin only)
@@ -1184,4 +1295,5 @@ export const cleanupExpiredInvitations = asyncHandler(async (req, res, next) => 
   } catch (error) {
     next(error);
   }
-}); 
+});
+

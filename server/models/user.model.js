@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema(
   {
@@ -29,6 +30,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin', 'super_admin', 'manager', 'staff'],
       default: 'user',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'blocked'],
+      default: 'active',
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
@@ -61,64 +67,158 @@ const userSchema = new mongoose.Schema(
     }],
     passwordChangedAt: Date,
     passwordExpiresAt: Date,
+    tokenVersion: {
+      type: Number,
+      default: 0
+    },
     activeSessions: [{
-      token: String,
-      deviceInfo: String,
+      token: {
+        type: String,
+        required: true
+      },
+      refreshToken: {
+        type: String,
+        required: true
+      },
+      deviceInfo: {
+        userAgent: String,
+        platform: String,
+        browser: String
+      },
       ipAddress: String,
-      lastActivity: Date,
-      createdAt: Date
-    }]
+      createdAt: {
+        type: Date,
+        default: Date.now
+      },
+      lastActivity: {
+        type: Date,
+        default: Date.now
+      },
+      expiresAt: Date
+    }],
+    notificationPreferences: {
+      email: {
+        type: Boolean,
+        default: true
+      },
+      push: {
+        type: Boolean,
+        default: true
+      },
+      sound: {
+        type: Boolean,
+        default: true
+      },
+      desktop: {
+        type: Boolean,
+        default: true
+      }
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Encrypt password before saving
+// 🔐 Encrypt password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-// Sign JWT and return
+// 🧹 Clean up expired sessions and tokens before saving
+userSchema.pre('save', async function(next) {
+  if (this.activeSessions?.length > 0) {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    this.activeSessions = this.activeSessions.filter(
+      session => !session.expiresAt || session.expiresAt > oneDayAgo
+    );
+  }
+
+  if (this.emailVerificationExpire && this.emailVerificationExpire < new Date()) {
+    this.emailVerificationToken = undefined;
+    this.emailVerificationExpire = undefined;
+  }
+
+  if (this.resetPasswordExpire && this.resetPasswordExpire < new Date()) {
+    this.resetPasswordToken = undefined;
+    this.resetPasswordExpire = undefined;
+  }
+
+  next();
+});
+
+// JWT generation
 userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
-    { 
-      id: this._id,
-      role: this.role 
-    }, 
-    process.env.JWT_SECRET, 
-    {
-      expiresIn: process.env.JWT_EXPIRE,
-    }
+    { id: this._id, role: this.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE }
   );
 };
 
-// Match user entered password to hashed password in database
+// Match user password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Check if user is admin
+// Role checks
 userSchema.methods.isAdmin = function () {
   return this.role === 'admin' || this.role === 'super_admin';
 };
 
-// Check if user is manager or admin
 userSchema.methods.isManagerOrAdmin = function () {
   return this.role === 'admin' || this.role === 'super_admin';
 };
 
-// Add new methods for security features
+// Session management methods
+userSchema.methods.addSession = async function(token, deviceInfo, ipAddress, refreshToken) {
+  if (this.activeSessions.length >= 10) {
+    this.activeSessions.sort((a, b) => a.createdAt - b.createdAt);
+    this.activeSessions.shift();
+  }
+
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Access token expiry (15 mins)
+
+  this.activeSessions.push({
+    token,
+    refreshToken,
+    deviceInfo,
+    ipAddress,
+    createdAt: new Date(),
+    lastActivity: new Date(),
+    expiresAt
+  });
+
+  return this.save();
+};
+
+userSchema.methods.updateSessionActivity = async function(token) {
+  const session = this.activeSessions.find(s => s.token === token);
+  if (session) {
+    session.lastActivity = new Date();
+    session.expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours activity timeout
+    await this.save();
+  }
+  return session;
+};
+
+userSchema.methods.removeSession = async function(token) {
+  this.activeSessions = this.activeSessions.filter(session => session.token !== token);
+  await this.save();
+};
+
+// Account lock and login security
 userSchema.methods.incrementFailedLoginAttempts = async function() {
   this.failedLoginAttempts += 1;
-  if (this.failedLoginAttempts >= 5) { // Lock after 5 failed attempts
+  if (this.failedLoginAttempts >= 5) {
     this.isLocked = true;
-    this.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
+    this.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes lock
     this.lockReason = 'Too many failed login attempts';
   }
   await this.save();
@@ -144,14 +244,20 @@ userSchema.methods.unlockAccount = async function() {
   await this.save();
 };
 
+// Password history
 userSchema.methods.addToPasswordHistory = async function(password) {
-  if (this.passwordHistory.length >= 5) { // Keep last 5 passwords
+  if (!password) return;
+  const hashedPassword = password.startsWith('$2') ? password : await bcrypt.hash(password, 10);
+
+  if (this.passwordHistory.length >= 5) {
     this.passwordHistory.shift();
   }
+
   this.passwordHistory.push({
-    password: await bcrypt.hash(password, 10),
+    password: hashedPassword,
     changedAt: new Date()
   });
+
   await this.save();
 };
 
@@ -164,31 +270,14 @@ userSchema.methods.isPasswordInHistory = async function(password) {
   return false;
 };
 
-userSchema.methods.addSession = async function(token, deviceInfo, ipAddress) {
-  if (this.activeSessions.length >= 5) { // Limit to 5 active sessions
-    this.activeSessions.shift();
-  }
-  this.activeSessions.push({
-    token,
-    deviceInfo,
-    ipAddress,
-    lastActivity: new Date(),
-    createdAt: new Date()
-  });
-  await this.save();
+// Password reset token
+userSchema.methods.getResetPasswordToken = function() {
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  this.resetPasswordToken = resetToken;
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  return resetToken;
 };
 
-userSchema.methods.removeSession = async function(token) {
-  this.activeSessions = this.activeSessions.filter(session => session.token !== token);
-  await this.save();
-};
-
-userSchema.methods.updateSessionActivity = async function(token) {
-  const session = this.activeSessions.find(s => s.token === token);
-  if (session) {
-    session.lastActivity = new Date();
-    await this.save();
-  }
-};
-
-export default mongoose.model('User', userSchema); 
+export default mongoose.model('User', userSchema);

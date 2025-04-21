@@ -14,10 +14,10 @@ const router = express.Router();
 // All order routes are protected
 router.use(authMiddleware);
 
-router.route('/').post(createOrder).get(authorize('admin'), getOrders);
+router.route('/').post(createOrder).get(authorize('admin', 'super_admin'), getOrders);
 router.get('/myorders', getMyOrders);
 router.get('/:id', getOrderById);
 router.put('/:id/pay', updateOrderToPaid);
-router.put('/:id/deliver', authorize('admin'), updateOrderToDelivered);
+router.put('/:id/deliver', authorize('admin', 'super_admin'), updateOrderToDelivered);
 
 export default router; 

@@ -53,6 +53,15 @@ export const createOrder = asyncHandler(async (req, res) => {
     console.error('Failed to send order confirmation email:', error);
   }
 
+  // Create order confirmation notification
+  await createOrderNotification({
+    userId: req.user._id,
+    title: 'Order Confirmed',
+    message: `Your order #${createdOrder.orderNumber} has been confirmed and is being processed.`,
+    link: `/orders/${createdOrder._id}`,
+    priority: 'high'
+  });
+
   res.status(201).json(createdOrder);
 });
 
@@ -91,12 +100,13 @@ export const updateOrderToPaid = asyncHandler(async (req, res) => {
 
     const updatedOrder = await order.save();
 
-    // Create a notification for the user
+    // Create order status update notification
     await createOrderNotification({
       userId: order.user,
-      orderId: order._id,
-      status: order.status,
-      total: order.totalPrice
+      title: 'Order Status Updated',
+      message: `Your order #${updatedOrder.orderNumber} status has been updated to ${updatedOrder.status}.`,
+      link: `/orders/${updatedOrder._id}`,
+      priority: 'medium'
     });
 
     res.json(updatedOrder);
@@ -127,12 +137,13 @@ export const updateOrderToShipped = asyncHandler(async (req, res) => {
       console.error('Failed to send shipping notification email:', error);
     }
 
-    // Create a notification for the user
+    // Create order status update notification
     await createOrderNotification({
       userId: order.user,
-      orderId: order._id,
-      status: order.status,
-      total: order.totalPrice
+      title: 'Order Status Updated',
+      message: `Your order #${updatedOrder.orderNumber} status has been updated to ${updatedOrder.status}.`,
+      link: `/orders/${updatedOrder._id}`,
+      priority: 'medium'
     });
 
     res.json(updatedOrder);
@@ -161,12 +172,13 @@ export const updateOrderToDelivered = asyncHandler(async (req, res) => {
       console.error('Failed to send delivery notification email:', error);
     }
 
-    // Create a notification for the user
+    // Create order status update notification
     await createOrderNotification({
       userId: order.user,
-      orderId: order._id,
-      status: order.status,
-      total: order.totalPrice
+      title: 'Order Status Updated',
+      message: `Your order #${updatedOrder.orderNumber} status has been updated to ${updatedOrder.status}.`,
+      link: `/orders/${updatedOrder._id}`,
+      priority: 'medium'
     });
 
     res.json(updatedOrder);

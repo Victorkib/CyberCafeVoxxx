@@ -1,6 +1,7 @@
-
 import { asyncHandler } from '../middleware/error.middleware.js';
 import SpecialOffer from '../models/specialOffer.model.js';
+import { createPromotionNotification } from '../utils/notificationHelper.js';
+import User from '../models/user.model.js';
 
 // @desc    Get all special offers
 // @route   GET /api/special-offers
@@ -37,6 +38,25 @@ export const getActiveSpecialOffers = asyncHandler(async (req, res) => {
 export const createSpecialOffer = asyncHandler(async (req, res) => {
   const specialOffer = await SpecialOffer.create(req.body);
 
+  // Notify all users about the new special offer
+  try {
+    // Get all active users
+    const users = await User.find({ isActive: true });
+    
+    // Create notifications for each user
+    for (const user of users) {
+      await createPromotionNotification({
+        userId: user._id,
+        title: `New Special Offer: ${specialOffer.title}`,
+        message: specialOffer.description,
+        link: `/special-offers/${specialOffer._id}`
+      });
+    }
+  } catch (error) {
+    console.error('Error creating special offer notifications:', error);
+    // Continue with the response even if notifications fail
+  }
+
   res.status(201).json({
     success: true,
     data: specialOffer,
@@ -64,6 +84,27 @@ export const updateSpecialOffer = asyncHandler(async (req, res) => {
       runValidators: true,
     }
   );
+
+  // If the offer is being activated, notify users
+  if (req.body.isActive && !specialOffer.isActive) {
+    try {
+      // Get all active users
+      const users = await User.find({ isActive: true });
+      
+      // Create notifications for each user
+      for (const user of users) {
+        await createPromotionNotification({
+          userId: user._id,
+          title: `Special Offer Available: ${updatedSpecialOffer.title}`,
+          message: updatedSpecialOffer.description,
+          link: `/special-offers/${updatedSpecialOffer._id}`
+        });
+      }
+    } catch (error) {
+      console.error('Error creating special offer notifications:', error);
+      // Continue with the response even if notifications fail
+    }
+  }
 
   res.json({
     success: true,

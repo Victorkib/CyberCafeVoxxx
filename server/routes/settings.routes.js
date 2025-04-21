@@ -12,7 +12,7 @@ const router = express.Router();
 
 // Protect all routes after this middleware
 router.use(authMiddleware);
-router.use(authorize('admin'));
+router.use(authorize('admin', 'super_admin'));
 
 router.get('/', getSettings);
 router.patch('/general', updateGeneralSettings);

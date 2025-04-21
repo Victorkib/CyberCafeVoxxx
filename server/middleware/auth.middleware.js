@@ -3,7 +3,16 @@ import User from '../models/user.model.js';
 import { asyncHandler } from './error.middleware.js';
 import rateLimit from 'express-rate-limit';
 
-// Protect routes
+// Rate limiter configuration
+export const rateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 10 requests per windowMs
+  message: 'Too many attempts, please try again after 15 minutes'
+});
+
+const SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
+
+// SOLUTION: Auth middleware with refresh token
 export const authMiddleware = asyncHandler(async (req, res, next) => {
   let token;
 
@@ -12,53 +21,91 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     try {
-      // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Get user from the token
-      const user = await User.findById(decoded.id).select('-password');
+      // First, find user via token in active sessions
+      const user = await User.findOne({
+        'activeSessions.token': token
+      }).select('-password');
 
       if (!user) {
         res.status(401);
-        throw new Error('Not authorized');
+        throw new Error('Session invalid or expired');
       }
 
-      // Check if account is locked
+      // Get matching session
+      const session = user.activeSessions.find(s => s.token === token);
+      if (!session) {
+        res.status(401);
+        throw new Error('Invalid session. Please login again.');
+      }
+
+      const lastActivity = new Date(session.lastActivity);
+
+      // ⏰ Session expired?
+      if (Date.now() - lastActivity > SESSION_TIMEOUT) {
+        console.log('Session timeout detected');
+
+        const refreshToken = session.refreshToken;
+        if (refreshToken) {
+          try {
+            // Attempt refresh
+            const refreshDecoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            // If valid, refresh activity and allow
+            await user.updateSessionActivity(token);
+            console.log('Session refreshed via middleware');
+          } catch (refreshError) {
+            await user.removeSession(token);
+            res.status(401);
+            throw new Error('Session timeout. Please login again.');
+          }
+        } else {
+          await user.removeSession(token);
+          res.status(401);
+          throw new Error('Session timeout. Please login again.');
+        }
+      } else {
+        // Session is still valid → update activity
+        await user.updateSessionActivity(token);
+      }
+
+      // ✅ Now verify the JWT itself
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.id !== user._id.toString()) {
+        res.status(401);
+        throw new Error('Invalid token');
+      }
+
+      // 🔒 Account lock check
       if (user.isLocked) {
         if (user.lockedUntil && user.lockedUntil > new Date()) {
           res.status(403);
           throw new Error('Account is locked');
         } else {
-          // Auto-unlock if lock duration has expired
           await user.unlockAccount();
         }
       }
 
-      // Check if password has expired
+      // 🔐 Password expiration check
       if (user.passwordExpiresAt && user.passwordExpiresAt < new Date()) {
         res.status(403);
         throw new Error('Password has expired. Please update your password.');
       }
 
-      // Check if session is valid
-      const session = user.activeSessions.find(s => s.token === token);
-      if (!session) {
-        res.status(401);
-        throw new Error('Session expired or invalid');
-      }
-
-      // Update session activity
-      await user.updateSessionActivity(token);
-
-      // Add user to request
+      // ✅ Attach user to request
       req.user = user;
       next();
+
     } catch (error) {
-      res.status(401);
-      throw new Error('Not authorized');
+      console.error('Auth error:', error.message);
+      if (error.name === 'JsonWebTokenError') {
+        res.status(401);
+        throw new Error('Invalid token');
+      } else if (error.name === 'TokenExpiredError') {
+        res.status(401);
+        throw new Error('Token expired');
+      }
+      throw error;
     }
   }
 
@@ -67,6 +114,7 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized, no token');
   }
 });
+
 
 // Grant access to specific roles
 export const authorize = (...roles) => {
@@ -92,20 +140,10 @@ export const requireVerified = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// Rate limiting middleware
-export const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    error: 'Too many requests from this IP, please try again after 15 minutes',
-  },
-});
-
 // Admin rate limiting middleware (more restrictive)
 export const adminRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 requests per windowMs
+  max: 1000, // limit each IP to 50 requests per windowMs
   message: {
     success: false,
     error: 'Too many admin requests from this IP, please try again after 15 minutes',

@@ -1,10 +1,15 @@
 import Notification from '../models/notification.model.js';
 import { handleAsync } from '../utils/errorHandler.js';
+import { RateLimiter } from '../utils/rateLimiter.js';
 
 class NotificationService {
   constructor(io) {
     this.io = io;
     this.userSockets = new Map(); // Map to store user ID to socket ID mapping
+    this.rateLimiter = new RateLimiter({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100 // limit each IP to 100 requests per windowMs
+    });
     this.setupSocketHandlers();
   }
 
@@ -32,6 +37,29 @@ class NotificationService {
     });
   }
 
+  async checkRateLimit(userId) {
+    return await this.rateLimiter.checkLimit(userId);
+  }
+
+  async saveAndDeliver(userId, notification) {
+    const savedNotification = await Notification.create({
+      ...notification,
+      user: userId,
+      delivered: false,
+      deliveryAttempts: 0
+    });
+
+    const socketId = this.io.sockets.adapter.rooms.get(userId)?.values().next().value;
+    if (socketId) {
+      this.io.to(socketId).emit('notification', savedNotification);
+      savedNotification.delivered = true;
+      savedNotification.deliveryAttempts += 1;
+      await savedNotification.save();
+    }
+
+    return savedNotification;
+  }
+
   /**
    * Send a notification to a specific user
    * @param {string} userId - The ID of the user to notify
@@ -39,27 +67,30 @@ class NotificationService {
    */
   async sendNotificationToUser(userId, notification) {
     try {
-      // Save the notification to the database
-      const savedNotification = await Notification.create({
-        ...notification,
-        user: userId,
-        delivered: false
-      });
-      
-      // Get the socket ID for this user
-      const socketId = this.userSockets.get(userId);
-      
-      if (socketId) {
-        // Send the notification to the user's socket
-        this.io.to(socketId).emit('notification', savedNotification);
-        
-        // Update delivery status
-        savedNotification.delivered = true;
-        savedNotification.deliveryAttempts += 1;
-        await savedNotification.save();
+      // Check rate limit
+      const rateLimit = await this.checkRateLimit(userId);
+      if (!rateLimit.allowed) {
+        throw new Error('Rate limit exceeded. Please try again later.');
       }
+
+      // Add retry mechanism
+      const maxRetries = 3;
+      let attempts = 0;
+      let lastError = null;
       
-      return savedNotification;
+      while (attempts < maxRetries) {
+        try {
+          const savedNotification = await this.saveAndDeliver(userId, notification);
+          return savedNotification;
+        } catch (error) {
+          lastError = error;
+          attempts++;
+          if (attempts === maxRetries) break;
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        }
+      }
+
+      throw lastError || new Error('Failed to send notification after multiple attempts');
     } catch (error) {
       console.error('Error sending notification:', error);
       throw error;

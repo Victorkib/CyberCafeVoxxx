@@ -15,7 +15,7 @@ router.get('/', getSpecialOffers);
 router.get('/active', getActiveSpecialOffers);
 
 // Protected routes (admin only)
-router.use(authMiddleware, authorize('admin'));
+router.use(authMiddleware, authorize('admin', 'super_admin'));
 router.post('/', createSpecialOffer);
 router.put('/:id', updateSpecialOffer);
 router.delete('/:id', deleteSpecialOffer);

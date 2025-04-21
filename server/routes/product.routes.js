@@ -11,6 +11,9 @@ import {
   getSaleProducts,
   getRelatedProducts,
   getFeaturedProducts,
+  updateProductStatus,
+  bulkDeleteProducts,
+  bulkUpdateProductStatus
 } from '../controllers/product.controller.js';
 import { authMiddleware, authorize } from '../middleware/auth.middleware.js';
 
@@ -29,8 +32,13 @@ router.get('/:id', getProductById);
 router.post('/:id/reviews', authMiddleware, createProductReview);
 
 // Admin routes
-router.post('/', authMiddleware, authorize('admin'), createProduct);
-router.put('/:id', authMiddleware, authorize('admin'), updateProduct);
-router.delete('/:id', authMiddleware, authorize('admin'), deleteProduct);
+router.post('/', authMiddleware, authorize('admin', 'super_admin'), createProduct);
+router.put('/:id', authMiddleware, authorize('admin', 'super_admin'), updateProduct);
+router.delete('/:id', authMiddleware, authorize('admin', 'super_admin'), deleteProduct);
+router.patch('/:id/status', authMiddleware, authorize('admin', 'super_admin'), updateProductStatus);
 
-export default router; 
+// Bulk operations
+router.post('/bulk-delete', authMiddleware, authorize('admin', 'super_admin'), bulkDeleteProducts);
+router.post('/bulk-update-status', authMiddleware, authorize('admin', 'super_admin'), bulkUpdateProductStatus);
+
+export default router;

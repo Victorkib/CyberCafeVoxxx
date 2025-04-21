@@ -1,5 +1,7 @@
 import Coupon from '../models/coupon.model.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
+import { createPromotionNotification } from '../utils/notificationHelper.js';
+import User from '../models/user.model.js';
 
 // @desc    Validate and apply coupon
 // @route   POST /api/coupons/validate
@@ -93,6 +95,25 @@ export const createCoupon = asyncHandler(async (req, res) => {
     products,
     categories,
   });
+
+  // Notify all users about the new coupon
+  try {
+    // Get all active users
+    const users = await User.find({ isActive: true });
+    
+    // Create notifications for each user
+    for (const user of users) {
+      await createPromotionNotification({
+        userId: user._id,
+        title: `New Coupon Available: ${coupon.code}`,
+        message: `Use code ${coupon.code} to get ${coupon.type === 'percentage' ? `${coupon.value}%` : `$${coupon.value}`} off your purchase!`,
+        link: `/shop`
+      });
+    }
+  } catch (error) {
+    console.error('Error creating coupon notifications:', error);
+    // Continue with the response even if notifications fail
+  }
 
   res.status(201).json(coupon);
 });

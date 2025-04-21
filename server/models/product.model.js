@@ -94,6 +94,11 @@ const productSchema = new mongoose.Schema(
       enum: ['active', 'inactive', 'out_of_stock'],
       default: 'active',
     },
+    sku: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
   },
   {
     timestamps: true,

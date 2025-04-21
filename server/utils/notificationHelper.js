@@ -1,183 +1,252 @@
-import Notification from '../models/notification.model.js';
+import { notificationTemplates } from "./notification-templates.js"
 
 /**
- * Create a notification for a user
- * @param {Object} options - Notification options
- * @param {string} options.userId - The ID of the user to notify
- * @param {string} options.title - The notification title
- * @param {string} options.message - The notification message
- * @param {string} options.type - The type of notification (order, payment, system, promotion)
- * @param {string} [options.link] - Optional link for the notification
- * @param {Object} [options.metadata] - Optional metadata for the notification
- * @returns {Promise<Object>} - The created notification
+ * Helper functions to create notifications for different parts of the system
+ * These functions use the unified notification service
  */
-export const createNotification = async ({
-  userId,
-  title,
-  message,
-  type,
-  link = null,
-  metadata = {}
-}) => {
+
+/**
+ * Get the notification service from the app
+ * @param {Object} req - Express request object (if available)
+ * @returns {Object} Notification service instance
+ */
+const getNotificationService = (req) => {
+  if (req && req.app) {
+    return req.app.get("notificationService")
+  }
+
+  // If req is not available, get from global (for use in services/utils)
+  if (global.notificationService) {
+    return global.notificationService
+  }
+
+  throw new Error("Notification service not available")
+}
+
+/**
+ * Create a product-related notification
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification
+ */
+export const createProductNotification = async (options) => {
   try {
-    const notification = await Notification.create({
-      user: userId,
+    const { userId, productId, action, details } = options
+
+    let template
+    switch (action) {
+      case "create":
+        template = {
+          title: "New Product Added",
+          message: details || "A new product has been added to the store",
+          type: "product",
+          link: `/products/${productId}`,
+          priority: "medium",
+          metadata: { productId, action },
+        }
+        break
+      case "update":
+        template = {
+          title: "Product Updated",
+          message: details || "A product has been updated",
+          type: "product",
+          link: `/products/${productId}`,
+          priority: "low",
+          metadata: { productId, action },
+        }
+        break
+      case "low_stock":
+        template = {
+          title: "Low Stock Alert",
+          message: details || "A product is running low on stock",
+          type: "inventory_alert",
+          link: `/admin/products/${productId}`,
+          priority: "high",
+          metadata: { productId, action },
+        }
+        break
+      default:
+        template = {
+          title: "Product Notification",
+          message: details || "Product notification",
+          type: "product",
+          link: `/products/${productId}`,
+          priority: "medium",
+          metadata: { productId, action },
+        }
+    }
+
+    // If this is called from a service/util without req
+    if (global.notificationService) {
+      return await global.notificationService.createNotification(userId, template)
+    }
+
+    // Otherwise, try to get from req in the next call
+    return template
+  } catch (error) {
+    console.error("Error creating product notification:", error)
+    return null
+  }
+}
+
+/**
+ * Create an order-related notification
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification
+ */
+export const createOrderNotification = async (options) => {
+  try {
+    const { userId, title, message, link, priority = "medium", metadata = {} } = options
+
+    const template = {
+      title,
+      message,
+      type: "order",
+      link,
+      priority,
+      metadata,
+    }
+
+    // If this is called from a service/util without req
+    if (global.notificationService) {
+      return await global.notificationService.createNotification(userId, template)
+    }
+
+    // Otherwise, try to get from req in the next call
+    return template
+  } catch (error) {
+    console.error("Error creating order notification:", error)
+    return null
+  }
+}
+
+/**
+ * Create a security-related notification
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification
+ */
+export const createSecurityNotification = async (options) => {
+  try {
+    const { userId, type, details } = options
+
+    // Use the security alert template from notification-templates.js
+    const template = notificationTemplates.securityAlert(type, { message: details })
+
+    // If this is called from a service/util without req
+    if (global.notificationService) {
+      return await global.notificationService.createNotification(userId, template)
+    }
+
+    // Otherwise, try to get from req in the next call
+    return template
+  } catch (error) {
+    console.error("Error creating security notification:", error)
+    return null
+  }
+}
+
+/**
+ * Create a payment-related notification
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification
+ */
+export const createPaymentNotification = async (options) => {
+  try {
+    const { userId, title, message, link, priority = "medium", metadata = {} } = options
+
+    const template = {
+      title,
+      message,
+      type: "payment",
+      link,
+      priority,
+      metadata,
+    }
+
+    // If this is called from a service/util without req
+    if (global.notificationService) {
+      return await global.notificationService.createNotification(userId, template)
+    }
+
+    // Otherwise, try to get from req in the next call
+    return template
+  } catch (error) {
+    console.error("Error creating payment notification:", error)
+    return null
+  }
+}
+
+/**
+ * Create a promotion-related notification
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification or array of notifications
+ */
+export const createPromotionNotification = async (options) => {
+  try {
+    const { userId, title, message, link, priority = "medium", metadata = {} } = options
+
+    const template = {
+      title,
+      message,
+      type: "promotion",
+      link,
+      priority,
+      metadata,
+    }
+
+    // If userId is not provided, broadcast to all users
+    if (!userId) {
+      if (global.notificationService) {
+        return await global.notificationService.broadcastNotification(template)
+      }
+      return template
+    }
+
+    // Otherwise, send to specific user
+    if (global.notificationService) {
+      return await global.notificationService.createNotification(userId, template)
+    }
+
+    // Otherwise, try to get from req in the next call
+    return template
+  } catch (error) {
+    console.error("Error creating promotion notification:", error)
+    return null
+  }
+}
+
+/**
+ * Create a notification using a middleware approach
+ * This function is designed to be used in Express middleware
+ * @param {Object} req - Express request object
+ * @param {Object} options - Notification options
+ * @returns {Promise<Object>} Created notification
+ */
+export const createNotificationMiddleware = async (req, options) => {
+  try {
+    const { userId, title, message, type, link, priority = "medium", metadata = {} } = options
+
+    const template = {
       title,
       message,
       type,
       link,
-      metadata
-    });
+      priority,
+      metadata,
+    }
 
-    return notification;
+    const notificationService = getNotificationService(req)
+    return await notificationService.createNotification(userId, template)
   } catch (error) {
-    console.error('Error creating notification:', error);
-    throw error;
+    console.error("Error creating notification in middleware:", error)
+    return null
   }
-};
+}
 
 /**
- * Create an order notification
- * @param {Object} options - Order notification options
- * @param {string} options.userId - The ID of the user to notify
- * @param {string} options.orderId - The ID of the order
- * @param {string} options.status - The status of the order
- * @param {number} options.total - The total amount of the order
- * @returns {Promise<Object>} - The created notification
+ * Initialize the notification helper with the notification service
+ * This should be called when the app starts
+ * @param {Object} notificationService - The notification service instance
  */
-export const createOrderNotification = async ({
-  userId,
-  orderId,
-  status,
-  total
-}) => {
-  let title, message;
-  
-  switch (status) {
-    case 'pending':
-      title = 'Order Placed';
-      message = `Your order #${orderId} has been placed successfully. Total: $${total.toFixed(2)}`;
-      break;
-    case 'processing':
-      title = 'Order Processing';
-      message = `Your order #${orderId} is now being processed.`;
-      break;
-    case 'shipped':
-      title = 'Order Shipped';
-      message = `Your order #${orderId} has been shipped and is on its way to you.`;
-      break;
-    case 'delivered':
-      title = 'Order Delivered';
-      message = `Your order #${orderId} has been delivered. Enjoy your purchase!`;
-      break;
-    case 'cancelled':
-      title = 'Order Cancelled';
-      message = `Your order #${orderId} has been cancelled.`;
-      break;
-    default:
-      title = 'Order Update';
-      message = `Your order #${orderId} status has been updated to ${status}.`;
-  }
-
-  return createNotification({
-    userId,
-    title,
-    message,
-    type: 'order',
-    link: `/orders/${orderId}`,
-    metadata: { orderId, status, total }
-  });
-};
-
-/**
- * Create a payment notification
- * @param {Object} options - Payment notification options
- * @param {string} options.userId - The ID of the user to notify
- * @param {string} options.orderId - The ID of the order
- * @param {string} options.status - The status of the payment
- * @param {number} options.amount - The amount paid
- * @returns {Promise<Object>} - The created notification
- */
-export const createPaymentNotification = async ({
-  userId,
-  orderId,
-  status,
-  amount
-}) => {
-  let title, message;
-  
-  switch (status) {
-    case 'succeeded':
-      title = 'Payment Successful';
-      message = `Your payment of $${amount.toFixed(2)} for order #${orderId} was successful.`;
-      break;
-    case 'failed':
-      title = 'Payment Failed';
-      message = `Your payment for order #${orderId} has failed. Please try again.`;
-      break;
-    case 'refunded':
-      title = 'Payment Refunded';
-      message = `Your payment of $${amount.toFixed(2)} for order #${orderId} has been refunded.`;
-      break;
-    default:
-      title = 'Payment Update';
-      message = `Your payment for order #${orderId} status has been updated to ${status}.`;
-  }
-
-  return createNotification({
-    userId,
-    title,
-    message,
-    type: 'payment',
-    link: `/orders/${orderId}`,
-    metadata: { orderId, status, amount }
-  });
-};
-
-/**
- * Create a system notification
- * @param {Object} options - System notification options
- * @param {string} options.userId - The ID of the user to notify
- * @param {string} options.title - The notification title
- * @param {string} options.message - The notification message
- * @param {string} [options.link] - Optional link for the notification
- * @returns {Promise<Object>} - The created notification
- */
-export const createSystemNotification = async ({
-  userId,
-  title,
-  message,
-  link = null
-}) => {
-  return createNotification({
-    userId,
-    title,
-    message,
-    type: 'system',
-    link
-  });
-};
-
-/**
- * Create a promotion notification
- * @param {Object} options - Promotion notification options
- * @param {string} options.userId - The ID of the user to notify
- * @param {string} options.title - The promotion title
- * @param {string} options.message - The promotion message
- * @param {string} [options.link] - Optional link for the promotion
- * @returns {Promise<Object>} - The created notification
- */
-export const createPromotionNotification = async ({
-  userId,
-  title,
-  message,
-  link = null
-}) => {
-  return createNotification({
-    userId,
-    title,
-    message,
-    type: 'promotion',
-    link
-  });
-}; 
+export const initNotificationHelper = (notificationService) => {
+  global.notificationService = notificationService
+}

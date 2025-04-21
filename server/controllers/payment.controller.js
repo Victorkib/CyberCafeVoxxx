@@ -21,92 +21,290 @@ import {
   sendPaymentSettingsUpdateEmail
 } from '../services/email.service.js';
 import { getPaymentSettings, updatePaymentSettings as updateSettings } from '../services/settings.service.js';
+import {
+  PAYMENT_STATUS,
+  PAYMENT_METHODS,
+  PAYMENT_ERRORS,
+  PAYMENT_NOTIFICATIONS,
+  PAYMENT_PRIORITY,
+  PAYMENT_VALIDATION
+} from '../constants/payment.js';
+import User from '../models/user.model.js';
 
-// Get available payment methods
-export const getPaymentMethods = handleAsync(async (req, res) => {
-  const settings = await getPaymentSettings();
-  const methods = [
-    {
-      id: 'mpesa',
-      name: 'M-Pesa',
-      description: 'Pay using M-Pesa mobile money',
-      icon: 'mpesa-icon',
-      enabled: settings.mpesaEnabled
-    },
-    {
-      id: 'paystack',
-      name: 'Paystack',
-      description: 'Pay using Paystack',
-      icon: 'paystack-icon',
-      enabled: settings.paystackEnabled
-    },
-    {
-      id: 'paypal',
-      name: 'PayPal',
-      description: 'Pay using PayPal',
-      icon: 'paypal-icon',
-      enabled: settings.paypalEnabled
-    }
-  ].filter(method => method.enabled);
+// Get payment methods
+export const getPaymentMethods = async (req, res) => {
+  try {
+    const methods = Object.values(PAYMENT_METHODS).map(method => ({
+      id: method,
+      name: method.charAt(0).toUpperCase() + method.slice(1),
+      enabled: true // This should come from settings
+    }));
 
-  res.json(methods);
-});
+    res.json({ success: true, data: methods });
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// Get all admin users (including super admins)
+const getAdminUsers = async () => {
+  return await User.find({ 
+    role: { $in: ['admin', 'super_admin'] } 
+  }).select('_id');
+};
 
 // Initialize payment
-export const initializePayment = handleAsync(async (req, res) => {
-  const { orderId, method, phoneNumber } = req.body;
+export const initializePayment = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    const userId = req.user._id;
 
-  const order = await Order.findById(orderId).populate('user');
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found' });
+    const order = await Order.findOne({ _id: orderId, userId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+
+    if (order.paymentStatus === PAYMENT_STATUS.PAID) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order is already paid'
+      });
+    }
+
+    const payment = new Payment({
+      orderId: order._id,
+      userId: order.user,
+      amount: order.totalAmount,
+      method: req.body.method || PAYMENT_METHODS.MPESA,
+      transactionId: generateTransactionId(),
+      metadata: {
+        orderNumber: order.orderNumber,
+        items: order.items.map(item => ({
+          productId: item.product,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      }
+    });
+
+    await payment.save();
+
+    // Get all admin users and create notifications for each
+    const adminUsers = await getAdminUsers();
+    await Promise.all(adminUsers.map(admin => 
+      createPaymentNotification({
+        userId: admin._id,
+        title: 'New Payment Initialized',
+        message: `Payment of ${payment.amount} KES initialized for Order #${order.orderNumber}`,
+        link: `/admin/payments/${payment._id}`,
+        priority: PAYMENT_PRIORITY.MEDIUM
+      })
+    ));
+
+    res.json({
+      success: true,
+      data: {
+        paymentId: payment._id,
+        amount: payment.amount,
+        method: payment.method,
+        transactionId: payment.transactionId
+      }
+    });
+  } catch (error) {
+    handleError(res, error);
   }
+};
 
-  // Verify order ownership
-  if (order.user._id.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: 'Not authorized to pay for this order' });
+// Process payment callback
+export const processPaymentCallback = async (req, res) => {
+  try {
+    const { paymentId, status, transactionId, metadata } = req.body;
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Payment not found'
+      });
+    }
+
+    if (payment.status !== PAYMENT_STATUS.PENDING) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment is not in pending state'
+      });
+    }
+
+    payment.status = status;
+    payment.metadata = { ...payment.metadata, ...metadata };
+
+    if (status === PAYMENT_STATUS.PAID) {
+      const order = await Order.findById(payment.orderId);
+      order.paymentStatus = PAYMENT_STATUS.PAID;
+      order.paymentMethod = payment.method;
+      order.transactionId = transactionId;
+      await order.save();
+
+      // Create success notification
+      await createPaymentNotification({
+        userId: payment.userId,
+        title: 'Payment Successful',
+        message: `Your payment of ${payment.amount} KES for Order #${order.orderNumber} was successful`,
+        link: `/orders/${order._id}`,
+        priority: PAYMENT_PRIORITY.HIGH
+      });
+    } else if (status === PAYMENT_STATUS.FAILED) {
+      payment.error = {
+        code: PAYMENT_ERRORS.PAYMENT_FAILED,
+        message: metadata?.error || 'Payment failed',
+        details: metadata
+      };
+
+      // Create failure notification
+      await createPaymentNotification({
+        userId: payment.userId,
+        title: 'Payment Failed',
+        message: `Your payment of ${payment.amount} KES failed. Please try again.`,
+        link: `/orders/${payment.orderId}`,
+        priority: PAYMENT_PRIORITY.HIGH
+      });
+    }
+
+    await payment.save();
+
+    res.json({ success: true, data: payment });
+  } catch (error) {
+    handleError(res, error);
   }
+};
 
-  // Check if payment is already successful
-  if (order.paymentStatus === 'paid') {
-    return res.status(400).json({ message: 'Order is already paid' });
-  }
+// Process refund
+export const processRefund = async (req, res) => {
+  try {
+    const { paymentId, reason } = req.body;
+    const adminId = req.user._id;
 
-  // Check payment method availability
-  const settings = await getPaymentSettings();
-  if (!settings[`${method}Enabled`]) {
-    return res.status(400).json({ message: 'Payment method is currently unavailable' });
-  }
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Payment not found'
+      });
+    }
 
-  let paymentResult;
+    if (!payment.canBeRefunded()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment cannot be refunded'
+      });
+    }
 
-  switch (method) {
-    case 'mpesa':
-      paymentResult = await initializeMpesaPayment(order, phoneNumber);
-      break;
-    case 'paystack':
-      paymentResult = await initializePaystackPayment(order);
-      break;
-    case 'paypal':
-      paymentResult = await initializePaypalPayment(order);
-      break;
-    default:
-      return res.status(400).json({ message: 'Invalid payment method' });
-  }
+    await payment.processRefund(reason, adminId);
 
-  // Update order with payment method
-  order.paymentMethod = method;
+    const order = await Order.findById(payment.orderId);
+    order.paymentStatus = PAYMENT_STATUS.REFUNDED;
   await order.save();
 
-  // Create notification for admin
+    // Create refund notification
   await createPaymentNotification({
-    userId: null,
-    orderId: order._id,
-    status: 'paid',
-    amount: order.totalAmount
-  });
+      userId: payment.userId,
+      title: 'Payment Refunded',
+      message: `Your payment of ${payment.amount} KES for Order #${order.orderNumber} has been refunded`,
+      link: `/orders/${order._id}`,
+      priority: PAYMENT_PRIORITY.HIGH
+    });
 
-  res.json(paymentResult);
-});
+    res.json({
+      success: true,
+      data: payment
+    });
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// Get payment analytics
+export const getPaymentAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const stats = await Payment.getPaymentStats(
+      new Date(startDate || 0),
+      new Date(endDate || Date.now())
+    );
+
+    // Get payment method distribution
+    const methodDistribution = await Payment.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(startDate || 0),
+            $lte: new Date(endDate || Date.now())
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$method',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          value: '$count'
+        }
+      }
+    ]);
+
+    // Get hourly distribution
+    const hourlyDistribution = await Payment.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(startDate || 0),
+            $lte: new Date(endDate || Date.now())
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $hour: '$createdAt' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          hour: '$_id',
+          count: 1
+        }
+      },
+      {
+        $sort: { hour: 1 }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        paymentMethodDistribution: methodDistribution,
+        hourlyDistribution
+      }
+    });
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// Helper function to generate unique transaction ID
+const generateTransactionId = () => {
+  return `TXN${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
+};
 
 // Retry payment
 export const retryPayment = handleAsync(async (req, res) => {
@@ -199,77 +397,62 @@ export const mpesaCallback = handleAsync(async (req, res) => {
     order.paymentDetails = {
       transactionId,
       method: 'mpesa',
-      timestamp: new Date(),
+      status: 'success'
     };
     await order.save();
 
     // Update payment record
-    payment.status = 'completed';
+    payment.status = 'success';
     payment.transactionId = transactionId;
     await payment.save();
 
-    // Send success notifications
-    try {
-    await Promise.all([
-      sendPaymentSuccessEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'paid',
-          amount: order.totalAmount
-        }),
-      sendAdminOrderNotification(order),
-    ]);
-    } catch (error) {
-      console.error('Error sending payment success notifications:', error);
-    }
+    // Send success email
+    await sendPaymentSuccessEmail(order.user.email, order);
+
+    // Create success notification
+    await createPaymentNotification(order.user._id, order._id, 'success', order.totalAmount);
+
+    // Send admin notification
+    await sendAdminOrderNotification(order);
   } else {
     // Update order payment status
     order.paymentStatus = 'failed';
+    order.paymentDetails = {
+      transactionId,
+      method: 'mpesa',
+      status: 'failed'
+    };
     await order.save();
 
     // Update payment record
     payment.status = 'failed';
+    payment.transactionId = transactionId;
     await payment.save();
 
-    // Send failure notifications
-    try {
-    await Promise.all([
-      sendPaymentFailedEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'failed',
-          amount: order.totalAmount
-        }),
-      ]);
-    } catch (error) {
-      console.error('Error sending payment failure notifications:', error);
-    }
+    // Send failure email
+    await sendPaymentFailedEmail(order.user.email, order);
+
+    // Create failure notification
+    await createPaymentNotification(order.user._id, order._id, 'failed', order.totalAmount);
   }
 
-  res.json({ message: 'Payment status updated' });
+  res.json({ status: 'success' });
 });
 
 // Paystack callback
 export const paystackCallback = handleAsync(async (req, res) => {
   const { reference, status } = req.body;
 
-  const order = await Order.findOne({ 'paymentDetails.transactionId': reference }).populate('user');
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found' });
-  }
-
-  // Find the payment record
   const payment = await Payment.findOne({ 
-    order: order._id,
-    method: 'paystack',
-    status: 'pending'
-  });
+    transactionId: reference,
+    method: 'paystack'
+  }).populate('order');
 
   if (!payment) {
     return res.status(404).json({ message: 'Payment record not found' });
   }
+
+  const order = payment.order;
 
   if (status === 'success') {
     // Update order payment status
@@ -277,56 +460,44 @@ export const paystackCallback = handleAsync(async (req, res) => {
     order.paymentDetails = {
       transactionId: reference,
       method: 'paystack',
-      timestamp: new Date(),
+      status: 'success'
     };
     await order.save();
 
     // Update payment record
-    payment.status = 'completed';
-    payment.transactionId = reference;
+    payment.status = 'success';
     await payment.save();
 
-    // Send success notifications
-    try {
-    await Promise.all([
-      sendPaymentSuccessEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'paid',
-          amount: order.totalAmount
-        }),
-      sendAdminOrderNotification(order),
-    ]);
-    } catch (error) {
-      console.error('Error sending payment success notifications:', error);
-    }
+    // Send success email
+    await sendPaymentSuccessEmail(order.user.email, order);
+
+    // Create success notification
+    await createPaymentNotification(order.user._id, order._id, 'success', order.totalAmount);
+
+    // Send admin notification
+    await sendAdminOrderNotification(order);
   } else {
     // Update order payment status
     order.paymentStatus = 'failed';
+    order.paymentDetails = {
+      transactionId: reference,
+      method: 'paystack',
+      status: 'failed'
+    };
     await order.save();
 
     // Update payment record
     payment.status = 'failed';
     await payment.save();
 
-    // Send failure notifications
-    try {
-    await Promise.all([
-      sendPaymentFailedEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'failed',
-          amount: order.totalAmount
-        }),
-      ]);
-    } catch (error) {
-      console.error('Error sending payment failure notifications:', error);
-    }
+    // Send failure email
+    await sendPaymentFailedEmail(order.user.email, order);
+
+    // Create failure notification
+    await createPaymentNotification(order.user._id, order._id, 'failed', order.totalAmount);
   }
 
-  res.json({ message: 'Payment status updated' });
+  res.json({ status: 'success' });
 });
 
 // PayPal callback
@@ -340,7 +511,7 @@ export const paypalCallback = handleAsync(async (req, res) => {
 
   // Find the payment record
   const payment = await Payment.findOne({ 
-    order: order._id,
+    order: orderId,
     method: 'paypal',
     status: 'pending'
   });
@@ -355,56 +526,46 @@ export const paypalCallback = handleAsync(async (req, res) => {
     order.paymentDetails = {
       transactionId: paymentId,
       method: 'paypal',
-      timestamp: new Date(),
+      status: 'success'
     };
     await order.save();
 
     // Update payment record
-    payment.status = 'completed';
+    payment.status = 'success';
     payment.transactionId = paymentId;
     await payment.save();
 
-    // Send success notifications
-    try {
-    await Promise.all([
-      sendPaymentSuccessEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'paid',
-          amount: order.totalAmount
-        }),
-      sendAdminOrderNotification(order),
-    ]);
-    } catch (error) {
-      console.error('Error sending payment success notifications:', error);
-    }
+    // Send success email
+    await sendPaymentSuccessEmail(order.user.email, order);
+
+    // Create success notification
+    await createPaymentNotification(order.user._id, order._id, 'success', order.totalAmount);
+
+    // Send admin notification
+    await sendAdminOrderNotification(order);
   } else {
     // Update order payment status
     order.paymentStatus = 'failed';
+    order.paymentDetails = {
+      transactionId: paymentId,
+      method: 'paypal',
+      status: 'failed'
+    };
     await order.save();
 
     // Update payment record
     payment.status = 'failed';
+    payment.transactionId = paymentId;
     await payment.save();
 
-    // Send failure notifications
-    try {
-    await Promise.all([
-      sendPaymentFailedEmail(order),
-        createPaymentNotification({
-          userId: order.user._id,
-          orderId: order._id,
-          status: 'failed',
-          amount: order.totalAmount
-        }),
-      ]);
-    } catch (error) {
-      console.error('Error sending payment failure notifications:', error);
-    }
+    // Send failure email
+    await sendPaymentFailedEmail(order.user.email, order);
+
+    // Create failure notification
+    await createPaymentNotification(order.user._id, order._id, 'failed', order.totalAmount);
   }
 
-  res.json({ message: 'Payment status updated' });
+  res.json({ status: 'success' });
 });
 
 // Update payment settings (admin only)
@@ -452,50 +613,6 @@ export const checkPaymentStatus = handleAsync(async (req, res) => {
     paymentMethod: order.paymentMethod,
     paymentDetails: order.paymentDetails
   });
-});
-
-// Get payment analytics
-export const getPaymentAnalytics = handleAsync(async (req, res) => {
-  // Verify admin access
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Not authorized to access payment analytics' });
-  }
-
-  const { startDate, endDate, paymentMethod } = req.query;
-  
-  // Build query
-  const query = {};
-  if (startDate && endDate) {
-    query.createdAt = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate)
-    };
-  }
-  if (paymentMethod) {
-    query.paymentMethod = paymentMethod;
-  }
-  
-  // Get orders within date range
-  const orders = await Order.find(query);
-
-  // Calculate analytics
-  const analytics = {
-    totalOrders: orders.length,
-    totalRevenue: orders.reduce((sum, order) => sum + order.totalAmount, 0),
-    averageOrderValue: orders.length > 0 
-      ? orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length 
-      : 0,
-    paymentMethodBreakdown: orders.reduce((breakdown, order) => {
-      breakdown[order.paymentMethod] = (breakdown[order.paymentMethod] || 0) + 1;
-      return breakdown;
-    }, {}),
-    statusBreakdown: orders.reduce((breakdown, order) => {
-      breakdown[order.paymentStatus] = (breakdown[order.paymentStatus] || 0) + 1;
-      return breakdown;
-    }, {})
-  };
-  
-  res.json(analytics);
 });
 
 // Get payment history
@@ -548,75 +665,6 @@ export const getPaymentDetails = handleAsync(async (req, res) => {
     payment
   });
 });
-
-// Process refund
-export const refund = handleAsync(async (req, res) => {
-  const { orderId } = req.params;
-  const { reason } = req.body;
-  
-  // Get order and payment
-  const order = await Order.findOne({ _id: orderId, user: req.user._id });
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found' });
-  }
-  
-  const payment = await Payment.findOne({ order: orderId });
-  if (!payment) {
-    return res.status(404).json({ message: 'Payment not found' });
-  }
-  
-  // Check if refund is possible
-  if (payment.paymentStatus !== 'completed') {
-    return res.status(400).json({ message: 'Payment must be completed to process refund' });
-  }
-  
-  if (payment.refundStatus === 'refunded') {
-    return res.status(400).json({ message: 'Payment has already been refunded' });
-  }
-  
-  // Process refund based on payment method
-  let refundResult;
-  switch (payment.paymentMethod) {
-    case 'mpesa':
-      refundResult = await processMpesaRefund(payment);
-      break;
-    case 'paystack':
-      refundResult = await processPaystackRefund(payment);
-      break;
-    case 'paypal':
-      refundResult = await processPaypalRefund(payment);
-      break;
-    default:
-      return res.status(400).json({ message: 'Unsupported payment method for refund' });
-  }
-  
-  // Update payment record
-  payment.refundStatus = 'refunded';
-  payment.refundReason = reason;
-  payment.refundDate = new Date();
-  payment.refundDetails = refundResult;
-  await payment.save();
-  
-  // Update order status
-  order.status = 'refunded';
-  await order.save();
-  
-  // Send notification
-  await sendNotification({
-    user: order.user,
-    type: 'refund',
-    title: 'Payment Refunded',
-    message: `Your payment of ${order.totalAmount} has been refunded.`
-  });
-  
-  res.json({
-    message: 'Refund processed successfully',
-    payment
-  });
-});
-
-// Alias for refund function to maintain API consistency
-export const refundPayment = refund;
 
 // Get refund history
 export const getRefundHistory = handleAsync(async (req, res) => {
