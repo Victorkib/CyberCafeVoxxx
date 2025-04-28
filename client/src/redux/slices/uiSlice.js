@@ -5,7 +5,7 @@ const initialState = {
   isAuthModalOpen: false,
   authModalView: 'login', // 'login' or 'register'
   isLoading: false,
-  darkMode: false,
+  darkMode: true,
 };
 
 const uiSlice = createSlice({

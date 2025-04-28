@@ -9,20 +9,21 @@ export const useSessionTimeout = () => {
   const refreshTimerRef = useRef(null);
   const inactivityTimerRef = useRef(null);
 
-  // Setup refresh token timer
+  // Setup refresh token timer - refresh before token expires
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || !isAuthenticated) return;
+    if (!isAuthenticated) return;
 
     const setupRefreshTimer = () => {
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current);
       }
 
+      // Refresh token every 10 minutes (before 15-min access token expires)
       refreshTimerRef.current = setInterval(() => {
+        console.log('Scheduled refresh triggered');
         dispatch(refreshToken())
           .unwrap()
-          .catch(error => {
+          .catch((error) => {
             console.error('Auto-refresh failed:', error);
             dispatch(logoutUser());
             dispatch(openAuthModal('login')); // Optional: prompt re-login
@@ -41,15 +42,17 @@ export const useSessionTimeout = () => {
 
   // Setup inactivity detection
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token || !isAuthenticated) return;
+    if (!isAuthenticated) return;
 
     const resetInactivityTimer = () => {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
 
+      // After 14 minutes of inactivity, try to refresh the token
+      // (just before the 15-min token expires)
       inactivityTimerRef.current = setTimeout(() => {
+        console.log('Inactivity refresh triggered');
         dispatch(refreshToken())
           .unwrap()
           .catch(() => {
@@ -57,16 +60,27 @@ export const useSessionTimeout = () => {
             dispatch(logoutUser());
             dispatch(openAuthModal('login')); // Optional: show login modal
           });
-      }, 25 * 60 * 1000); // 25 minutes
+      }, 14 * 60 * 1000); // 14 minutes
     };
 
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    const activityListener = () => resetInactivityTimer();
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'keypress',
+      'scroll',
+      'touchstart',
+    ];
 
-    activityEvents.forEach(event =>
+    const activityListener = () => {
+      resetInactivityTimer();
+    };
+
+    // Add event listeners for user activity
+    activityEvents.forEach((event) =>
       document.addEventListener(event, activityListener)
     );
 
+    // Initial setup of inactivity timer
     resetInactivityTimer();
 
     return () => {
@@ -74,7 +88,8 @@ export const useSessionTimeout = () => {
         clearTimeout(inactivityTimerRef.current);
       }
 
-      activityEvents.forEach(event =>
+      // Clean up event listeners
+      activityEvents.forEach((event) =>
         document.removeEventListener(event, activityListener)
       );
     };

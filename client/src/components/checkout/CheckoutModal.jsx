@@ -19,10 +19,13 @@ import {
   decreaseQuantity,
 } from '../../redux/slices/cartSlice';
 import { openAuthModal } from '../../redux/slices/uiSlice';
+import { toast } from 'react-toastify';
 
-const CheckoutModal = ({ isOpen, onClose }) => {
+const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
   const dispatch = useDispatch();
-  const { items, totalAmount } = useSelector((state) => state.cart);
+  const { items, totalAmount, loading, error } = useSelector(
+    (state) => state.cart
+  );
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
@@ -44,6 +47,26 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     cvc: '',
   });
   const [errors, setErrors] = useState({});
+  const [orderSummary, setOrderSummary] = useState({
+    subtotal: 0,
+    shipping: 0,
+    tax: 0,
+    total: 0,
+  });
+
+  // Calculate order summary whenever items or totalAmount changes
+  useEffect(() => {
+    const shipping = 0; // Free shipping for now
+    const tax = totalAmount * 0.1; // 10% tax
+    const total = totalAmount + shipping + tax;
+
+    setOrderSummary({
+      subtotal: totalAmount,
+      shipping,
+      tax,
+      total,
+    });
+  }, [totalAmount, items]);
 
   // Pre-fill shipping info if user is logged in
   useEffect(() => {
@@ -51,9 +74,32 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setShippingInfo((prev) => ({
         ...prev,
         fullName: user.name || prev.fullName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
       }));
     }
   }, [isAuthenticated, user]);
+
+  // Reset state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      // Don't reset everything immediately to avoid UI flicker
+      setTimeout(() => {
+        if (!isOpen) {
+          setStep(1);
+          setIsComplete(false);
+          setErrors({});
+        }
+      }, 300);
+    }
+  }, [isOpen]);
+
+  // Handle errors from cart operations
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   if (!isOpen) return null;
 
@@ -63,37 +109,100 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       ...prev,
       [name]: value,
     }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
   };
 
   const handleCardInfoChange = (e) => {
     const { name, value } = e.target;
-    setCardInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Special handling for card number formatting
+    if (name === 'cardNumber') {
+      const formattedValue = formatCardNumber(value);
+      setCardInfo((prev) => ({
+        ...prev,
+        [name]: formattedValue,
+      }));
+    }
+    // Special handling for expiry date formatting
+    else if (name === 'expiry') {
+      const formattedValue = formatExpiryDate(value);
+      setCardInfo((prev) => ({
+        ...prev,
+        [name]: formattedValue,
+      }));
+    }
+    // Special handling for CVC (numbers only)
+    else if (name === 'cvc') {
+      const numericValue = value.replace(/\D/g, '').slice(0, 4);
+      setCardInfo((prev) => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+    } else {
+      setCardInfo((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+  };
+
+  const formatExpiryDate = (value) => {
+    // Remove any non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+
+    // Format as MM/YY
+    if (cleaned.length > 2) {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`;
+    } else {
+      return cleaned;
+    }
   };
 
   const validateShippingInfo = () => {
     const newErrors = {};
 
-    if (!shippingInfo.fullName.trim()) {
+    if (!shippingInfo.fullName?.trim()) {
       newErrors.fullName = 'Full name is required';
     }
 
-    if (!shippingInfo.address.trim()) {
+    if (!shippingInfo.address?.trim()) {
       newErrors.address = 'Address is required';
     }
 
-    if (!shippingInfo.city.trim()) {
+    if (!shippingInfo.city?.trim()) {
       newErrors.city = 'City is required';
     }
 
-    if (!shippingInfo.zipCode.trim()) {
+    if (!shippingInfo.zipCode?.trim()) {
       newErrors.zipCode = 'ZIP code is required';
+    } else if (!/^\d{5}(-\d{4})?$/.test(shippingInfo.zipCode)) {
+      newErrors.zipCode = 'Invalid ZIP code format';
     }
 
-    if (!shippingInfo.country.trim()) {
+    if (!shippingInfo.country?.trim()) {
       newErrors.country = 'Country is required';
+    }
+
+    if (
+      shippingInfo.phone &&
+      !/^(\+\d{1,3})?\s?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}$/.test(shippingInfo.phone)
+    ) {
+      newErrors.phone = 'Invalid phone number format';
     }
 
     setErrors(newErrors);
@@ -103,23 +212,38 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const validateCardInfo = () => {
     const newErrors = {};
 
-    if (!cardInfo.cardNumber.trim()) {
+    if (!cardInfo.cardNumber?.trim()) {
       newErrors.cardNumber = 'Card number is required';
-    } else if (!/^\d{16}$/.test(cardInfo.cardNumber.replace(/\s/g, ''))) {
-      newErrors.cardNumber = 'Invalid card number';
+    } else if (!/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/.test(cardInfo.cardNumber)) {
+      newErrors.cardNumber = 'Invalid card number format';
     }
 
-    if (!cardInfo.cardName.trim()) {
+    if (!cardInfo.cardName?.trim()) {
       newErrors.cardName = 'Name on card is required';
     }
 
-    if (!cardInfo.expiry.trim()) {
+    if (!cardInfo.expiry?.trim()) {
       newErrors.expiry = 'Expiry date is required';
     } else if (!/^\d{2}\/\d{2}$/.test(cardInfo.expiry)) {
       newErrors.expiry = 'Invalid format (MM/YY)';
+    } else {
+      // Check if expiry date is valid
+      const [month, year] = cardInfo.expiry.split('/');
+      const currentYear = new Date().getFullYear() % 100; // Get last 2 digits of year
+      const currentMonth = new Date().getMonth() + 1; // Get current month (1-12)
+
+      if (Number.parseInt(month) < 1 || Number.parseInt(month) > 12) {
+        newErrors.expiry = 'Invalid month';
+      } else if (
+        Number.parseInt(year) < currentYear ||
+        (Number.parseInt(year) === currentYear &&
+          Number.parseInt(month) < currentMonth)
+      ) {
+        newErrors.expiry = 'Card has expired';
+      }
     }
 
-    if (!cardInfo.cvc.trim()) {
+    if (!cardInfo.cvc?.trim()) {
       newErrors.cvc = 'CVC is required';
     } else if (!/^\d{3,4}$/.test(cardInfo.cvc)) {
       newErrors.cvc = 'Invalid CVC';
@@ -135,12 +259,26 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    if (items.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+
     setStep(2);
   };
 
   const handleShippingSubmit = () => {
     if (validateShippingInfo()) {
       setStep(3);
+    } else {
+      // Scroll to the first error
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.querySelector(
+        `[name="${firstErrorField}"]`
+      );
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
@@ -150,6 +288,35 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
       // Simulate payment processing
       setTimeout(() => {
+        // Create order object with all necessary information
+        const order = {
+          items: items.map((item) => ({
+            productId: item.product?._id || item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shippingInfo,
+          paymentInfo: {
+            method: paymentMethod,
+            // Don't include full card details in a real app
+            cardLast4: cardInfo.cardNumber.slice(-4),
+          },
+          orderSummary: {
+            subtotal: orderSummary.subtotal,
+            shipping: orderSummary.shipping,
+            tax: orderSummary.tax,
+            total: orderSummary.total,
+          },
+          status: 'processing',
+          orderedAt: new Date().toISOString(),
+        };
+
+        console.log('Order created:', order);
+
+        // In a real app, you would send this to your backend
+        // const response = await apiRequest.createOrder(order);
+
         setIsProcessing(false);
         setIsComplete(true);
         dispatch(clearCart());
@@ -176,37 +343,227 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           });
         }, 3000);
       }, 2000);
+    } else {
+      // Scroll to the first error
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.querySelector(
+        `[name="${firstErrorField}"]`
+      );
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
   const handleIncreaseQuantity = (item) => {
-    dispatch(addToCart(item));
+    try {
+      const productId = item.product?._id || item.productId;
+      if (!productId) {
+        console.error('Invalid product ID:', item);
+        toast.error("Couldn't update item: missing product ID");
+        return;
+      }
+
+      dispatch(
+        addToCart({
+          productId: String(productId),
+          quantity: 1,
+        })
+      );
+    } catch (error) {
+      console.error('Error increasing quantity:', error);
+      toast.error("Couldn't increase quantity");
+    }
   };
 
-  const handleDecreaseQuantity = (id) => {
-    dispatch(decreaseQuantity(id));
+  const handleDecreaseQuantity = (item) => {
+    try {
+      const productId = item.product?._id || item.productId;
+      if (!productId) {
+        console.error('Invalid product ID:', item);
+        toast.error("Couldn't update item: missing product ID");
+        return;
+      }
+
+      if (item.quantity <= 1) {
+        handleRemoveItem(item);
+      } else {
+        dispatch(
+          decreaseQuantity({
+            productId: String(productId),
+            currentQuantity: item.quantity,
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error decreasing quantity:', error);
+      toast.error("Couldn't decrease quantity");
+    }
   };
 
-  const handleRemoveItem = (id) => {
-    dispatch(removeFromCart(id));
+  const handleRemoveItem = (item) => {
+    try {
+      const productId = item.product?._id || item.productId;
+      if (!productId) {
+        console.error('Invalid product ID:', item);
+        toast.error("Couldn't remove item: missing product ID");
+        return;
+      }
+
+      dispatch(removeFromCart(String(productId)));
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast.error("Couldn't remove item");
+    }
   };
 
   const formatCardNumber = (value) => {
+    // Remove all non-digit characters
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
+
+    // Limit to 16 digits
+    const cardNumber = v.slice(0, 16);
+
+    // Add spaces after every 4 digits
     const parts = [];
-
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
+    for (let i = 0; i < cardNumber.length; i += 4) {
+      parts.push(cardNumber.substring(i, i + 4));
     }
 
-    if (parts.length) {
-      return parts.join(' ');
-    } else {
-      return value;
-    }
+    return parts.join(' ');
   };
+
+  const renderCartItems = () => {
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <ShoppingBag className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
+            Your cart is empty
+          </p>
+          <button
+            onClick={onClose}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-h-80 overflow-y-auto mb-6">
+        {items.map((item) => (
+          <div
+            key={item.id || item.product?._id || item.productId}
+            className="flex items-center py-4 border-b border-gray-200 dark:border-gray-700"
+          >
+            <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
+              <img
+                src={
+                  item.image ||
+                  item.product?.images[0] ||
+                  '/placeholder.svg?height=80&width=80'
+                }
+                alt={item.name || item.product?.name || 'Product'}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="ml-4 flex-1">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {item.name || item.product?.name || 'Product'}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                ${(item.price || item.product?.price || 0).toFixed(2)}
+              </p>
+              {item.size && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Size: {item.size}
+                </p>
+              )}
+              {item.color && (
+                <div className="flex items-center mt-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                    Color:
+                  </span>
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  ></span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center">
+              <button
+                onClick={() => handleDecreaseQuantity(item)}
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="Decrease quantity"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="mx-2 w-8 text-center">{item.quantity}</span>
+              <button
+                onClick={() => handleIncreaseQuantity(item)}
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="Increase quantity"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            <div className="ml-4 text-right">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                $
+                {(
+                  (item.price || item.product?.price || 0) * item.quantity
+                ).toFixed(2)}
+              </p>
+              <button
+                onClick={() => handleRemoveItem(item)}
+                className="text-red-500 hover:text-red-700 text-xs flex items-center mt-1"
+                aria-label="Remove item"
+              >
+                <Trash2 size={12} className="mr-1" />
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderOrderSummary = () => (
+    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+      <div className="flex justify-between mb-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Subtotal</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          ${orderSummary.subtotal.toFixed(2)}
+        </p>
+      </div>
+      <div className="flex justify-between mb-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Shipping</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          {orderSummary.shipping === 0
+            ? 'Free'
+            : `$${orderSummary.shipping.toFixed(2)}`}
+        </p>
+      </div>
+      <div className="flex justify-between mb-2">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Tax</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">
+          ${orderSummary.tax.toFixed(2)}
+        </p>
+      </div>
+      <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-base font-medium text-gray-900 dark:text-white">
+          Total
+        </p>
+        <p className="text-base font-bold text-gray-900 dark:text-white">
+          ${orderSummary.total.toFixed(2)}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -214,6 +571,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          aria-label="Close"
         >
           <X size={24} />
         </button>
@@ -231,7 +589,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   className={`w-8 h-8 flex items-center justify-center rounded-full ${
                     step >= 1
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                   }`}
                 >
                   <ShoppingBag size={16} />
@@ -240,7 +598,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
               <div
                 className={`flex-1 h-1 mx-2 ${
-                  step >= 2 ? 'bg-blue-600' : 'bg-gray-200'
+                  step >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               ></div>
               <div
@@ -252,7 +610,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   className={`w-8 h-8 flex items-center justify-center rounded-full ${
                     step >= 2
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                   }`}
                 >
                   2
@@ -261,7 +619,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
               <div
                 className={`flex-1 h-1 mx-2 ${
-                  step >= 3 ? 'bg-blue-600' : 'bg-gray-200'
+                  step >= 3 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               ></div>
               <div
@@ -273,7 +631,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   className={`w-8 h-8 flex items-center justify-center rounded-full ${
                     step >= 3
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                   }`}
                 >
                   3
@@ -281,6 +639,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 <span className="text-xs mt-1">Payment</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="absolute inset-0 bg-white bg-opacity-75 dark:bg-gray-800 dark:bg-opacity-75 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
           </div>
         )}
 
@@ -296,115 +661,16 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </p>
             </div>
 
-            {items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingBag className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
-                  Your cart is empty
-                </p>
-                <button
-                  onClick={onClose}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Continue Shopping
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="max-h-80 overflow-y-auto mb-6">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center py-4 border-b border-gray-200 dark:border-gray-700"
-                    >
-                      <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
-                        <img
-                          src={item.image || '/placeholder.svg'}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                          {item.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          ${item.price.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => handleDecreaseQuantity(item.id)}
-                          className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
-                          disabled={item.quantity <= 1}
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className="mx-2 w-8 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => handleIncreaseQuantity(item)}
-                          className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                      <div className="ml-4 text-right">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          ${item.totalPrice.toFixed(2)}
-                        </p>
-                        <button
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-red-500 hover:text-red-700 text-xs flex items-center mt-1"
-                        >
-                          <Trash2 size={12} className="mr-1" />
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {renderCartItems()}
 
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-                  <div className="flex justify-between mb-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Subtotal
-                    </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Shipping
-                    </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      $0.00
-                    </p>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Tax
-                    </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${(totalAmount * 0.1).toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-base font-medium text-gray-900 dark:text-white">
-                      Total
-                    </p>
-                    <p className="text-base font-bold text-gray-900 dark:text-white">
-                      ${(totalAmount * 1.1).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
+            {items.length > 0 && (
+              <>
+                {renderOrderSummary()}
 
                 <div className="flex justify-between">
                   <button
                     onClick={onClose}
-                    className="flex items-center text-gray-600 hover:text-gray-800"
+                    className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
                   >
                     <ChevronLeft size={16} className="mr-1" />
                     Continue Shopping
@@ -412,6 +678,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleCheckout}
                     className="flex justify-center py-2 px-6 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    disabled={loading || items.length === 0}
                   >
                     Proceed to Checkout
                   </button>
@@ -433,15 +700,25 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleShippingSubmit();
+              }}
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Full Name
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Full Name *
                 </label>
                 <input
                   type="text"
+                  id="fullName"
                   name="fullName"
-                  value={shippingInfo.fullName}
+                  value={shippingInfo.fullName || ''}
                   onChange={handleShippingInfoChange}
                   className={`w-full px-3 py-2 border ${
                     errors.fullName
@@ -456,13 +733,42 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Address
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={shippingInfo.email || user?.email || ''}
+                  onChange={handleShippingInfoChange}
+                  className={`w-full px-3 py-2 border ${
+                    errors.email
+                      ? 'border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="john.doe@example.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Address *
                 </label>
                 <input
                   type="text"
+                  id="address"
                   name="address"
-                  value={shippingInfo.address}
+                  value={shippingInfo.address || ''}
                   onChange={handleShippingInfoChange}
                   className={`w-full px-3 py-2 border ${
                     errors.address
@@ -478,13 +784,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    City
+                  <label
+                    htmlFor="city"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    City *
                   </label>
                   <input
                     type="text"
+                    id="city"
                     name="city"
-                    value={shippingInfo.city}
+                    value={shippingInfo.city || ''}
                     onChange={handleShippingInfoChange}
                     className={`w-full px-3 py-2 border ${
                       errors.city
@@ -498,15 +808,19 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="state"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     State/Province
                   </label>
                   <input
                     type="text"
+                    id="state"
                     name="state"
-                    value={shippingInfo.state}
+                    value={shippingInfo.state || ''}
                     onChange={handleShippingInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}"
                     placeholder="NY"
                   />
                 </div>
@@ -514,13 +828,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    ZIP/Postal Code
+                  <label
+                    htmlFor="zipCode"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    ZIP/Postal Code *
                   </label>
                   <input
                     type="text"
+                    id="zipCode"
                     name="zipCode"
-                    value={shippingInfo.zipCode}
+                    value={shippingInfo.zipCode || ''}
                     onChange={handleShippingInfoChange}
                     className={`w-full px-3 py-2 border ${
                       errors.zipCode
@@ -536,13 +854,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Country
+                  <label
+                    htmlFor="country"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Country *
                   </label>
                   <input
                     type="text"
+                    id="country"
                     name="country"
-                    value={shippingInfo.country}
+                    value={shippingInfo.country || ''}
                     onChange={handleShippingInfoChange}
                     className={`w-full px-3 py-2 border ${
                       errors.country
@@ -560,17 +882,34 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Phone Number
                 </label>
                 <input
                   type="tel"
+                  id="phone"
                   name="phone"
-                  value={shippingInfo.phone}
+                  value={shippingInfo.phone || ''}
                   onChange={handleShippingInfoChange}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border ${
+                    errors.phone
+                      ? 'border-red-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="(123) 456-7890"
                 />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+                )}
+              </div>
+
+              <div className="mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  * Required fields
+                </p>
               </div>
             </form>
 
@@ -647,20 +986,19 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             {paymentMethod === 'credit-card' && (
               <div className="mb-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Card Number
+                  <label
+                    htmlFor="cardNumber"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Card Number *
                   </label>
                   <div className="relative">
                     <input
                       type="text"
+                      id="cardNumber"
                       name="cardNumber"
                       value={cardInfo.cardNumber}
-                      onChange={(e) =>
-                        setCardInfo({
-                          ...cardInfo,
-                          cardNumber: formatCardNumber(e.target.value),
-                        })
-                      }
+                      onChange={handleCardInfoChange}
                       maxLength="19"
                       className={`w-full pl-10 pr-4 py-2 border ${
                         errors.cardNumber
@@ -682,11 +1020,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Name on Card
+                  <label
+                    htmlFor="cardName"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Name on Card *
                   </label>
                   <input
                     type="text"
+                    id="cardName"
                     name="cardName"
                     value={cardInfo.cardName}
                     onChange={handleCardInfoChange}
@@ -706,11 +1048,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Expiry Date
+                    <label
+                      htmlFor="expiry"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Expiry Date *
                     </label>
                     <input
                       type="text"
+                      id="expiry"
                       name="expiry"
                       value={cardInfo.expiry}
                       onChange={handleCardInfoChange}
@@ -729,11 +1075,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      CVC
+                    <label
+                      htmlFor="cvc"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      CVC *
                     </label>
                     <input
                       type="text"
+                      id="cvc"
                       name="cvc"
                       value={cardInfo.cvc}
                       onChange={handleCardInfoChange}
@@ -753,38 +1103,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-              <div className="flex justify-between mb-2">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Subtotal
-                </p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  ${totalAmount.toFixed(2)}
-                </p>
-              </div>
-              <div className="flex justify-between mb-2">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Shipping
-                </p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  $0.00
-                </p>
-              </div>
-              <div className="flex justify-between mb-2">
-                <p className="text-sm text-gray-600 dark:text-gray-400">Tax</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  ${(totalAmount * 0.1).toFixed(2)}
-                </p>
-              </div>
-              <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-base font-medium text-gray-900 dark:text-white">
-                  Total
-                </p>
-                <p className="text-base font-bold text-gray-900 dark:text-white">
-                  ${(totalAmount * 1.1).toFixed(2)}
-                </p>
-              </div>
-            </div>
+            {renderOrderSummary()}
 
             <div className="flex space-x-3">
               <button
@@ -822,7 +1141,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 Order confirmation has been sent to:
               </p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {user?.email}
+                {user?.email || shippingInfo.email}
               </p>
             </div>
             <button

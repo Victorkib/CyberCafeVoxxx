@@ -12,15 +12,15 @@ export default function ProductCard({ product }) {
   const { wishlist } = useSelector((state) => state.wishlist);
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    if (!user) {
-      toast.error('Please login to add items to cart');
-      return;
-    }
-    dispatch(addToCart({ productId: product._id, quantity: 1 }));
-    toast.success('Added to cart');
-  };
+ const handleAddToCart = (e) => {
+  e.preventDefault();
+  if (!user) {
+    toast.error('Please login to add items to cart');
+    return;
+  }
+  dispatch(addToCart({ productId: product._id, quantity: 1 }));
+  toast.success('Added to cart');
+};
 
   const handleAddToWishlist = (e) => {
     e.preventDefault();

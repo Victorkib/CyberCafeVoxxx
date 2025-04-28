@@ -52,25 +52,25 @@ export default function ProductDetailsPage() {
     setQuantity((prev) => Math.max(1, prev + value));
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      toast.error('Please login to add items to cart');
-      return;
-    }
+ const handleAddToCart = () => {
+  if (!user) {
+    toast.error('Please login to add items to cart');
+    return;
+  }
 
-    if (currentProduct.variants && (!selectedSize || !selectedColor)) {
-      toast.error('Please select size and color');
-      return;
-    }
+  if (currentProduct.variants && (!selectedSize || !selectedColor)) {
+    toast.error('Please select size and color');
+    return;
+  }
 
-    dispatch(addToCart({
-      productId: currentProduct._id,
-      quantity,
-      size: selectedSize,
-      color: selectedColor
-    }));
-    toast.success('Added to cart');
-  };
+  dispatch(addToCart({
+    productId: currentProduct._id,
+    quantity,
+    size: selectedSize,
+    color: selectedColor
+  }));
+  toast.success('Added to cart');
+};
 
   const handleAddToWishlist = () => {
     if (!user) {
