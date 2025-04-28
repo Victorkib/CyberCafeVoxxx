@@ -16,18 +16,18 @@ export const getDashboardStats = async (req, res, next) => {
   try {
     const totalSales = await Order.aggregate([
       { $match: { status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
     ]);
 
     const totalOrders = await Order.countDocuments();
     const totalProducts = await Product.countDocuments();
-    const totalCustomers = await User.countDocuments({ role: 'customer' });
+    const totalCustomers = await User.countDocuments({ role: 'user' });
 
     res.json({
       totalSales: totalSales[0]?.total || 0,
       totalOrders,
       totalProducts,
-      totalCustomers
+      totalCustomers,
     });
   } catch (error) {
     next(error);
@@ -39,12 +39,13 @@ export const getSalesAnalytics = async (req, res, next) => {
     const { startDate, endDate } = req.query;
     const matchStage = {
       status: 'completed',
-      ...(startDate && endDate && {
-        createdAt: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
-      })
+      ...(startDate &&
+        endDate && {
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          },
+        }),
     };
 
     const salesData = await Order.aggregate([
@@ -53,10 +54,10 @@ export const getSalesAnalytics = async (req, res, next) => {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
           total: { $sum: '$totalAmount' },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     res.json(salesData);
@@ -70,16 +71,36 @@ export const getInventoryStats = async (req, res, next) => {
     const inventoryStats = await Product.aggregate([
       {
         $group: {
-          _id: '$category',
+          _id: '$category', // Group by category ObjectId
           totalProducts: { $sum: 1 },
           totalStock: { $sum: '$stock' },
           lowStock: {
             $sum: {
-              $cond: [{ $lt: ['$stock', 10] }, 1, 0]
-            }
-          }
-        }
-      }
+              $cond: [{ $lt: ['$stock', 10] }, 1, 0],
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories', // name of your Category collection (Mongoose usually pluralizes)
+          localField: '_id', // _id from the group stage
+          foreignField: '_id', // _id of the Category collection
+          as: 'categoryInfo', // result will be placed here
+        },
+      },
+      {
+        $unwind: '$categoryInfo', // Turn categoryInfo array into a single object
+      },
+      {
+        $project: {
+          _id: 1, // Hide the MongoDB _id if you want
+          categoryName: '$categoryInfo.name', // Pick the category name from joined info
+          totalProducts: 1,
+          totalStock: 1,
+          lowStock: 1,
+        },
+      },
     ]);
 
     res.json(inventoryStats);
@@ -91,14 +112,14 @@ export const getInventoryStats = async (req, res, next) => {
 export const getCustomerStats = async (req, res, next) => {
   try {
     const customerStats = await User.aggregate([
-      { $match: { role: 'customer' } },
+      { $match: { role: 'user' } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     res.json(customerStats);
@@ -114,7 +135,7 @@ export const getAllProducts = async (req, res, next) => {
     const query = {};
 
     if (filter) {
-      Object.keys(filter).forEach(key => {
+      Object.keys(filter).forEach((key) => {
         query[key] = filter[key];
       });
     }
@@ -130,7 +151,7 @@ export const getAllProducts = async (req, res, next) => {
     res.json({
       products,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     });
   } catch (error) {
     next(error);
@@ -161,11 +182,10 @@ export const createProduct = async (req, res, next) => {
 
 export const updateProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
     if (!product) {
       throw createError(404, 'Product not found');
     }
@@ -238,7 +258,7 @@ export const getAllOrders = async (req, res, next) => {
     res.json({
       orders,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     });
   } catch (error) {
     next(error);
@@ -328,18 +348,18 @@ export const refundOrder = async (req, res, next) => {
 export const getAllCustomers = async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const customers = await User.find({ role: 'customer' })
+    const customers = await User.find({ role: 'user' })
       .select('-password')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await User.countDocuments({ role: 'customer' });
+    const total = await User.countDocuments({ role: 'user' });
 
     res.json({
       customers,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     });
   } catch (error) {
     next(error);
@@ -350,7 +370,7 @@ export const getCustomerById = async (req, res, next) => {
   try {
     const customer = await User.findOne({
       _id: req.params.id,
-      role: 'customer'
+      role: 'user',
     }).select('-password');
     if (!customer) {
       throw createError(404, 'Customer not found');
@@ -365,7 +385,7 @@ export const updateCustomerStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     const customer = await User.findOneAndUpdate(
-      { _id: req.params.id, role: 'customer' },
+      { _id: req.params.id, role: 'user' },
       { status },
       { new: true, runValidators: true }
     ).select('-password');
@@ -381,7 +401,7 @@ export const updateCustomerStatus = async (req, res, next) => {
 export const blockCustomer = async (req, res, next) => {
   try {
     const customer = await User.findOneAndUpdate(
-      { _id: req.params.id, role: 'customer' },
+      { _id: req.params.id, role: 'user' },
       { status: 'blocked' },
       { new: true, runValidators: true }
     ).select('-password');
@@ -397,7 +417,7 @@ export const blockCustomer = async (req, res, next) => {
 export const unblockCustomer = async (req, res, next) => {
   try {
     const customer = await User.findOneAndUpdate(
-      { _id: req.params.id, role: 'customer' },
+      { _id: req.params.id, role: 'user' },
       { status: 'active' },
       { new: true, runValidators: true }
     ).select('-password');
@@ -414,18 +434,18 @@ export const unblockCustomer = async (req, res, next) => {
 export const getAllUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const users = await User.find({ role: { $ne: 'customer' } })
+    const users = await User.find({})
       .select('-password')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await User.countDocuments({ role: { $ne: 'customer' } });
+    const total = await User.countDocuments();
 
     res.json({
       users,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
     });
   } catch (error) {
     next(error);
@@ -434,8 +454,7 @@ export const getAllUsers = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    const user = await User.findOne({ _id: req.params.id, role: { $ne: 'customer' } })
-      .select('-password');
+    const user = await User.findOne({ _id: req.params.id }).select('-password');
     if (!user) {
       throw createError(404, 'User not found');
     }
@@ -458,11 +477,10 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    }).select('-password');
     if (!user) {
       throw createError(404, 'User not found');
     }
@@ -552,11 +570,10 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
   try {
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
     if (!category) {
       throw createError(404, 'Category not found');
     }
@@ -646,12 +663,13 @@ export const getSalesReport = async (req, res, next) => {
     const { startDate, endDate } = req.query;
     const matchStage = {
       status: 'completed',
-      ...(startDate && endDate && {
-        createdAt: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
-      })
+      ...(startDate &&
+        endDate && {
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          },
+        }),
     };
 
     const salesReport = await Order.aggregate([
@@ -661,14 +679,14 @@ export const getSalesReport = async (req, res, next) => {
           _id: {
             year: { $year: '$createdAt' },
             month: { $month: '$createdAt' },
-            day: { $dayOfMonth: '$createdAt' }
+            day: { $dayOfMonth: '$createdAt' },
           },
           totalSales: { $sum: '$totalAmount' },
           orderCount: { $sum: 1 },
-          averageOrderValue: { $avg: '$totalAmount' }
-        }
+          averageOrderValue: { $avg: '$totalAmount' },
+        },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
     ]);
 
     res.json(salesReport);
@@ -688,24 +706,24 @@ export const getInventoryReport = async (req, res, next) => {
           totalValue: { $sum: { $multiply: ['$price', '$stock'] } },
           lowStock: {
             $sum: {
-              $cond: [{ $lt: ['$stock', 10] }, 1, 0]
-            }
+              $cond: [{ $lt: ['$stock', 10] }, 1, 0],
+            },
           },
           outOfStock: {
             $sum: {
-              $cond: [{ $eq: ['$stock', 0] }, 1, 0]
-            }
-          }
-        }
+              $cond: [{ $eq: ['$stock', 0] }, 1, 0],
+            },
+          },
+        },
       },
       {
         $lookup: {
           from: 'categories',
           localField: '_id',
           foreignField: '_id',
-          as: 'categoryDetails'
-        }
-      }
+          as: 'categoryDetails',
+        },
+      },
     ]);
 
     res.json(inventoryReport);
@@ -717,27 +735,27 @@ export const getInventoryReport = async (req, res, next) => {
 export const getCustomerReport = async (req, res, next) => {
   try {
     const customerReport = await User.aggregate([
-      { $match: { role: 'customer' } },
+      { $match: { role: 'user' } },
       {
         $group: {
           _id: {
             year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
+            month: { $month: '$createdAt' },
           },
           newCustomers: { $sum: 1 },
           activeCustomers: {
             $sum: {
-              $cond: [{ $eq: ['$status', 'active'] }, 1, 0]
-            }
+              $cond: [{ $eq: ['$status', 'active'] }, 1, 0],
+            },
           },
           blockedCustomers: {
             $sum: {
-              $cond: [{ $eq: ['$status', 'blocked'] }, 1, 0]
-            }
-          }
-        }
+              $cond: [{ $eq: ['$status', 'blocked'] }, 1, 0],
+            },
+          },
+        },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
     ]);
 
     res.json(customerReport);
@@ -750,12 +768,13 @@ export const getOrderReport = async (req, res, next) => {
   try {
     const { startDate, endDate } = req.query;
     const matchStage = {
-      ...(startDate && endDate && {
-        createdAt: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
-      })
+      ...(startDate &&
+        endDate && {
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          },
+        }),
     };
 
     const orderReport = await Order.aggregate([
@@ -765,9 +784,9 @@ export const getOrderReport = async (req, res, next) => {
           _id: '$status',
           count: { $sum: 1 },
           totalAmount: { $sum: '$totalAmount' },
-          averageOrderValue: { $avg: '$totalAmount' }
-        }
-      }
+          averageOrderValue: { $avg: '$totalAmount' },
+        },
+      },
     ]);
 
     res.json(orderReport);
@@ -780,7 +799,7 @@ export const exportReport = async (req, res, next) => {
   try {
     const { type, format } = req.params;
     let data;
-    
+
     switch (type) {
       case 'sales':
         data = await getSalesReport(req, res, next);
@@ -800,7 +819,10 @@ export const exportReport = async (req, res, next) => {
 
     // Set headers for file download
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=${type}-report.csv`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${type}-report.csv`
+    );
 
     // Convert data to CSV and send
     // Note: You might want to use a library like csv-stringify for proper CSV conversion
@@ -819,7 +841,10 @@ export const inviteAdmin = asyncHandler(async (req, res, next) => {
 
     // Validate role
     if (role && role !== 'admin') {
-      throw createError(400, 'Invalid role. Only admin role can be assigned through invitation');
+      throw createError(
+        400,
+        'Invalid role. Only admin role can be assigned through invitation'
+      );
     }
 
     // Check if user already exists
@@ -831,7 +856,7 @@ export const inviteAdmin = asyncHandler(async (req, res, next) => {
     // Check if invitation already exists and is pending
     const existingInvitation = await AdminInvitation.findOne({
       email: email.toLowerCase(),
-      status: 'pending'
+      status: 'pending',
     });
     if (existingInvitation) {
       throw createError(400, 'An invitation for this email already exists');
@@ -840,7 +865,7 @@ export const inviteAdmin = asyncHandler(async (req, res, next) => {
     // Check rate limiting (max 5 invitations per 24 hours)
     const recentInvitations = await AdminInvitation.countDocuments({
       invitedBy: req.user._id,
-      createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+      createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
     });
     if (recentInvitations >= 5) {
       throw createError(429, 'Too many invitations sent in the last 24 hours');
@@ -855,7 +880,7 @@ export const inviteAdmin = asyncHandler(async (req, res, next) => {
       name,
       role: 'admin', // Force role to be admin
       tempPassword,
-      invitedBy: req.user._id
+      invitedBy: req.user._id,
     });
 
     // Send invitation email
@@ -869,9 +894,9 @@ export const inviteAdmin = asyncHandler(async (req, res, next) => {
           email: invitation.email,
           name: invitation.name,
           role: invitation.role,
-          expiresAt: invitation.expiresAt
-        }
-      }
+          expiresAt: invitation.expiresAt,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -906,7 +931,7 @@ export const acceptInvitation = asyncHandler(async (req, res, next) => {
       name: invitation.name,
       password,
       role: invitation.role,
-      isEmailVerified: true
+      isEmailVerified: true,
     });
 
     // Update invitation status
@@ -921,9 +946,9 @@ export const acceptInvitation = asyncHandler(async (req, res, next) => {
           id: admin._id,
           email: admin.email,
           name: admin.name,
-          role: admin.role
-        }
-      }
+          role: admin.role,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -943,7 +968,7 @@ export const verifyInvitation = asyncHandler(async (req, res, next) => {
     const initialAdmin = await User.findOne({
       emailVerificationToken: token,
       emailVerificationExpire: { $gt: Date.now() },
-      role: 'super_admin'
+      role: 'super_admin',
     });
 
     console.log('verifyInvitation: Initial admin:', initialAdmin);
@@ -959,9 +984,9 @@ export const verifyInvitation = asyncHandler(async (req, res, next) => {
               name: initialAdmin.name,
               role: initialAdmin.role,
               type: 'super_admin',
-              expiresAt: initialAdmin.emailVerificationExpire
-            }
-          }
+              expiresAt: initialAdmin.emailVerificationExpire,
+            },
+          },
         });
       }
 
@@ -980,9 +1005,9 @@ export const verifyInvitation = asyncHandler(async (req, res, next) => {
             name: initialAdmin.name,
             role: initialAdmin.role,
             type: 'super_admin',
-            expiresAt: initialAdmin.emailVerificationExpire
-          }
-        }
+            expiresAt: initialAdmin.emailVerificationExpire,
+          },
+        },
       });
     }
 
@@ -1011,9 +1036,9 @@ export const verifyInvitation = asyncHandler(async (req, res, next) => {
           name: invitation.name,
           role: invitation.role,
           type: 'invited_admin',
-          expiresAt: invitation.expiresAt
-        }
-      }
+          expiresAt: invitation.expiresAt,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -1041,27 +1066,27 @@ export const getAdminInvitations = asyncHandler(async (req, res, next) => {
 export const resendInvitation = asyncHandler(async (req, res, next) => {
   try {
     const invitation = await AdminInvitation.findById(req.params.id);
-    
+
     if (!invitation) {
       throw createError(404, 'Invitation not found');
     }
-    
+
     if (invitation.status !== 'pending') {
       throw createError(400, 'Cannot resend invitation that is not pending');
     }
-    
+
     // Update expiration date
     invitation.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     await invitation.save();
-    
+
     // Resend invitation email
     await sendAdminInvitationEmail(
-      invitation.email, 
-      invitation.name, 
-      invitation.token, 
+      invitation.email,
+      invitation.name,
+      invitation.token,
       invitation.tempPassword
     );
-    
+
     res.json(invitation);
   } catch (error) {
     next(error);
@@ -1074,18 +1099,21 @@ export const resendInvitation = asyncHandler(async (req, res, next) => {
 export const cancelInvitation = asyncHandler(async (req, res, next) => {
   try {
     const invitation = await AdminInvitation.findById(req.params.id);
-    
+
     if (!invitation) {
       throw createError(404, 'Invitation not found');
     }
-    
+
     if (invitation.status !== 'pending') {
       throw createError(400, 'Cannot cancel invitation that is not pending');
     }
-    
+
     await invitation.remove();
-    
-    res.json({ message: 'Invitation cancelled successfully', id: req.params.id });
+
+    res.json({
+      message: 'Invitation cancelled successfully',
+      id: req.params.id,
+    });
   } catch (error) {
     next(error);
   }
@@ -1097,14 +1125,14 @@ export const cancelInvitation = asyncHandler(async (req, res, next) => {
 export const lockAccount = asyncHandler(async (req, res, next) => {
   try {
     const { userId, reason, durationMinutes } = req.body;
-    
+
     const user = await User.findById(userId);
     if (!user) {
       throw createError(404, 'User not found');
     }
-    
+
     await user.lockAccount(reason, durationMinutes);
-    
+
     res.json(user);
   } catch (error) {
     next(error);
@@ -1117,14 +1145,14 @@ export const lockAccount = asyncHandler(async (req, res, next) => {
 export const unlockAccount = asyncHandler(async (req, res, next) => {
   try {
     const { userId } = req.body;
-    
+
     const user = await User.findById(userId);
     if (!user) {
       throw createError(404, 'User not found');
     }
-    
+
     await user.unlockAccount();
-    
+
     res.json(user);
   } catch (error) {
     next(error);
@@ -1143,8 +1171,8 @@ export const getAdmins = asyncHandler(async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       data: {
-        admins
-      }
+        admins,
+      },
     });
   } catch (error) {
     next(error);
@@ -1183,9 +1211,9 @@ export const updateAdminRole = asyncHandler(async (req, res, next) => {
           id: admin._id,
           email: admin.email,
           name: admin.name,
-          role: admin.role
-        }
-      }
+          role: admin.role,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -1212,7 +1240,7 @@ export const removeAdmin = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      message: 'Admin removed successfully'
+      message: 'Admin removed successfully',
     });
   } catch (error) {
     next(error);
@@ -1257,43 +1285,44 @@ export const updateAdminProfile = asyncHandler(async (req, res, next) => {
       _id: admin._id,
       name: admin.name,
       email: admin.email,
-      role: admin.role
-    }
+      role: admin.role,
+    },
   });
 });
 
 // @desc    Cleanup expired invitations
 // @route   POST /api/admin/cleanup-invitations
 // @access  Private (Admin only)
-export const cleanupExpiredInvitations = asyncHandler(async (req, res, next) => {
-  try {
-    // Update expired invitations
-    const updateResult = await AdminInvitation.updateMany(
-      {
-        status: 'pending',
-        expiresAt: { $lt: new Date() }
-      },
-      {
-        $set: { status: 'expired' }
-      }
-    );
+export const cleanupExpiredInvitations = asyncHandler(
+  async (req, res, next) => {
+    try {
+      // Update expired invitations
+      const updateResult = await AdminInvitation.updateMany(
+        {
+          status: 'pending',
+          expiresAt: { $lt: new Date() },
+        },
+        {
+          $set: { status: 'expired' },
+        }
+      );
 
-    // Delete old expired invitations
-    const deleteResult = await AdminInvitation.deleteMany({
-      status: 'expired',
-      updatedAt: { $lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-    });
+      // Delete old expired invitations
+      const deleteResult = await AdminInvitation.deleteMany({
+        status: 'expired',
+        updatedAt: { $lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      });
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Invitations cleaned up successfully',
-      data: {
-        expired: updateResult.modifiedCount,
-        deleted: deleteResult.deletedCount
-      }
-    });
-  } catch (error) {
-    next(error);
+      res.status(200).json({
+        status: 'success',
+        message: 'Invitations cleaned up successfully',
+        data: {
+          expired: updateResult.modifiedCount,
+          deleted: deleteResult.deletedCount,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
-
+);

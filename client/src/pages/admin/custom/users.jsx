@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useDispatch, useSelector } from "react-redux"
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Table,
   TableBody,
@@ -38,7 +38,7 @@ import {
   Menu,
   Avatar,
   Tooltip,
-} from "@mui/material"
+} from '@mui/material';
 import {
   Search,
   PersonAdd,
@@ -53,8 +53,8 @@ import {
   LockOpen,
   MoreVert,
   Warning,
-} from "@mui/icons-material"
-import { toast } from "react-hot-toast"
+} from '@mui/icons-material';
+import { toast } from 'react-hot-toast';
 import {
   fetchUsers,
   createUser,
@@ -69,11 +69,11 @@ import {
   lockAccount,
   unlockAccount,
   cleanupExpiredInvitations,
-} from "../../../redux/slices/adminSlice"
+} from '../../../redux/slices/adminSlice';
 
 // TabPanel component for the tabs
 function TabPanel(props) {
-  const { children, value, index, ...other } = props
+  const { children, value, index, ...other } = props;
 
   return (
     <div
@@ -85,162 +85,167 @@ function TabPanel(props) {
     >
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
-  )
+  );
 }
 
 const Users = () => {
-  const dispatch = useDispatch()
-  const { users, invitations, loading, error } = useSelector((state) => state.admin)
-  const { user: currentUser } = useSelector((state) => state.auth)
-  const isSuperAdmin = currentUser?.role === "super_admin"
+  const dispatch = useDispatch();
+  const { users, invitations, loading, error } = useSelector(
+    (state) => state.admin
+  );
+  console.log('FetchedUsers', users);
+  const { user: currentUser } = useSelector((state) => state.auth);
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [activeTab, setActiveTab] = useState(0)
-  const [anchorEl, setAnchorEl] = useState(null)
-  const [actionUser, setActionUser] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isLockDialogOpen, setIsLockDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [actionUser, setActionUser] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "admin",
-    status: "active",
-    phone: "",
-  })
+    name: '',
+    email: '',
+    password: '',
+    role: 'admin',
+    status: 'active',
+    phone: '',
+  });
 
   const [inviteData, setInviteData] = useState({
-    name: "",
-    email: "",
-    role: "admin",
+    name: '',
+    email: '',
+    role: 'admin',
     sendWelcomeEmail: true,
-    message: "",
-  })
+    message: '',
+  });
 
   const [lockData, setLockData] = useState({
-    userId: "",
-    reason: "",
+    userId: '',
+    reason: '',
     durationMinutes: 60,
-  })
+  });
 
   useEffect(() => {
-    dispatch(fetchUsers())
-    dispatch(fetchAdminInvitations())
-  }, [dispatch])
+    dispatch(fetchUsers());
+    dispatch(fetchAdminInvitations());
+  }, [dispatch]);
 
   // Show error toast if there's an error
   useEffect(() => {
     if (error) {
-      toast.error(error)
+      toast.error(error);
     }
-  }, [error])
+  }, [error]);
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value)
-  }
+    setSearchTerm(e.target.value);
+  };
 
   const handleRoleFilter = (e) => {
-    setRoleFilter(e.target.value)
-  }
+    setRoleFilter(e.target.value);
+  };
 
   const handleStatusFilter = (e) => {
-    setStatusFilter(e.target.value)
-  }
+    setStatusFilter(e.target.value);
+  };
 
   const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue)
-  }
+    setActiveTab(newValue);
+  };
 
   const handleMenuOpen = (event, user) => {
-    setAnchorEl(event.currentTarget)
-    setActionUser(user)
-  }
+    setAnchorEl(event.currentTarget);
+    setActionUser(user);
+  };
 
   const handleMenuClose = () => {
-    setAnchorEl(null)
-    setActionUser(null)
-  }
+    setAnchorEl(null);
+    setActionUser(null);
+  };
 
   const handleAddUser = async () => {
     try {
-      await dispatch(createUser(formData)).unwrap()
-      setIsAddDialogOpen(false)
-      resetForm()
+      await dispatch(createUser(formData)).unwrap();
+      setIsAddDialogOpen(false);
+      resetForm();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleEditUser = async () => {
     try {
-      await dispatch(updateUser({ id: selectedUser._id, userData: formData })).unwrap()
-      setIsEditDialogOpen(false)
-      resetForm()
+      await dispatch(
+        updateUser({ id: selectedUser._id, userData: formData })
+      ).unwrap();
+      setIsEditDialogOpen(false);
+      resetForm();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
+    if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await dispatch(deleteUser(userId)).unwrap()
+        await dispatch(deleteUser(userId)).unwrap();
       } catch (error) {
         // Error is handled by the toast in the thunk
       }
     }
-  }
+  };
 
   const handleUpdateRole = async (userId, role) => {
     try {
-      await dispatch(updateUserRole({ id: userId, role })).unwrap()
+      await dispatch(updateUserRole({ id: userId, role })).unwrap();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleUpdateStatus = async (userId, status) => {
     try {
-      await dispatch(updateUserStatus({ id: userId, status })).unwrap()
+      await dispatch(updateUserStatus({ id: userId, status })).unwrap();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleInviteAdmin = async () => {
     try {
-      await dispatch(inviteAdmin(inviteData)).unwrap()
-      setIsInviteDialogOpen(false)
-      resetInviteForm()
+      await dispatch(inviteAdmin(inviteData)).unwrap();
+      setIsInviteDialogOpen(false);
+      resetInviteForm();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleResendInvitation = async (invitationId) => {
     try {
-      await dispatch(resendInvitation(invitationId)).unwrap()
+      await dispatch(resendInvitation(invitationId)).unwrap();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleCancelInvitation = async (invitationId) => {
-    if (window.confirm("Are you sure you want to cancel this invitation?")) {
+    if (window.confirm('Are you sure you want to cancel this invitation?')) {
       try {
-        await dispatch(cancelInvitation(invitationId)).unwrap()
+        await dispatch(cancelInvitation(invitationId)).unwrap();
       } catch (error) {
         // Error is handled by the toast in the thunk
       }
     }
-  }
+  };
 
   const handleLockAccount = async () => {
     try {
@@ -248,162 +253,172 @@ const Users = () => {
         lockAccount({
           userId: selectedUser._id,
           ...lockData,
-        }),
-      ).unwrap()
-      setIsLockDialogOpen(false)
+        })
+      ).unwrap();
+      setIsLockDialogOpen(false);
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleUnlockAccount = async (userId) => {
     try {
-      await dispatch(unlockAccount({ userId })).unwrap()
+      await dispatch(unlockAccount({ userId })).unwrap();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const handleCleanupInvitations = async () => {
     try {
-      await dispatch(cleanupExpiredInvitations()).unwrap()
+      await dispatch(cleanupExpiredInvitations()).unwrap();
     } catch (error) {
       // Error is handled by the toast in the thunk
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "admin",
-      status: "active",
-      phone: "",
-    })
-    setSelectedUser(null)
-  }
+      name: '',
+      email: '',
+      password: '',
+      role: 'admin',
+      status: 'active',
+      phone: '',
+    });
+    setSelectedUser(null);
+  };
 
   const resetInviteForm = () => {
     setInviteData({
-      name: "",
-      email: "",
-      role: "admin",
+      name: '',
+      email: '',
+      role: 'admin',
       sendWelcomeEmail: true,
-      message: "",
-    })
-  }
+      message: '',
+    });
+  };
 
   const resetLockForm = () => {
     setLockData({
-      userId: "",
-      reason: "",
+      userId: '',
+      reason: '',
       durationMinutes: 60,
-    })
-  }
+    });
+  };
 
   const openEditDialog = (user) => {
-    setSelectedUser(user)
+    setSelectedUser(user);
     setFormData({
       name: user.name,
       email: user.email,
       role: user.role,
       status: user.status,
-      phone: user.phone || "",
-    })
-    setIsEditDialogOpen(true)
-  }
+      phone: user.phone || '',
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const openViewDialog = (user) => {
-    setSelectedUser(user)
-    setIsViewDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setIsViewDialogOpen(true);
+  };
 
   const openLockDialog = (user) => {
-    setSelectedUser(user)
-    resetLockForm()
+    setSelectedUser(user);
+    resetLockForm();
     setLockData((prev) => ({
       ...prev,
       userId: user._id,
-    }))
-    setIsLockDialogOpen(true)
-  }
+    }));
+    setIsLockDialogOpen(true);
+  };
 
   const getRoleColor = (role) => {
     switch (role) {
-      case "super_admin":
-        return "secondary"
-      case "admin":
-        return "error"
-      case "manager":
-        return "primary"
-      case "staff":
-        return "success"
+      case 'super_admin':
+        return 'secondary';
+      case 'admin':
+        return 'error';
+      case 'manager':
+        return 'primary';
+      case 'staff':
+        return 'success';
       default:
-        return "default"
+        return 'default';
     }
-  }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "active":
-        return "success"
-      case "inactive":
-        return "warning"
-      case "blocked":
-        return "error"
+      case 'active':
+        return 'success';
+      case 'inactive':
+        return 'warning';
+      case 'blocked':
+        return 'error';
       default:
-        return "default"
+        return 'default';
     }
-  }
+  };
 
   const getInvitationStatusColor = (status) => {
     switch (status) {
-      case "pending":
-        return "primary"
-      case "accepted":
-        return "success"
-      case "expired":
-        return "error"
+      case 'pending':
+        return 'primary';
+      case 'accepted':
+        return 'success';
+      case 'expired':
+        return 'error';
       default:
-        return "default"
+        return 'default';
     }
-  }
+  };
 
   const filteredUsers =
     users?.filter((user) => {
       // Filter by search term
       const matchesSearch =
         user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Filter by role
-      const matchesRole = roleFilter === "all" || user.role === roleFilter
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
 
       // Filter by status
-      const matchesStatus = statusFilter === "all" || user.status === statusFilter
+      const matchesStatus =
+        statusFilter === 'all' || user.status === statusFilter;
 
       // Filter by tab (admins or all users)
-      const matchesTab = (activeTab === 0 && ["admin", "super_admin"].includes(user.role)) || activeTab === 1
+      const matchesTab =
+        (activeTab === 0 && ['admin', 'super_admin'].includes(user.role)) ||
+        activeTab === 1;
 
-      return matchesSearch && matchesRole && matchesStatus && matchesTab
-    }) || []
+      return matchesSearch && matchesRole && matchesStatus && matchesTab;
+    }) || [];
 
   if (loading && !users?.length) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '400px',
+        }}
+      >
         <CircularProgress />
       </Box>
-    )
+    );
   }
 
   return (
-    <Box sx={{ width: "100%", mb: 4 }}>
+    <Box sx={{ width: '100%', mb: 4 }}>
       <Card>
         <CardHeader
           title={
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Shield sx={{ mr: 1, color: "primary.main" }} />
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Shield sx={{ mr: 1, color: 'primary.main' }} />
               <Typography variant="h5" component="div">
                 Admin Management
               </Typography>
@@ -411,7 +426,7 @@ const Users = () => {
           }
           subheader="Manage admin accounts and permissions"
           action={
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               {isSuperAdmin && (
                 <Button
                   variant="contained"
@@ -434,8 +449,12 @@ const Users = () => {
           }
         />
 
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="admin tabs">
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="admin tabs"
+          >
             <Tab label="Admins" />
             <Tab label="All Users" />
             <Tab label="Invitations" />
@@ -452,7 +471,9 @@ const Users = () => {
                   value={searchTerm}
                   onChange={handleSearch}
                   InputProps={{
-                    startAdornment: <Search sx={{ color: "action.active", mr: 1 }} />,
+                    startAdornment: (
+                      <Search sx={{ color: 'action.active', mr: 1 }} />
+                    ),
                   }}
                   variant="outlined"
                   size="small"
@@ -461,7 +482,11 @@ const Users = () => {
               <Grid item xs={6} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Role</InputLabel>
-                  <Select value={roleFilter} onChange={handleRoleFilter} label="Role">
+                  <Select
+                    value={roleFilter}
+                    onChange={handleRoleFilter}
+                    label="Role"
+                  >
                     <MenuItem value="all">All Roles</MenuItem>
                     <MenuItem value="super_admin">Super Admin</MenuItem>
                     <MenuItem value="admin">Admin</MenuItem>
@@ -471,7 +496,11 @@ const Users = () => {
               <Grid item xs={6} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
-                  <Select value={statusFilter} onChange={handleStatusFilter} label="Status">
+                  <Select
+                    value={statusFilter}
+                    onChange={handleStatusFilter}
+                    label="Status"
+                  >
                     <MenuItem value="all">All Status</MenuItem>
                     <MenuItem value="active">Active</MenuItem>
                     <MenuItem value="inactive">Inactive</MenuItem>
@@ -507,29 +536,50 @@ const Users = () => {
                           <FormControl fullWidth size="small">
                             <Select
                               value={user.role}
-                              onChange={(e) => handleUpdateRole(user._id, e.target.value)}
-                              disabled={user.role === "super_admin" && user._id !== currentUser._id}
+                              onChange={(e) =>
+                                handleUpdateRole(user._id, e.target.value)
+                              }
+                              disabled={
+                                user.role === 'super_admin' &&
+                                user._id !== currentUser._id
+                              }
                               size="small"
                             >
-                              <MenuItem value="super_admin">Super Admin</MenuItem>
+                              <MenuItem value="super_admin">
+                                Super Admin
+                              </MenuItem>
                               <MenuItem value="admin">Admin</MenuItem>
                               <MenuItem value="manager">Manager</MenuItem>
                               <MenuItem value="staff">Staff</MenuItem>
                             </Select>
                           </FormControl>
                         ) : (
-                          <Chip label={user.role} color={getRoleColor(user.role)} size="small" />
+                          <Chip
+                            label={user.role}
+                            color={getRoleColor(user.role)}
+                            size="small"
+                          />
                         )}
                       </TableCell>
                       <TableCell>
                         {user.isLocked ? (
-                          <Chip icon={<Lock fontSize="small" />} label="Locked" color="error" size="small" />
+                          <Chip
+                            icon={<Lock fontSize="small" />}
+                            label="Locked"
+                            color="error"
+                            size="small"
+                          />
                         ) : isSuperAdmin ? (
                           <FormControl fullWidth size="small">
                             <Select
                               value={user.status}
-                              onChange={(e) => handleUpdateStatus(user._id, e.target.value)}
-                              disabled={user.role === "super_admin" && user._id !== currentUser._id}
+                              onChange={(e) =>
+                                handleUpdateStatus(user._id, e.target.value)
+                              }
+                              disabled={
+                                user.role === 'super_admin' &&
+                                user._id !== currentUser._id
+                              }
                               size="small"
                             >
                               <MenuItem value="active">Active</MenuItem>
@@ -538,10 +588,18 @@ const Users = () => {
                             </Select>
                           </FormControl>
                         ) : (
-                          <Chip label={user.status} color={getStatusColor(user.status)} size="small" />
+                          <Chip
+                            label={user.status}
+                            color={getStatusColor(user.status)}
+                            size="small"
+                          />
                         )}
                       </TableCell>
-                      <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never"}</TableCell>
+                      <TableCell>
+                        {user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleString()
+                          : 'Never'}
+                      </TableCell>
                       <TableCell align="right">
                         <IconButton
                           aria-label="more actions"
@@ -578,7 +636,9 @@ const Users = () => {
                   value={searchTerm}
                   onChange={handleSearch}
                   InputProps={{
-                    startAdornment: <Search sx={{ color: "action.active", mr: 1 }} />,
+                    startAdornment: (
+                      <Search sx={{ color: 'action.active', mr: 1 }} />
+                    ),
                   }}
                   variant="outlined"
                   size="small"
@@ -587,7 +647,11 @@ const Users = () => {
               <Grid item xs={6} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Role</InputLabel>
-                  <Select value={roleFilter} onChange={handleRoleFilter} label="Role">
+                  <Select
+                    value={roleFilter}
+                    onChange={handleRoleFilter}
+                    label="Role"
+                  >
                     <MenuItem value="all">All Roles</MenuItem>
                     <MenuItem value="super_admin">Super Admin</MenuItem>
                     <MenuItem value="admin">Admin</MenuItem>
@@ -600,7 +664,11 @@ const Users = () => {
               <Grid item xs={6} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Status</InputLabel>
-                  <Select value={statusFilter} onChange={handleStatusFilter} label="Status">
+                  <Select
+                    value={statusFilter}
+                    onChange={handleStatusFilter}
+                    label="Status"
+                  >
                     <MenuItem value="all">All Status</MenuItem>
                     <MenuItem value="active">Active</MenuItem>
                     <MenuItem value="inactive">Inactive</MenuItem>
@@ -632,20 +700,38 @@ const Users = () => {
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Chip label={user.role} color={getRoleColor(user.role)} size="small" />
+                        <Chip
+                          label={user.role}
+                          color={getRoleColor(user.role)}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell>
-                        <Chip label={user.status} color={getStatusColor(user.status)} size="small" />
+                        <Chip
+                          label={user.status}
+                          color={getStatusColor(user.status)}
+                          size="small"
+                        />
                       </TableCell>
-                      <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never"}</TableCell>
+                      <TableCell>
+                        {user.lastLogin
+                          ? new Date(user.lastLogin).toLocaleString()
+                          : 'Never'}
+                      </TableCell>
                       <TableCell align="right">
                         <Tooltip title="View Details">
-                          <IconButton size="small" onClick={() => openViewDialog(user)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => openViewDialog(user)}
+                          >
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit User">
-                          <IconButton size="small" onClick={() => openEditDialog(user)}>
+                          <IconButton
+                            size="small"
+                            onClick={() => openEditDialog(user)}
+                          >
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -653,7 +739,7 @@ const Users = () => {
                           <IconButton
                             size="small"
                             onClick={() => handleDeleteUser(user._id)}
-                            disabled={user.role === "super_admin"}
+                            disabled={user.role === 'super_admin'}
                           >
                             <Delete fontSize="small" color="error" />
                           </IconButton>
@@ -676,7 +762,7 @@ const Users = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={2}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6">Admin Invitations</Typography>
             <Box>
               <Button
@@ -688,7 +774,12 @@ const Users = () => {
               >
                 Clean Up Expired
               </Button>
-              <Button variant="contained" startIcon={<Mail />} onClick={() => setIsInviteDialogOpen(true)} size="small">
+              <Button
+                variant="contained"
+                startIcon={<Mail />}
+                onClick={() => setIsInviteDialogOpen(true)}
+                size="small"
+              >
                 New Invitation
               </Button>
             </Box>
@@ -697,20 +788,25 @@ const Users = () => {
           {!invitations || invitations.length === 0 ? (
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 py: 6,
-                textAlign: "center",
+                textAlign: 'center',
               }}
             >
-              <Mail sx={{ fontSize: 48, color: "text.disabled", mb: 2 }} />
+              <Mail sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
                 No invitations found
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: "md", mt: 1 }}>
-                There are no pending or recent admin invitations. Click the "New Invitation" button to invite an admin.
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ maxWidth: 'md', mt: 1 }}
+              >
+                There are no pending or recent admin invitations. Click the "New
+                Invitation" button to invite an admin.
               </Typography>
             </Box>
           ) : (
@@ -735,7 +831,11 @@ const Users = () => {
                       </TableCell>
                       <TableCell>{invitation.email}</TableCell>
                       <TableCell>
-                        <Chip label={invitation.role} color={getRoleColor(invitation.role)} size="small" />
+                        <Chip
+                          label={invitation.role}
+                          color={getRoleColor(invitation.role)}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -744,18 +844,32 @@ const Users = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{invitation.invitedBy?.name || "Unknown"}</TableCell>
-                      <TableCell>{new Date(invitation.expiresAt).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {invitation.invitedBy?.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invitation.expiresAt).toLocaleString()}
+                      </TableCell>
                       <TableCell align="right">
-                        {invitation.status === "pending" && (
+                        {invitation.status === 'pending' && (
                           <>
                             <Tooltip title="Resend Invitation">
-                              <IconButton size="small" onClick={() => handleResendInvitation(invitation._id)}>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleResendInvitation(invitation._id)
+                                }
+                              >
                                 <Refresh fontSize="small" color="primary" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Cancel Invitation">
-                              <IconButton size="small" onClick={() => handleCancelInvitation(invitation._id)}>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleCancelInvitation(invitation._id)
+                                }
+                              >
                                 <Cancel fontSize="small" color="error" />
                               </IconButton>
                             </Tooltip>
@@ -772,36 +886,47 @@ const Users = () => {
 
         <CardContent
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            borderTop: "1px solid",
-            borderColor: "divider",
+            display: 'flex',
+            justifyContent: 'space-between',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             pt: 2,
           }}
         >
           <Typography variant="body2" color="text.secondary">
             {filteredUsers.length} users shown
           </Typography>
-          <Button variant="outlined" startIcon={<Refresh />} onClick={() => dispatch(fetchUsers())} size="small">
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={() => dispatch(fetchUsers())}
+            size="small"
+          >
             Refresh
           </Button>
         </CardContent>
       </Card>
 
       {/* Action Menu */}
-      <Menu id="user-menu" anchorEl={anchorEl} keepMounted open={Boolean(anchorEl)} onClose={handleMenuClose}>
+      <Menu
+        id="user-menu"
+        anchorEl={anchorEl}
+        keepMounted
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
         <MenuItem
           onClick={() => {
-            openViewDialog(actionUser)
-            handleMenuClose()
+            openViewDialog(actionUser);
+            handleMenuClose();
           }}
         >
           <Visibility fontSize="small" sx={{ mr: 1 }} /> View Details
         </MenuItem>
         <MenuItem
           onClick={() => {
-            openEditDialog(actionUser)
-            handleMenuClose()
+            openEditDialog(actionUser);
+            handleMenuClose();
           }}
         >
           <Edit fontSize="small" sx={{ mr: 1 }} /> Edit
@@ -810,8 +935,8 @@ const Users = () => {
         {actionUser?.isLocked ? (
           <MenuItem
             onClick={() => {
-              handleUnlockAccount(actionUser._id)
-              handleMenuClose()
+              handleUnlockAccount(actionUser._id);
+              handleMenuClose();
             }}
           >
             <LockOpen fontSize="small" sx={{ mr: 1 }} /> Unlock Account
@@ -819,8 +944,8 @@ const Users = () => {
         ) : (
           <MenuItem
             onClick={() => {
-              openLockDialog(actionUser)
-              handleMenuClose()
+              openLockDialog(actionUser);
+              handleMenuClose();
             }}
           >
             <Lock fontSize="small" sx={{ mr: 1 }} /> Lock Account
@@ -829,28 +954,37 @@ const Users = () => {
         <Divider />
         <MenuItem
           onClick={() => {
-            handleDeleteUser(actionUser._id)
-            handleMenuClose()
+            handleDeleteUser(actionUser._id);
+            handleMenuClose();
           }}
-          disabled={actionUser?.role === "super_admin"}
-          sx={{ color: "error.main" }}
+          disabled={actionUser?.role === 'super_admin'}
+          sx={{ color: 'error.main' }}
         >
           <Delete fontSize="small" sx={{ mr: 1 }} /> Delete
         </MenuItem>
       </Menu>
 
       {/* Add User Dialog */}
-      <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Add New User</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>Create a new admin or staff account</DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
+            Create a new admin or staff account
+          </DialogContentText>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
                 label="Full Name"
                 fullWidth
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -860,7 +994,9 @@ const Users = () => {
                 type="email"
                 fullWidth
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -870,7 +1006,9 @@ const Users = () => {
                 type="password"
                 fullWidth
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -879,10 +1017,14 @@ const Users = () => {
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                   label="Role"
                 >
-                  {isSuperAdmin && <MenuItem value="super_admin">Super Admin</MenuItem>}
+                  {isSuperAdmin && (
+                    <MenuItem value="super_admin">Super Admin</MenuItem>
+                  )}
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="manager">Manager</MenuItem>
                   <MenuItem value="staff">Staff</MenuItem>
@@ -894,7 +1036,9 @@ const Users = () => {
                 label="Phone"
                 fullWidth
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -909,17 +1053,26 @@ const Users = () => {
       </Dialog>
 
       {/* Edit User Dialog */}
-      <Dialog open={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Edit User</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>Update user information</DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
+            Update user information
+          </DialogContentText>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
                 label="Full Name"
                 fullWidth
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -929,7 +1082,9 @@ const Users = () => {
                 type="email"
                 fullWidth
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -938,10 +1093,14 @@ const Users = () => {
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role: e.target.value })
+                  }
                   label="Role"
                 >
-                  {isSuperAdmin && <MenuItem value="super_admin">Super Admin</MenuItem>}
+                  {isSuperAdmin && (
+                    <MenuItem value="super_admin">Super Admin</MenuItem>
+                  )}
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="manager">Manager</MenuItem>
                   <MenuItem value="staff">Staff</MenuItem>
@@ -953,7 +1112,9 @@ const Users = () => {
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   label="Status"
                 >
                   <MenuItem value="active">Active</MenuItem>
@@ -967,7 +1128,9 @@ const Users = () => {
                 label="Phone"
                 fullWidth
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -982,17 +1145,26 @@ const Users = () => {
       </Dialog>
 
       {/* Invite Admin Dialog */}
-      <Dialog open={isInviteDialogOpen} onClose={() => setIsInviteDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={isInviteDialogOpen}
+        onClose={() => setIsInviteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Invite Admin</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>Send an invitation to a new admin user</DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
+            Send an invitation to a new admin user
+          </DialogContentText>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
                 label="Full Name"
                 fullWidth
                 value={inviteData.name}
-                onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                onChange={(e) =>
+                  setInviteData({ ...inviteData, name: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -1002,7 +1174,9 @@ const Users = () => {
                 type="email"
                 fullWidth
                 value={inviteData.email}
-                onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                onChange={(e) =>
+                  setInviteData({ ...inviteData, email: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -1011,10 +1185,14 @@ const Users = () => {
                 <InputLabel>Role</InputLabel>
                 <Select
                   value={inviteData.role}
-                  onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
+                  onChange={(e) =>
+                    setInviteData({ ...inviteData, role: e.target.value })
+                  }
                   label="Role"
                 >
-                  {isSuperAdmin && <MenuItem value="super_admin">Super Admin</MenuItem>}
+                  {isSuperAdmin && (
+                    <MenuItem value="super_admin">Super Admin</MenuItem>
+                  )}
                   <MenuItem value="admin">Admin</MenuItem>
                 </Select>
               </FormControl>
@@ -1027,7 +1205,9 @@ const Users = () => {
                 fullWidth
                 placeholder="Add a personal message to the invitation email..."
                 value={inviteData.message}
-                onChange={(e) => setInviteData({ ...inviteData, message: e.target.value })}
+                onChange={(e) =>
+                  setInviteData({ ...inviteData, message: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -1036,7 +1216,12 @@ const Users = () => {
                 control={
                   <Checkbox
                     checked={inviteData.sendWelcomeEmail}
-                    onChange={(e) => setInviteData({ ...inviteData, sendWelcomeEmail: e.target.checked })}
+                    onChange={(e) =>
+                      setInviteData({
+                        ...inviteData,
+                        sendWelcomeEmail: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="Send welcome email with instructions"
@@ -1046,24 +1231,45 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsInviteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleInviteAdmin} variant="contained" color="primary">
+          <Button
+            onClick={handleInviteAdmin}
+            variant="contained"
+            color="primary"
+          >
             Send Invitation
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* View User Dialog */}
-      <Dialog open={isViewDialogOpen} onClose={() => setIsViewDialogOpen(false)} maxWidth="sm">
+      <Dialog
+        open={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        maxWidth="sm"
+      >
         <DialogTitle>User Details</DialogTitle>
         <DialogContent>
           {selectedUser && (
-            <Box sx={{ textAlign: "center", mb: 2 }}>
-              <Avatar sx={{ width: 80, height: 80, mx: "auto", mb: 2, bgcolor: "primary.main", fontSize: "2rem" }}>
-                {selectedUser.name?.charAt(0).toUpperCase() || "U"}
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  mx: 'auto',
+                  mb: 2,
+                  bgcolor: 'primary.main',
+                  fontSize: '2rem',
+                }}
+              >
+                {selectedUser.name?.charAt(0).toUpperCase() || 'U'}
               </Avatar>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Name
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
@@ -1071,7 +1277,11 @@ const Users = () => {
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Email
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
@@ -1079,45 +1289,85 @@ const Users = () => {
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Role
                   </Typography>
-                  <Chip label={selectedUser.role} color={getRoleColor(selectedUser.role)} size="small" />
+                  <Chip
+                    label={selectedUser.role}
+                    color={getRoleColor(selectedUser.role)}
+                    size="small"
+                  />
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Status
                   </Typography>
-                  <Chip label={selectedUser.status} color={getStatusColor(selectedUser.status)} size="small" />
+                  <Chip
+                    label={selectedUser.status}
+                    color={getStatusColor(selectedUser.status)}
+                    size="small"
+                  />
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Last Login
                   </Typography>
                   <Typography variant="body2">
-                    {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : "Never"}
+                    {selectedUser.lastLogin
+                      ? new Date(selectedUser.lastLogin).toLocaleString()
+                      : 'Never'}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Account Created
                   </Typography>
-                  <Typography variant="body2">{new Date(selectedUser.createdAt).toLocaleString()}</Typography>
+                  <Typography variant="body2">
+                    {new Date(selectedUser.createdAt).toLocaleString()}
+                  </Typography>
                 </Grid>
                 {selectedUser.isLocked && (
                   <>
                     <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
                         Lock Reason
                       </Typography>
-                      <Typography variant="body2">{selectedUser.lockReason || "N/A"}</Typography>
+                      <Typography variant="body2">
+                        {selectedUser.lockReason || 'N/A'}
+                      </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
                         Locked Until
                       </Typography>
                       <Typography variant="body2">
-                        {selectedUser.lockedUntil ? new Date(selectedUser.lockedUntil).toLocaleString() : "N/A"}
+                        {selectedUser.lockedUntil
+                          ? new Date(selectedUser.lockedUntil).toLocaleString()
+                          : 'N/A'}
                       </Typography>
                     </Grid>
                   </>
@@ -1132,16 +1382,31 @@ const Users = () => {
       </Dialog>
 
       {/* Lock Account Dialog */}
-      <Dialog open={isLockDialogOpen} onClose={() => setIsLockDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={isLockDialogOpen}
+        onClose={() => setIsLockDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Lock User Account</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
             {selectedUser && `Lock ${selectedUser.name}'s account temporarily`}
           </DialogContentText>
-          <Box sx={{ mb: 3, p: 2, bgcolor: "warning.light", borderRadius: 1, display: "flex", alignItems: "center" }}>
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              bgcolor: 'warning.light',
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             <Warning color="warning" sx={{ mr: 1 }} />
             <Typography variant="body2" color="warning.dark">
-              Locking this account will prevent the user from logging in until the lock expires or is manually removed.
+              Locking this account will prevent the user from logging in until
+              the lock expires or is manually removed.
             </Typography>
           </Box>
           <Grid container spacing={2}>
@@ -1153,7 +1418,9 @@ const Users = () => {
                 fullWidth
                 placeholder="Provide a reason for locking this account..."
                 value={lockData.reason}
-                onChange={(e) => setLockData({ ...lockData, reason: e.target.value })}
+                onChange={(e) =>
+                  setLockData({ ...lockData, reason: e.target.value })
+                }
                 margin="normal"
               />
             </Grid>
@@ -1162,7 +1429,12 @@ const Users = () => {
                 <InputLabel>Lock Duration</InputLabel>
                 <Select
                   value={lockData.durationMinutes.toString()}
-                  onChange={(e) => setLockData({ ...lockData, durationMinutes: Number.parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setLockData({
+                      ...lockData,
+                      durationMinutes: Number.parseInt(e.target.value),
+                    })
+                  }
                   label="Lock Duration"
                 >
                   <MenuItem value="30">30 minutes</MenuItem>
@@ -1184,7 +1456,7 @@ const Users = () => {
         </DialogActions>
       </Dialog>
     </Box>
-  )
-}
+  );
+};
 
-export default Users
+export default Users;
