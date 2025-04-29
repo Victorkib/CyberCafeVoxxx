@@ -433,19 +433,24 @@ export const unblockCustomer = async (req, res, next) => {
 // User Management
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const users = await User.find({})
+    const { page = 1, limit = 10, role } = req.query;
+
+    // If called from admin management, filter for admin users
+    const query =
+      role === 'admin' ? { role: { $in: ['admin', 'super_admin'] } } : {};
+
+    const users = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await User.countDocuments();
+    const total = await User.countDocuments(query);
 
     res.json({
       users,
       totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      currentPage: Number(page),
     });
   } catch (error) {
     next(error);

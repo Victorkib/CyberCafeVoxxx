@@ -33,6 +33,7 @@ import {
   LayoutDashboard,
   UserCog,
   Mail,
+  ShieldCheck,
 } from 'lucide-react';
 import { logoutUser } from '../../redux/slices/authSlice';
 import { toggleDarkMode } from '../../redux/slices/uiSlice';
@@ -40,15 +41,15 @@ import { toggleDarkMode } from '../../redux/slices/uiSlice';
 // Import your custom components
 import Dashboard from './custom/dashboard';
 import Products from './custom/products';
-import  Order from './custom/order';
+import Order from './custom/order';
 import Customers from './custom/customers';
-import UsersManagement from './custom/users';
 import NewsletterManagement from './NewsletterManagement';
 import PaymentAnalyticsPage from './PaymentAnalyticsPage';
 import PaymentManagementPage from './PaymentManagementPage';
 import NotificationBell from './notifications/NotificationBell';
 import NotificationsManagement from './notifications/NotificationsManagement';
 import CategoryManagement from './categories/CategoryManagement';
+import AdminManagement from './custom/AdminManagement';
 
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -134,13 +135,13 @@ const AdminLayout = () => {
       id: 'payments',
       icon: CreditCard,
       path: '/admin/payments',
-      group: 'main'
+      group: 'main',
     },
     {
-      name: 'Users',
-      id: 'users',
-      icon: UserCog,
-      path: '/admin/users',
+      name: 'Admins',
+      id: 'admins',
+      icon: ShieldCheck,
+      path: '/admin/admins',
     },
     {
       name: 'Newsletter',
@@ -478,7 +479,10 @@ const AdminLayout = () => {
                       {user?.name || 'Admin User'}
                     </p>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {user?.role || 'Administrator' || 'Super Admin' || 'Admin'}
+                      {user?.role ||
+                        'Administrator' ||
+                        'Super Admin' ||
+                        'Admin'}
                     </p>
                   </div>
                 </div>
@@ -598,7 +602,8 @@ const AdminLayout = () => {
                     {location.pathname.includes('products') && 'Add Product'}
                     {location.pathname.includes('orders') && 'Create Order'}
                     {location.pathname.includes('customers') && 'Add Customer'}
-                    {location.pathname.includes('categories') && 'Add Categories'}
+                    {location.pathname.includes('categories') &&
+                      'Add Categories'}
                     {location.pathname.includes('dashboard') && 'Refresh Data'}
                     {location.pathname.includes('analytics') &&
                       'Generate Report'}
@@ -618,12 +623,24 @@ const AdminLayout = () => {
                   <Route path="/customers" element={<Customers />} />
                   <Route path="/categories" element={<CategoryManagement />} />
                   <Route path="/payments" element={<PaymentManagementPage />} />
-                  <Route path="/payments/analytics" element={<PaymentAnalyticsPage />} />
-                  <Route path="/users" element={<UsersManagement />} />
-                  <Route path="/newsletter" element={<NewsletterManagement />} />
-                  <Route path="/notifications" element={<NotificationsManagement />} />
+                  <Route
+                    path="/payments/analytics"
+                    element={<PaymentAnalyticsPage />}
+                  />
+                  <Route path="/admins" element={<AdminManagement />} />
+                  <Route
+                    path="/newsletter"
+                    element={<NewsletterManagement />}
+                  />
+                  <Route
+                    path="/notifications"
+                    element={<NotificationsManagement />}
+                  />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route
+                    path="/"
+                    element={<Navigate to="/admin/dashboard" replace />}
+                  />
                 </Routes>
               </div>
             </div>
