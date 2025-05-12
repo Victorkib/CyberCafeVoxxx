@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { paymentAPI } from '../../utils/api';
+import { paymentAPI } from '../../utils/paymentAPI';
 import { toast } from 'react-toastify';
 
 // User payment thunks
@@ -8,10 +8,14 @@ export const getPaymentMethods = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.getMethods();
-      return response.data;
+      return response.data.data; // Server returns { success: true, data: [...] }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch payment methods');
-      return rejectWithValue(error.response?.data || 'Failed to fetch payment methods');
+      toast.error(
+        error.response?.data?.message || 'Failed to fetch payment methods'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to fetch payment methods'
+      );
     }
   }
 );
@@ -21,10 +25,15 @@ export const initializePayment = createAsyncThunk(
   async (paymentData, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.initialize(paymentData);
-      return response.data;
+      toast.success('Payment initialized successfully');
+      return response.data.data; // Server returns { success: true, data: {...} }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to initialize payment');
-      return rejectWithValue(error.response?.data || 'Failed to initialize payment');
+      toast.error(
+        error.response?.data?.message || 'Failed to initialize payment'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to initialize payment'
+      );
     }
   }
 );
@@ -39,7 +48,7 @@ export const retryPayment = createAsyncThunk(
         ...paymentData,
       });
       toast.success('Payment retry initiated');
-      return response.data;
+      return response.data.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to retry payment');
       return rejectWithValue(error.response?.data || 'Failed to retry payment');
@@ -54,34 +63,44 @@ export const checkPaymentStatus = createAsyncThunk(
       const response = await paymentAPI.checkStatus(orderId);
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to check payment status');
-      return rejectWithValue(error.response?.data || 'Failed to check payment status');
+      console.error('Error checking payment status:', error);
+      return rejectWithValue(
+        error.response?.data || 'Failed to check payment status'
+      );
     }
   }
 );
 
 export const getPaymentHistory = createAsyncThunk(
   'payment/getHistory',
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await paymentAPI.getHistory();
-      return response.data;
+      const response = await paymentAPI.getHistory(params);
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to get payment history');
-      return rejectWithValue(error.response?.data || 'Failed to get payment history');
+      toast.error(
+        error.response?.data?.message || 'Failed to get payment history'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to get payment history'
+      );
     }
   }
 );
 
 export const getPaymentDetails = createAsyncThunk(
   'payment/getDetails',
-  async (paymentId, { rejectWithValue }) => {
+  async (orderId, { rejectWithValue }) => {
     try {
-      const response = await paymentAPI.getDetails(paymentId);
-      return response.data;
+      const response = await paymentAPI.getDetails(orderId);
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to get payment details');
-      return rejectWithValue(error.response?.data || 'Failed to get payment details');
+      toast.error(
+        error.response?.data?.message || 'Failed to get payment details'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to get payment details'
+      );
     }
   }
 );
@@ -92,10 +111,14 @@ export const getPaymentAnalytics = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.getAnalytics(params);
-      return response.data;
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch payment analytics');
-      return rejectWithValue(error.response?.data || 'Failed to fetch payment analytics');
+      toast.error(
+        error.response?.data?.message || 'Failed to fetch payment analytics'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to fetch payment analytics'
+      );
     }
   }
 );
@@ -106,23 +129,29 @@ export const processRefund = createAsyncThunk(
     try {
       const response = await paymentAPI.refund(paymentId, reason);
       toast.success('Refund processed successfully');
-      return response.data;
+      return response.data.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to process refund');
-      return rejectWithValue(error.response?.data || 'Failed to process refund');
+      return rejectWithValue(
+        error.response?.data || 'Failed to process refund'
+      );
     }
   }
 );
 
 export const getRefundHistory = createAsyncThunk(
   'payment/getRefundHistory',
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await paymentAPI.getRefundHistory();
-      return response.data;
+      const response = await paymentAPI.getRefundHistory(params);
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to get refund history');
-      return rejectWithValue(error.response?.data || 'Failed to get refund history');
+      toast.error(
+        error.response?.data?.message || 'Failed to get refund history'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to get refund history'
+      );
     }
   }
 );
@@ -132,10 +161,14 @@ export const getPaymentSettings = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await paymentAPI.getSettings();
-      return response.data;
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to get payment settings');
-      return rejectWithValue(error.response?.data || 'Failed to get payment settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to get payment settings'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to get payment settings'
+      );
     }
   }
 );
@@ -146,10 +179,14 @@ export const updatePaymentSettings = createAsyncThunk(
     try {
       const response = await paymentAPI.updateSettings(settings);
       toast.success('Payment settings updated successfully');
-      return response.data;
+      return response.data.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update payment settings');
-      return rejectWithValue(error.response?.data || 'Failed to update payment settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to update payment settings'
+      );
+      return rejectWithValue(
+        error.response?.data || 'Failed to update payment settings'
+      );
     }
   }
 );
@@ -163,7 +200,7 @@ const initialState = {
   settings: null,
   loading: false,
   error: null,
-  status: 'idle'
+  status: 'idle',
 };
 
 const paymentSlice = createSlice({
@@ -175,7 +212,12 @@ const paymentSlice = createSlice({
     },
     resetPaymentState: (state) => {
       return initialState;
-    }
+    },
+    updatePaymentStatus: (state, action) => {
+      if (state.currentPayment) {
+        state.currentPayment.status = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -205,6 +247,19 @@ const paymentSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Retry Payment
+      .addCase(retryPayment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(retryPayment.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentPayment = action.payload;
+      })
+      .addCase(retryPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Check Payment Status
       .addCase(checkPaymentStatus.pending, (state) => {
         state.loading = true;
@@ -227,9 +282,26 @@ const paymentSlice = createSlice({
       })
       .addCase(getPaymentHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.paymentHistory = action.payload;
+        state.paymentHistory = action.payload.payments;
+        // If pagination is included in the response
+        if (action.payload.pagination) {
+          state.pagination = action.payload.pagination;
+        }
       })
       .addCase(getPaymentHistory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Get Payment Details
+      .addCase(getPaymentDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPaymentDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentPayment = action.payload;
+      })
+      .addCase(getPaymentDetails.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -254,7 +326,9 @@ const paymentSlice = createSlice({
       .addCase(processRefund.fulfilled, (state, action) => {
         state.loading = false;
         // Update payment history if needed
-        const index = state.paymentHistory.findIndex(p => p._id === action.payload._id);
+        const index = state.paymentHistory.findIndex(
+          (p) => p._id === action.payload._id
+        );
         if (index !== -1) {
           state.paymentHistory[index] = action.payload;
         }
@@ -270,7 +344,11 @@ const paymentSlice = createSlice({
       })
       .addCase(getRefundHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.refundHistory = action.payload;
+        state.refundHistory = action.payload.refunds;
+        // If pagination is included in the response
+        if (action.payload.pagination) {
+          state.refundPagination = action.payload.pagination;
+        }
       })
       .addCase(getRefundHistory.rejected, (state, action) => {
         state.loading = false;
@@ -302,8 +380,9 @@ const paymentSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+  },
 });
 
-export const { clearPaymentError, resetPaymentState } = paymentSlice.actions;
-export default paymentSlice.reducer; 
+export const { clearPaymentError, resetPaymentState, updatePaymentStatus } =
+  paymentSlice.actions;
+export default paymentSlice.reducer;

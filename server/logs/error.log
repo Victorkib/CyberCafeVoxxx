@@ -1,0 +1,42 @@
+2025-05-09 15:40:14:4014 [31merror[39m: [31mError creating order[39m
+2025-05-09 15:58:38:5838 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending email[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending order confirmation email to triple3limited@gmail.com[39m
+2025-05-09 16:19:46:1946 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:47:53:4753 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:48:52:4852 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:52:33:5233 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mError initializing payment for order 68209e1e198617bfb3f15ef4[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mError initializing payment for order 6820a4cd9e7e4c02993ccea5[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m

@@ -1,0 +1,153 @@
+2025-05-09 14:44:52:4452 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:01:05:15 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:13:28:1328 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:17:36:1736 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:21:04:214 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:39:00:390 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-09 15:40:13:4013 [32minfo[39m: [32mCreating new order[39m
+2025-05-09 15:40:14:4014 [31merror[39m: [31mError creating order[39m
+2025-05-09 15:58:35:5835 [32minfo[39m: [32mCreating new order[39m
+2025-05-09 15:58:38:5838 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending email[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending order confirmation email to triple3limited@gmail.com[39m
+2025-05-09 15:58:39:5839 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-09 16:19:45:1945 [32minfo[39m: [32mMailjet client initialized successfully[39m
+2025-05-09 16:19:46:1946 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:19:46:1946 [32minfo[39m: [32mEmail service initialized with primary/secondary providers[39m
+2025-05-09 16:24:49:2449 [32minfo[39m: [32mCreating new order[39m
+2025-05-09 16:24:51:2451 [32minfo[39m: [32mEmail sent successfully via Mailjet[39m
+2025-05-09 16:24:51:2451 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-09 16:24:51:2451 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-09 16:26:31:2631 [32minfo[39m: [32mCreating new order[39m
+2025-05-09 16:26:33:2633 [32minfo[39m: [32mEmail sent successfully via Mailjet[39m
+2025-05-09 16:26:33:2633 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-09 16:26:33:2633 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-09 16:26:34:2634 [32minfo[39m: [32mValidating payment initialization request[39m
+2025-05-09 16:26:34:2634 [32minfo[39m: [32mInitializing payment for order 681e0288787345b12d81ffb1 using mpesa[39m
+2025-05-09 16:26:34:2634 [32minfo[39m: [32mInitializing M-Pesa payment[39m
+2025-05-09 16:26:34:2634 [32minfo[39m: [32mGetting M-Pesa access token[39m
+2025-05-09 16:26:35:2635 [32minfo[39m: [32mInitiating M-Pesa STK Push[39m
+2025-05-09 16:26:36:2636 [32minfo[39m: [32mPayment initialized successfully for order 681e0288787345b12d81ffb1[39m
+2025-05-09 16:47:50:4750 [32minfo[39m: [32mMailjet client initialized successfully[39m
+2025-05-09 16:47:53:4753 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:47:53:4753 [32minfo[39m: [32mEmail service initialized with primary/secondary providers[39m
+2025-05-09 16:48:49:4849 [32minfo[39m: [32mMailjet client initialized successfully[39m
+2025-05-09 16:48:52:4852 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:48:52:4852 [32minfo[39m: [32mEmail service initialized with primary/secondary providers[39m
+2025-05-09 16:52:31:5231 [32minfo[39m: [32mMailjet client initialized successfully[39m
+2025-05-09 16:52:33:5233 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:52:33:5233 [32minfo[39m: [32mEmail service initialized with primary/secondary providers[39m
+2025-05-10 09:32:28:3228 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-10 15:52:01:521 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-10 15:52:02:522 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:35:07:357 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-11 14:36:38:3638 [32minfo[39m: [32mCreating new order[39m
+2025-05-11 14:36:48:3648 [32minfo[39m: [32mEmail sent successfully using mailjet[39m
+2025-05-11 14:36:48:3648 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-11 14:36:48:3648 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-11 14:36:48:3648 [32minfo[39m: [32mValidating payment initialization request[39m
+2025-05-11 14:36:48:3648 [32minfo[39m: [32mInitializing payment for order 68208bcada6b8deb6dac808d using mpesa[39m
+2025-05-11 14:36:49:3649 [32minfo[39m: [32mInitializing M-Pesa payment[39m
+2025-05-11 14:36:49:3649 [32minfo[39m: [32mGetting M-Pesa access token[39m
+2025-05-11 14:36:51:3651 [32minfo[39m: [32mInitiating M-Pesa STK Push[39m
+2025-05-11 14:36:52:3652 [32minfo[39m: [32mPayment initialized successfully for order 68208bcada6b8deb6dac808d[39m
+2025-05-11 15:09:24:924 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-11 15:09:25:925 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-11 15:54:02:542 [32minfo[39m: [32mFetching available payment methods[39m
+2025-05-11 15:54:53:5453 [32minfo[39m: [32mCreating new order[39m
+2025-05-11 15:54:55:5455 [32minfo[39m: [32mEmail sent successfully using mailjet[39m
+2025-05-11 15:54:55:5455 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-11 15:54:55:5455 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-11 15:54:56:5456 [32minfo[39m: [32mValidating payment initialization request[39m
+2025-05-11 15:54:56:5456 [32minfo[39m: [32mInitializing payment for order 68209e1e198617bfb3f15ef4 using mpesa[39m
+2025-05-11 15:54:57:5457 [32minfo[39m: [32mInitializing M-Pesa payment[39m
+2025-05-11 15:54:57:5457 [32minfo[39m: [32mGetting M-Pesa access token[39m
+2025-05-11 15:54:58:5458 [32minfo[39m: [32mInitiating M-Pesa STK Push[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mError initializing payment for order 68209e1e198617bfb3f15ef4[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 16:23:11:2311 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-11 16:23:11:2311 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-11 16:23:25:2325 [32minfo[39m: [32mCreating new order[39m
+2025-05-11 16:23:26:2326 [32minfo[39m: [32mEmail sent successfully using mailjet[39m
+2025-05-11 16:23:26:2326 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-11 16:23:26:2326 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-11 16:23:27:2327 [32minfo[39m: [32mValidating payment initialization request[39m
+2025-05-11 16:23:27:2327 [32minfo[39m: [32mInitializing payment for order 6820a4cd9e7e4c02993ccea5 using mpesa[39m
+2025-05-11 16:23:28:2328 [32minfo[39m: [32mInitializing M-Pesa payment[39m
+2025-05-11 16:23:28:2328 [32minfo[39m: [32mGetting M-Pesa access token[39m
+2025-05-11 16:23:30:2330 [32minfo[39m: [32mInitiating M-Pesa STK Push[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mError initializing payment for order 6820a4cd9e7e4c02993ccea5[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 16:28:03:283 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-11 16:28:04:284 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-11 16:28:30:2830 [32minfo[39m: [32mCreating new order[39m
+2025-05-11 16:28:31:2831 [32minfo[39m: [32mEmail sent successfully using mailjet[39m
+2025-05-11 16:28:31:2831 [32minfo[39m: [32mOrder confirmation email sent to triple3limited@gmail.com[39m
+2025-05-11 16:28:32:2832 [32minfo[39m: [32mOrder created successfully[39m
+2025-05-11 16:28:32:2832 [32minfo[39m: [32mValidating payment initialization request[39m
+2025-05-11 16:28:32:2832 [32minfo[39m: [32mInitializing payment for order 6820a5fe57e143d55ad30d24 using mpesa[39m
+2025-05-11 16:28:33:2833 [32minfo[39m: [32mInitializing M-Pesa payment[39m
+2025-05-11 16:28:33:2833 [32minfo[39m: [32mGetting M-Pesa access token[39m
+2025-05-11 16:28:34:2834 [32minfo[39m: [32mInitiating M-Pesa STK Push[39m
+2025-05-11 16:28:35:2835 [32minfo[39m: [32mM-Pesa STK Push successful[39m
+2025-05-11 16:28:35:2835 [32minfo[39m: [32mPayment initialized successfully for order 6820a5fe57e143d55ad30d24[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 12:28:01:281 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:28:02:282 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:28:26:2826 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:28:27:2827 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:30:58:3058 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:30:59:3059 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:34:21:3421 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:34:22:3422 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:35:23:3523 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:35:26:3526 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:36:13:3613 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-05-12 12:36:14:3614 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-05-12 12:36:23:3623 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:36:25:3625 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:36:54:3654 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:36:57:3657 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:37:00:370 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:37:02:372 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:37:38:3738 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:37:40:3740 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:38:52:3852 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:38:54:3854 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:38:58:3858 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:39:02:392 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:39:26:3926 [32minfo[39m: [32mFetching refund history[39m
+2025-05-12 12:39:26:3926 [32minfo[39m: [32mFetching payment history[39m
+2025-05-12 12:39:27:3927 [32minfo[39m: [32mFetching refund history[39m
+2025-05-12 12:39:27:3927 [32minfo[39m: [32mFetching payment history[39m
+2025-05-12 12:40:12:4012 [32minfo[39m: [32mFetching all orders[39m
+2025-05-12 12:40:14:4014 [32minfo[39m: [32mFetching all orders[39m

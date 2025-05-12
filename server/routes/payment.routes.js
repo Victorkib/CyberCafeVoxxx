@@ -4,9 +4,25 @@ import {
   initializePayment,
   processPaymentCallback,
   processRefund,
-  getPaymentAnalytics
+  getPaymentAnalytics,
+  retryPayment,
+  checkPaymentStatus,
+  getPaymentHistory,
+  getPaymentDetails,
+  getRefundHistory,
+  updatePaymentSettings,
+  fetchPaymentSettings,
 } from '../controllers/payment.controller.js';
 import { authMiddleware, authorize } from '../middleware/auth.middleware.js';
+import {
+  validatePaymentInit,
+  validatePaymentCallback,
+  validateRefund,
+} from '../middleware/paymentValidation.js';
+import {
+  handlePaymentError,
+  handleProviderError,
+} from '../middleware/paymentErrorHandler.js';
 
 const router = express.Router();
 
@@ -17,14 +33,23 @@ router.get('/methods', getPaymentMethods);
 router.use(authMiddleware);
 
 // Payment initialization and processing
-router.post('/initialize', initializePayment);
-router.post('/callback', processPaymentCallback);
+router.post('/initialize', validatePaymentInit, initializePayment);
+router.post('/callback', validatePaymentCallback, processPaymentCallback);
+router.post('/retry', retryPayment);
+router.get('/status/:orderId', checkPaymentStatus);
+router.get('/history', getPaymentHistory);
+router.get('/details/:orderId', getPaymentDetails);
+router.get('/refunds', getRefundHistory);
 
 // Admin routes (require admin authorization)
-router.use(authorize(['admin']));
+router.use('/admin', authorize('admin', 'super_admin'));
+router.post('/admin/refund', validateRefund, processRefund);
+router.get('/admin/analytics', getPaymentAnalytics);
+router.put('/admin/settings', updatePaymentSettings);
+router.get('/admin/settings', fetchPaymentSettings);
 
-// Payment management
-router.post('/refund', processRefund);
-router.get('/analytics', getPaymentAnalytics);
+// Error handlers specific to payment routes
+router.use(handlePaymentError);
+router.use(handleProviderError);
 
-export default router; 
+export default router;

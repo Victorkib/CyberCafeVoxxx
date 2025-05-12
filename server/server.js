@@ -15,35 +15,6 @@ import hpp from 'hpp';
 import { Server } from 'socket.io';
 import http from 'http';
 
-// Import the unified notification service
-import UnifiedNotificationService from './services/unified-notification.service.js';
-import { initNotificationHelper } from './utils/notificationHelper.js';
-import { notificationMiddleware } from './middleware/notification.middleware.js';
-
-// Import routes
-import authRoutes from './routes/auth.routes.js';
-import userRoutes from './routes/user.routes.js';
-import productRoutes from './routes/product.routes.js';
-import categoryRoutes from './routes/category.routes.js';
-import cartRoutes from './routes/cart.routes.js';
-import orderRoutes from './routes/order.routes.js';
-import specialOfferRoutes from './routes/specialOffer.routes.js';
-import heroSlideRoutes from './routes/heroSlide.routes.js';
-import newsletterRoutes from './routes/newsletter.routes.js';
-import paymentRoutes from './routes/payment.routes.js';
-import notificationRoutes from './routes/notification.routes.js';
-import adminRoutes from './routes/admin.routes.js';
-import reportRoutes from './routes/report.routes.js';
-import settingsRoutes from './routes/settings.routes.js';
-import couponRoutes from './routes/coupon.routes.js';
-
-// Import middleware
-import { errorHandler } from './middleware/error.middleware.js';
-import { authMiddleware } from './middleware/auth.middleware.js';
-
-// Import scheduler
-import { initializeScheduledTasks } from './utils/scheduler.js';
-
 // Load environment variables
 dotenv.config();
 
@@ -53,6 +24,9 @@ process.env.USE_REDIS = process.env.USE_REDIS || 'false';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Raw body parser for webhooks
+const rawBodyParser = express.raw({ type: 'application/json' });
+
 // Security Middleware
 app.use(helmet());
 app.use(mongoSanitize());
@@ -61,8 +35,8 @@ app.use(hpp());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
 });
 app.use('/api/', limiter);
 
@@ -87,7 +61,7 @@ app.use('/uploads', express.static(join(__dirname, 'uploads')));
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create Socket.IO server with CORS configuration
+// Socket.IO
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -96,17 +70,48 @@ const io = new Server(server, {
   },
 });
 
-// Initialize the unified notification service
+// Unified notification service
+import UnifiedNotificationService from './services/unified-notification.service.js';
+import { initNotificationHelper } from './utils/notificationHelper.js';
+import { notificationMiddleware } from './middleware/notification.middleware.js';
+
 const notificationService = new UnifiedNotificationService(io);
-
-// Make the notification service available to other modules
 app.set('notificationService', notificationService);
-
-// Initialize the notification helper with the notification service
 initNotificationHelper(notificationService);
-
-// Add notification middleware
 app.use(notificationMiddleware);
+
+// Import routes
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import productRoutes from './routes/product.routes.js';
+import categoryRoutes from './routes/category.routes.js';
+import cartRoutes from './routes/cart.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import specialOfferRoutes from './routes/specialOffer.routes.js';
+import heroSlideRoutes from './routes/heroSlide.routes.js';
+import newsletterRoutes from './routes/newsletter.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import reportRoutes from './routes/report.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
+import couponRoutes from './routes/coupon.routes.js';
+import paymentWebhookRoutes from './routes/payment.webhooks.routes.js';
+
+// Import error handlers
+import { errorHandler } from './middleware/error.middleware.js';
+import {
+  handlePaymentError,
+  handleProviderError,
+} from './middleware/paymentErrorHandler.js';
+import { authMiddleware } from './middleware/auth.middleware.js';
+
+// Import payment webhooks
+import {
+  handleMpesaWebhook,
+  handlePaystackWebhook,
+  handlePaypalWebhook,
+} from './controllers/payment.webhooks.js';
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -114,7 +119,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', authMiddleware, cartRoutes);
-app.use('/api/orders', authMiddleware, orderRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/special-offers', specialOfferRoutes);
 app.use('/api/hero-slides', heroSlideRoutes);
@@ -124,31 +129,42 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/webhooks', paymentWebhookRoutes);
 
-// Error handling
+// Webhook endpoints without rate limiting
+app.post('/webhooks/mpesa', rawBodyParser, handleMpesaWebhook);
+app.post('/webhooks/paystack', rawBodyParser, handlePaystackWebhook);
+app.post('/webhooks/paypal', rawBodyParser, handlePaypalWebhook);
+
+// Error handlers
+app.use(handlePaymentError);
+app.use(handleProviderError);
 app.use(errorHandler);
 
-// Database connection
+// MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
-    // Initialize scheduled tasks
-    initializeScheduledTasks();
-    console.log('Scheduled tasks initialized');
-    server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+
+    // Scheduler
+    import('./utils/scheduler.js').then(({ initializeScheduledTasks }) => {
+      initializeScheduledTasks();
+      console.log('Scheduled tasks initialized');
+
+      server.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+      });
     });
   })
   .catch((error) => {
     console.error('MongoDB connection error:', error);
+    process.exit(1);
   });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  process.exit(1);
 });
 
 // Export for testing

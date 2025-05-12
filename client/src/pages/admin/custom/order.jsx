@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   ShoppingCart,
   Search,
@@ -76,120 +77,55 @@ import {
   CardHeader,
   CardTitle,
 } from '../../../components/ui/card';
-
-// Mock data
-const mockOrders = [
-  {
-    id: '#ORD-001',
-    customer: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '(555) 123-4567',
-    date: '2025-03-15',
-    total: 74.98,
-    status: 'Delivered',
-    items: 3,
-    payment: 'Credit Card',
-    address: '123 Main St, New York, NY 10001',
-    tracking: 'TRK12345678',
-    notes: 'Leave at the door',
-  },
-  {
-    id: '#ORD-002',
-    customer: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '(555) 987-6543',
-    date: '2025-03-16',
-    total: 159.99,
-    status: 'Processing',
-    items: 2,
-    payment: 'PayPal',
-    address: '456 Oak Ave, Chicago, IL 60611',
-    tracking: '',
-    notes: '',
-  },
-  {
-    id: '#ORD-003',
-    customer: 'Robert Johnson',
-    email: 'robert.j@example.com',
-    phone: '(555) 456-7890',
-    date: '2025-03-17',
-    total: 45.99,
-    status: 'Shipped',
-    items: 1,
-    payment: 'Credit Card',
-    address: '789 Pine Blvd, Los Angeles, CA 90001',
-    tracking: 'TRK87654321',
-    notes: 'Call before delivery',
-  },
-  {
-    id: '#ORD-004',
-    customer: 'Emily Davis',
-    email: 'emily.d@example.com',
-    phone: '(555) 234-5678',
-    date: '2025-03-17',
-    total: 89.97,
-    status: 'Pending',
-    items: 4,
-    payment: 'Bank Transfer',
-    address: '321 Maple Dr, Houston, TX 77001',
-    tracking: '',
-    notes: '',
-  },
-  {
-    id: '#ORD-005',
-    customer: 'Michael Wilson',
-    email: 'michael.w@example.com',
-    phone: '(555) 876-5432',
-    date: '2025-03-18',
-    total: 179.98,
-    status: 'Cancelled',
-    items: 2,
-    payment: 'Credit Card',
-    address: '654 Cedar St, Phoenix, AZ 85001',
-    tracking: '',
-    notes: 'Customer requested cancellation',
-  },
-];
+import {
+  fetchAllOrders,
+  updateOrderStatus,
+  cancelOrder,
+} from '../../../redux/slices/orderSlice';
+import {
+  fetchDashboardStats,
+  fetchSalesAnalytics,
+} from '../../../redux/slices/adminSlice';
 
 const orderStatuses = [
-  'Pending',
-  'Processing',
-  'Shipped',
-  'Delivered',
-  'Cancelled',
+  'pending',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
 ];
 
 // Status color mapper
 const getStatusColor = (status) => {
   const statusColors = {
-    Pending:
+    pending:
       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    Processing:
+    processing:
       'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    Shipped:
+    shipped:
       'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-    Delivered:
+    delivered:
       'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    Cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   };
   return (
-    statusColors[status] ||
+    statusColors[status?.toLowerCase()] ||
     'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
   );
 };
 
 // Status icon mapper
 const getStatusIcon = (status) => {
-  switch (status) {
-    case 'Pending':
+  switch (status?.toLowerCase()) {
+    case 'pending':
       return <Clock className="h-5 w-5" />;
-    case 'Processing':
+    case 'processing':
       return <RefreshCw className="h-5 w-5" />;
-    case 'Shipped':
+    case 'shipped':
       return <Truck className="h-5 w-5" />;
-    case 'Delivered':
+    case 'delivered':
       return <CheckCircle className="h-5 w-5" />;
-    case 'Cancelled':
+    case 'cancelled':
       return <X className="h-5 w-5" />;
     default:
       return <Clock className="h-5 w-5" />;
@@ -198,14 +134,37 @@ const getStatusIcon = (status) => {
 
 // Date formatter
 const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
+// Format address helper
+const formatAddress = (address) => {
+  if (!address) return 'N/A';
+  const parts = [
+    address.address,
+    address.city,
+    address.postalCode,
+    address.country,
+  ].filter(Boolean);
+  return parts.join(', ');
+};
+
 // Orders Component
 export const Order = () => {
-  const [orders, setOrders] = useState(mockOrders);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const {
+    orders,
+    loading: orderLoading,
+    pagination,
+  } = useSelector((state) => state.order);
+  const {
+    dashboardStats,
+    salesAnalytics,
+    loading: adminLoading,
+  } = useSelector((state) => state.admin);
+
   const [notification, setNotification] = useState({
     open: false,
     message: '',
@@ -220,21 +179,60 @@ export const Order = () => {
   const [tabValue, setTabValue] = useState(0);
   const [bulkSelected, setBulkSelected] = useState([]);
 
+  // Fetch orders on component mount and when filters change
+  useEffect(() => {
+    dispatch(
+      fetchAllOrders({
+        page: pagination?.page || 1,
+        limit: 10,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        // Add date range if needed
+        ...(dateRange &&
+          dateRange[0] &&
+          dateRange[1] && {
+            startDate: dateRange[0].toISOString(),
+            endDate: dateRange[1].toISOString(),
+          }),
+        // Add search term if needed
+        ...(searchTerm && { search: searchTerm }),
+      })
+    );
+  }, [dispatch, pagination?.page, selectedStatus, dateRange, searchTerm]);
+
+  // Fetch dashboard stats and analytics
+  useEffect(() => {
+    dispatch(fetchDashboardStats());
+
+    // Get last 7 days for analytics
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+
+    dispatch(
+      fetchSalesAnalytics({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      })
+    );
+  }, [dispatch]);
+
   const handleStatusChange = (orderId, newStatus) => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const updatedOrders = orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      );
-      setOrders(updatedOrders);
-      setLoading(false);
-      setNotification({
-        open: true,
-        message: `Order ${orderId} status updated to ${newStatus}`,
-        type: 'success',
+    dispatch(updateOrderStatus({ orderId, status: newStatus }))
+      .unwrap()
+      .then(() => {
+        setNotification({
+          open: true,
+          message: `Order ${orderId} status updated to ${newStatus}`,
+          type: 'success',
+        });
+      })
+      .catch((error) => {
+        setNotification({
+          open: true,
+          message: error || 'Failed to update order status',
+          type: 'error',
+        });
       });
-    }, 1000);
   };
 
   const handleCloseNotification = () => {
@@ -252,18 +250,13 @@ export const Order = () => {
   };
 
   const handleDeleteOrder = (orderId) => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const updatedOrders = orders.filter((order) => order.id !== orderId);
-      setOrders(updatedOrders);
-      setLoading(false);
-      setNotification({
-        open: true,
-        message: `Order ${orderId} deleted successfully`,
-        type: 'success',
-      });
-    }, 1000);
+    // In a real application, you would dispatch a delete action
+    // For now, we'll just show a notification
+    setNotification({
+      open: true,
+      message: `Order ${orderId} deletion is not implemented yet`,
+      type: 'info',
+    });
   };
 
   const handleTabChange = (event, newValue) => {
@@ -283,50 +276,45 @@ export const Order = () => {
   const handleBulkDelete = () => {
     if (bulkSelected.length === 0) return;
 
-    setLoading(true);
-    setTimeout(() => {
-      const updatedOrders = orders.filter(
-        (order) => !bulkSelected.includes(order.id)
-      );
-      setOrders(updatedOrders);
-      setBulkSelected([]);
-      setLoading(false);
-      setNotification({
-        open: true,
-        message: `${bulkSelected.length} orders deleted successfully`,
-        type: 'success',
-      });
-    }, 1000);
+    // In a real application, you would dispatch a bulk delete action
+    // For now, we'll just show a notification
+    setNotification({
+      open: true,
+      message: `Bulk deletion of ${bulkSelected.length} orders is not implemented yet`,
+      type: 'info',
+    });
+    setBulkSelected([]);
   };
 
-  // Filter orders based on search, status, and date range
-  const filteredOrders = orders.filter((order) => {
-    const matchesSearch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      selectedStatus === 'all' || order.status === selectedStatus;
-
-    let matchesDateRange = true;
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const orderDate = new Date(order.date);
-      const startDate = new Date(dateRange[0]);
-      const endDate = new Date(dateRange[1]);
-      matchesDateRange = orderDate >= startDate && orderDate <= endDate;
-    }
-
-    return matchesSearch && matchesStatus && matchesDateRange;
-  });
+  // Map backend orders to the format expected by the component
+  const mappedOrders =
+    orders?.map((order) => ({
+      id: order.orderNumber || order._id,
+      customer: order.user?.name || 'Unknown Customer',
+      email: order.user?.email || 'unknown@example.com',
+      phone: order.user?.phone || 'N/A',
+      date: order.createdAt,
+      total: order.totalAmount || 0,
+      status: order.status,
+      items: order.items?.length || 0,
+      payment: order.paymentMethod || 'N/A',
+      address: formatAddress(order.shippingAddress) || 'N/A',
+      tracking: order.trackingNumber || '',
+      notes: order.notes || '',
+      // Keep the original order for reference
+      originalOrder: order,
+    })) || [];
 
   // Calculate status counts
   const statusCounts = orderStatuses.reduce((acc, status) => {
-    acc[status] = orders.filter((order) => order.status === status).length;
+    acc[status] =
+      orders?.filter((order) => order.status?.toLowerCase() === status)
+        .length || 0;
     return acc;
   }, {});
 
-  // Order analytics data
-  const dailyOrdersData = [
+  // Prepare analytics data
+  const dailyOrdersData = salesAnalytics || [
     { date: '03/12', orders: 12, revenue: 1250 },
     { date: '03/13', orders: 15, revenue: 1680 },
     { date: '03/14', orders: 18, revenue: 2100 },
@@ -341,13 +329,13 @@ export const Order = () => {
       name: status,
       value: count,
       color:
-        status === 'Pending'
+        status === 'pending'
           ? '#F59E0B'
-          : status === 'Processing'
+          : status === 'processing'
           ? '#3B82F6'
-          : status === 'Shipped'
+          : status === 'shipped'
           ? '#8B5CF6'
-          : status === 'Delivered'
+          : status === 'delivered'
           ? '#10B981'
           : '#EF4444',
     })
@@ -400,7 +388,7 @@ export const Order = () => {
       key: 'total',
       render: (text) => (
         <span className="text-sm font-medium text-gray-900 dark:text-white">
-          ${text.toFixed(2)}
+          ${Number(text).toFixed(2)}
         </span>
       ),
     },
@@ -421,7 +409,7 @@ export const Order = () => {
           onChange={(value) => handleStatusChange(record.id, value)}
           options={orderStatuses.map((status) => ({
             value: status,
-            label: status,
+            label: status.charAt(0).toUpperCase() + status.slice(1),
           }))}
           className="status-select"
         />
@@ -478,6 +466,8 @@ export const Order = () => {
     },
   ];
 
+  const loading = orderLoading || adminLoading;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -502,8 +492,13 @@ export const Order = () => {
             className="border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/20"
             startIcon={<RefreshCw className="h-5 w-5" />}
             onClick={() => {
-              setLoading(true);
-              setTimeout(() => setLoading(false), 1000);
+              dispatch(
+                fetchAllOrders({
+                  page: pagination?.page || 1,
+                  limit: 10,
+                  status: selectedStatus !== 'all' ? selectedStatus : undefined,
+                })
+              );
             }}
           >
             Refresh
@@ -537,27 +532,27 @@ export const Order = () => {
                 <MuiBadge
                   badgeContent={statusCounts[status] || 0}
                   color={
-                    status === 'Pending'
+                    status === 'pending'
                       ? 'warning'
-                      : status === 'Processing'
+                      : status === 'processing'
                       ? 'primary'
-                      : status === 'Shipped'
+                      : status === 'shipped'
                       ? 'secondary'
-                      : status === 'Delivered'
+                      : status === 'delivered'
                       ? 'success'
                       : 'error'
                   }
                 />
               </div>
               <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                {status}
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </h3>
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {statusCounts[status] || 0}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {statusCounts[status]
+                  {statusCounts[status] && orders?.length
                     ? ((statusCounts[status] / orders.length) * 100).toFixed(0)
                     : 0}
                   % of orders
@@ -566,19 +561,19 @@ export const Order = () => {
               <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                 <div
                   className={`h-1.5 rounded-full ${
-                    status === 'Pending'
+                    status === 'pending'
                       ? 'bg-yellow-500 dark:bg-yellow-400'
-                      : status === 'Processing'
+                      : status === 'processing'
                       ? 'bg-blue-500 dark:bg-blue-400'
-                      : status === 'Shipped'
+                      : status === 'shipped'
                       ? 'bg-purple-500 dark:bg-purple-400'
-                      : status === 'Delivered'
+                      : status === 'delivered'
                       ? 'bg-green-500 dark:bg-green-400'
                       : 'bg-red-500 dark:bg-red-400'
                   }`}
                   style={{
                     width: `${
-                      statusCounts[status]
+                      statusCounts[status] && orders?.length
                         ? (statusCounts[status] / orders.length) * 100
                         : 0
                     }%`,
@@ -708,7 +703,10 @@ export const Order = () => {
               >
                 <Tab label="All Orders" />
                 {orderStatuses.map((status) => (
-                  <Tab key={status} label={status} />
+                  <Tab
+                    key={status}
+                    label={status.charAt(0).toUpperCase() + status.slice(1)}
+                  />
                 ))}
               </Tabs>
             </Box>
@@ -736,7 +734,7 @@ export const Order = () => {
                   { value: 'all', label: 'All' },
                   ...orderStatuses.map((status) => ({
                     value: status,
-                    label: status,
+                    label: status.charAt(0).toUpperCase() + status.slice(1),
                   })),
                 ]}
               />
@@ -771,12 +769,24 @@ export const Order = () => {
 
           <Table
             columns={columns}
-            dataSource={filteredOrders}
+            dataSource={mappedOrders}
             rowKey="id"
             pagination={{
               pageSize: 5,
               showSizeChanger: true,
               pageSizeOptions: ['5', '10', '20'],
+              total: pagination?.total || 0,
+              current: pagination?.page || 1,
+              onChange: (page) => {
+                dispatch(
+                  fetchAllOrders({
+                    page,
+                    limit: 10,
+                    status:
+                      selectedStatus !== 'all' ? selectedStatus : undefined,
+                  })
+                );
+              },
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} of ${total} items`,
             }}
@@ -822,7 +832,7 @@ export const Order = () => {
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
                         <span className="font-medium">Total:</span> $
-                        {record.total.toFixed(2)}
+                        {Number(record.total).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -840,9 +850,9 @@ export const Order = () => {
                       },
                       {
                         label:
-                          record.status === 'Processing' ||
-                          record.status === 'Shipped' ||
-                          record.status === 'Delivered'
+                          record.status === 'processing' ||
+                          record.status === 'shipped' ||
+                          record.status === 'delivered'
                             ? formatDate(
                                 new Date(
                                   new Date(record.date).setDate(
@@ -853,17 +863,17 @@ export const Order = () => {
                             : null,
                         children: 'Processing',
                         dot:
-                          record.status === 'Processing' ||
-                          record.status === 'Shipped' ||
-                          record.status === 'Delivered' ? (
+                          record.status === 'processing' ||
+                          record.status === 'shipped' ||
+                          record.status === 'delivered' ? (
                             <RefreshCw className="h-4 w-4 text-blue-500" />
                           ) : null,
-                        color: record.status === 'Processing' ? 'blue' : 'gray',
+                        color: record.status === 'processing' ? 'blue' : 'gray',
                       },
                       {
                         label:
-                          record.status === 'Shipped' ||
-                          record.status === 'Delivered'
+                          record.status === 'shipped' ||
+                          record.status === 'delivered'
                             ? formatDate(
                                 new Date(
                                   new Date(record.date).setDate(
@@ -876,15 +886,15 @@ export const Order = () => {
                           ? `Shipped (Tracking: ${record.tracking})`
                           : 'Shipped',
                         dot:
-                          record.status === 'Shipped' ||
-                          record.status === 'Delivered' ? (
+                          record.status === 'shipped' ||
+                          record.status === 'delivered' ? (
                             <Truck className="h-4 w-4 text-purple-500" />
                           ) : null,
-                        color: record.status === 'Shipped' ? 'purple' : 'gray',
+                        color: record.status === 'shipped' ? 'purple' : 'gray',
                       },
                       {
                         label:
-                          record.status === 'Delivered'
+                          record.status === 'delivered'
                             ? formatDate(
                                 new Date(
                                   new Date(record.date).setDate(
@@ -895,14 +905,14 @@ export const Order = () => {
                             : null,
                         children: 'Delivered',
                         dot:
-                          record.status === 'Delivered' ? (
+                          record.status === 'delivered' ? (
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           ) : null,
-                        color: record.status === 'Delivered' ? 'green' : 'gray',
+                        color: record.status === 'delivered' ? 'green' : 'gray',
                       },
                       {
                         label:
-                          record.status === 'Cancelled'
+                          record.status === 'cancelled'
                             ? formatDate(
                                 new Date(
                                   new Date(record.date).setDate(
@@ -913,10 +923,10 @@ export const Order = () => {
                             : null,
                         children: 'Cancelled',
                         dot:
-                          record.status === 'Cancelled' ? (
+                          record.status === 'cancelled' ? (
                             <X className="h-4 w-4 text-red-500" />
                           ) : null,
-                        color: record.status === 'Cancelled' ? 'red' : 'gray',
+                        color: record.status === 'cancelled' ? 'red' : 'gray',
                       },
                     ].filter((item) => item.label !== null)}
                   />
@@ -1037,7 +1047,7 @@ export const Order = () => {
                       Amount
                     </p>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      ${selectedOrder.total.toFixed(2)}
+                      ${Number(selectedOrder.total).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -1081,65 +1091,107 @@ export const Order = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {/* Mock items based on the order's item count */}
-                      {Array.from({ length: selectedOrder.items }).map(
-                        (_, index) => {
-                          const price = (
-                            (selectedOrder.total / selectedOrder.items) *
-                            (0.7 + Math.random() * 0.6)
-                          ).toFixed(2);
-                          const quantity = Math.floor(Math.random() * 3) + 1;
-                          return (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
-                                    <img
-                                      src={`/placeholder.svg?height=40&width=40`}
-                                      alt="Product"
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="ml-4">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {
-                                        [
-                                          'Wireless Mouse',
-                                          'USB Flash Drive',
-                                          'Notebook Set',
-                                          'Office Chair',
-                                          'Laptop Cooling Pad',
-                                        ][index % 5]
-                                      }
+                      {/* Use real items if available, otherwise use mock items */}
+                      {selectedOrder.originalOrder?.items?.length > 0
+                        ? selectedOrder.originalOrder.items.map(
+                            (item, index) => (
+                              <tr key={index}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                      <img
+                                        src={
+                                          item.product?.images?.[0] ||
+                                          `/placeholder.svg?height=40&width=40`
+                                        }
+                                        alt={item.product?.name || 'Product'}
+                                        className="h-full w-full object-cover"
+                                      />
                                     </div>
-                                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                                      SKU:{' '}
-                                      {
-                                        [
-                                          'WM001',
-                                          'UFD32',
-                                          'NB100',
-                                          'OC220',
-                                          'LCP50',
-                                        ][index % 5]
-                                      }
+                                    <div className="ml-4">
+                                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {item.product?.name ||
+                                          item.name ||
+                                          'Product'}
+                                      </div>
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                                        SKU: {item.product?.sku || 'N/A'}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                ${price}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                {quantity}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                ${(price * quantity).toFixed(2)}
-                              </td>
-                            </tr>
-                          );
-                        }
-                      )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                  ${Number(item.price).toFixed(2)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                  {item.quantity}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                  ${(item.price * item.quantity).toFixed(2)}
+                                </td>
+                              </tr>
+                            )
+                          )
+                        : // Mock items based on the order's item count
+                          Array.from({ length: selectedOrder.items }).map(
+                            (_, index) => {
+                              const price = (
+                                (selectedOrder.total / selectedOrder.items) *
+                                (0.7 + Math.random() * 0.6)
+                              ).toFixed(2);
+                              const quantity =
+                                Math.floor(Math.random() * 3) + 1;
+                              return (
+                                <tr key={index}>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                        <img
+                                          src={`/placeholder.svg?height=40&width=40`}
+                                          alt="Product"
+                                          className="h-full w-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="ml-4">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {
+                                            [
+                                              'Wireless Mouse',
+                                              'USB Flash Drive',
+                                              'Notebook Set',
+                                              'Office Chair',
+                                              'Laptop Cooling Pad',
+                                            ][index % 5]
+                                          }
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                                          SKU:{' '}
+                                          {
+                                            [
+                                              'WM001',
+                                              'UFD32',
+                                              'NB100',
+                                              'OC220',
+                                              'LCP50',
+                                            ][index % 5]
+                                          }
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    ${price}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    {quantity}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                    ${(price * quantity).toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          )}
                     </tbody>
                   </table>
                 </div>
@@ -1175,7 +1227,7 @@ export const Order = () => {
                           Total:
                         </span>
                         <span className="text-gray-900 dark:text-white">
-                          ${selectedOrder.total.toFixed(2)}
+                          ${Number(selectedOrder.total).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -1260,7 +1312,11 @@ export const Order = () => {
                 variant="outlined"
                 type="date"
                 fullWidth
-                defaultValue={selectedOrder.date}
+                defaultValue={
+                  selectedOrder.date
+                    ? new Date(selectedOrder.date).toISOString().split('T')[0]
+                    : ''
+                }
                 InputLabelProps={{ shrink: true }}
               />
               <TextField
@@ -1278,7 +1334,7 @@ export const Order = () => {
                   defaultValue={selectedOrder.status}
                   options={orderStatuses.map((status) => ({
                     value: status,
-                    label: status,
+                    label: status.charAt(0).toUpperCase() + status.slice(1),
                   }))}
                 />
               </div>

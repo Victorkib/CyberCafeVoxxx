@@ -1,12 +1,20 @@
-import { PAYMENT_METHODS, PAYMENT_VALIDATION } from '../constants/payment.js';
+import { PAYMENT_METHODS } from '../constants/payment.js';
 import { createError } from '../utils/error.js';
+import logger from '../utils/logger.js';
 
 /**
  * Validate payment initialization request
  */
 export const validatePaymentInit = (req, res, next) => {
   try {
-    const { orderId, method } = req.body;
+    const { orderId, method, phoneNumber, email } = req.body;
+
+    logger.info('Validating payment initialization request', {
+      orderId,
+      method,
+      hasPhoneNumber: !!phoneNumber,
+      hasEmail: !!email,
+    });
 
     if (!orderId) {
       throw createError(400, 'Order ID is required');
@@ -19,19 +27,25 @@ export const validatePaymentInit = (req, res, next) => {
     // Validate method-specific requirements
     switch (method) {
       case PAYMENT_METHODS.MPESA:
-        if (!req.body.phoneNumber) {
-          throw createError(400, 'Phone number is required for M-Pesa payments');
+        if (!phoneNumber) {
+          throw createError(
+            400,
+            'Phone number is required for M-Pesa payments'
+          );
         }
-        if (!/^254[0-9]{9}$/.test(req.body.phoneNumber)) {
-          throw createError(400, 'Invalid M-Pesa phone number format');
+        if (!/^254[0-9]{9}$/.test(phoneNumber)) {
+          throw createError(
+            400,
+            'Invalid M-Pesa phone number format. Must start with 254 followed by 9 digits'
+          );
         }
         break;
 
       case PAYMENT_METHODS.PAYSTACK:
-        if (!req.body.email) {
+        if (!email) {
           throw createError(400, 'Email is required for Paystack payments');
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           throw createError(400, 'Invalid email format');
         }
         break;
@@ -46,6 +60,9 @@ export const validatePaymentInit = (req, res, next) => {
 
     next();
   } catch (error) {
+    logger.warn('Payment initialization validation failed', {
+      error: error.message,
+    });
     next(error);
   }
 };
@@ -56,6 +73,11 @@ export const validatePaymentInit = (req, res, next) => {
 export const validatePaymentCallback = (req, res, next) => {
   try {
     const { paymentId, status, transactionId } = req.body;
+
+    logger.info('Validating payment callback request', {
+      paymentId,
+      status,
+    });
 
     if (!paymentId) {
       throw createError(400, 'Payment ID is required');
@@ -71,6 +93,9 @@ export const validatePaymentCallback = (req, res, next) => {
 
     next();
   } catch (error) {
+    logger.warn('Payment callback validation failed', {
+      error: error.message,
+    });
     next(error);
   }
 };
@@ -82,6 +107,11 @@ export const validateRefund = (req, res, next) => {
   try {
     const { paymentId, reason } = req.body;
 
+    logger.info('Validating refund request', {
+      paymentId,
+      hasReason: !!reason,
+    });
+
     if (!paymentId) {
       throw createError(400, 'Payment ID is required');
     }
@@ -91,11 +121,17 @@ export const validateRefund = (req, res, next) => {
     }
 
     if (reason.length < 10) {
-      throw createError(400, 'Refund reason must be at least 10 characters long');
+      throw createError(
+        400,
+        'Refund reason must be at least 10 characters long'
+      );
     }
 
     next();
   } catch (error) {
+    logger.warn('Refund validation failed', {
+      error: error.message,
+    });
     next(error);
   }
 };
@@ -107,6 +143,10 @@ export const validatePaymentVerification = (req, res, next) => {
   try {
     const { paymentId, transactionId } = req.body;
 
+    logger.info('Validating payment verification request', {
+      paymentId,
+    });
+
     if (!paymentId) {
       throw createError(400, 'Payment ID is required');
     }
@@ -117,6 +157,9 @@ export const validatePaymentVerification = (req, res, next) => {
 
     next();
   } catch (error) {
+    logger.warn('Payment verification validation failed', {
+      error: error.message,
+    });
     next(error);
   }
-}; 
+};

@@ -22,6 +22,9 @@ const orderItemSchema = new mongoose.Schema({
   totalPrice: {
     type: Number,
     required: true,
+    default: function () {
+      return this.price * this.quantity;
+    },
   },
 });
 
@@ -31,6 +34,11 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
     },
     items: [orderItemSchema],
     shippingAddress: {
@@ -75,12 +83,6 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    paymentResult: {
-      id: String,
-      status: String,
-      update_time: String,
-      email_address: String,
-    },
     taxAmount: {
       type: Number,
       required: true,
@@ -111,36 +113,61 @@ const orderSchema = new mongoose.Schema(
     trackingNumber: String,
     estimatedDelivery: Date,
     notes: String,
+    paidAt: Date,
+    shippedAt: Date,
+    deliveredAt: Date,
+    isDelivered: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Pre-save middleware to calculate totals
+// Pre-save middleware to calculate item totals if not provided
 orderSchema.pre('save', function (next) {
-  this.totalAmount =
-    this.items.reduce((total, item) => total + item.totalPrice, 0) +
-    this.taxAmount +
-    this.shippingAmount;
+  // Calculate totalPrice for each item if not set
+  this.items.forEach((item) => {
+    if (!item.totalPrice) {
+      item.totalPrice = item.price * item.quantity;
+    }
+  });
+
+  // Only calculate order total if items have changed
+  if (this.isModified('items') || this.isNew) {
+    this.totalAmount =
+      this.items.reduce((total, item) => total + item.totalPrice, 0) +
+      this.taxAmount +
+      this.shippingAmount;
+  }
   next();
 });
 
 // Method to update order status
-orderSchema.methods.updateStatus = async function (newStatus) {
+orderSchema.methods.updateStatus = async function (newStatus, session = null) {
   this.status = newStatus;
-  
+
   // If order is cancelled or refunded, update product stock
   if (newStatus === 'cancelled' || newStatus === 'refunded') {
     const Product = mongoose.model('Product');
     for (const item of this.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity },
-      });
+      if (session) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { countInStock: item.quantity } },
+          { session }
+        );
+      } else {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { countInStock: item.quantity },
+        });
+      }
     }
   }
-  
-  return this.save();
+
+  return session ? this.save({ session }) : this.save();
 };
 
 // Method to generate tracking number
@@ -173,4 +200,4 @@ orderSchema.statics.getOrderStats = async function () {
   }, {});
 };
 
-export default mongoose.model('Order', orderSchema); 
+export default mongoose.model('Order', orderSchema);
