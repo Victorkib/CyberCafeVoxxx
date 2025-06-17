@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  fetchAdminNotifications,
-  markNotificationAsRead,
-} from '../../../redux/slices/adminNotificationSlice';
+import { fetchAdminNotifications } from '../../../redux/slices/adminNotificationSlice';
 import { Link } from 'react-router-dom';
 
 const AdminNotificationBell = () => {
@@ -62,7 +59,10 @@ const AdminNotificationBell = () => {
   const handleNotificationClick = (notification) => {
     // Mark as read
     if (!notification.isRead) {
-      dispatch(markNotificationAsRead(notification._id));
+      // dispatch(markNotificationAsRead(notification._id));
+      console.log(`Marking notification ${notification._id} as read`);
+      // Update local state to reflect the change
+      setUnreadCount((prevCount) => prevCount - 1);
     }
 
     // Navigate to link if available
