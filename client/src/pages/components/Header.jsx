@@ -628,245 +628,431 @@ const Header = ({
             </form>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className={`lg:hidden ${
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 lg:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
+
+            {/* Sliding Menu */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 30,
+                duration: 0.4,
+              }}
+              className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] ${
                 darkMode
-                  ? 'bg-gray-800 border-gray-700'
+                  ? 'bg-gray-900 border-gray-700'
                   : 'bg-white border-gray-200'
-              } absolute w-full shadow-lg z-50 overflow-hidden border-t`}
+              } shadow-2xl z-50 lg:hidden border-l overflow-hidden`}
             >
-              <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
-                {/* Navigation Links */}
-                <ButtonLoader
-                  isLoading={loadingNavItem === '/shop'}
-                  onClick={() => handleNavigation('/shop', 'Shop')}
-                  className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } bg-transparent border-none`}
-                  loadingText="Loading Shop..."
-                  size="sm"
-                >
-                  🛍️ Shop
-                </ButtonLoader>
-
-                <ButtonLoader
-                  isLoading={loadingNavItem === '/services'}
-                  onClick={() => handleNavigation('/services', 'Services')}
-                  className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } bg-transparent border-none`}
-                  loadingText="Loading Services..."
-                  size="sm"
-                >
-                  ⚙️ Services
-                </ButtonLoader>
-
-                <ButtonLoader
-                  isLoading={loadingNavItem === '/websites'}
-                  onClick={() => handleNavigation('/websites', 'Websites')}
-                  className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } bg-transparent border-none`}
-                  loadingText="Loading Websites..."
-                  size="sm"
-                >
-                  🌐 Websites
-                </ButtonLoader>
-
-                {/* Admin Link */}
-                {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                  <ButtonLoader
-                    isLoading={loadingNavItem === '/admin'}
-                    onClick={() =>
-                      handleNavigation('/admin', 'Admin Dashboard')
-                    }
-                    className="block w-full text-left py-3 px-4 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
-                    loadingText="Loading Admin..."
-                    size="sm"
+              {/* Menu Header */}
+              <div
+                className={`flex items-center justify-between p-6 border-b ${
+                  darkMode ? 'border-gray-700' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center">
+                  <Coffee
+                    size={24}
+                    className={`${
+                      darkMode ? 'text-blue-400' : 'text-blue-700'
+                    } mr-2`}
+                  />
+                  <span
+                    className={`font-bold text-lg ${
+                      darkMode ? 'text-white' : 'text-blue-900'
+                    }`}
                   >
-                    👑 Admin Dashboard
-                  </ButtonLoader>
-                )}
+                    Vox
+                    <span
+                      className={`${
+                        darkMode ? 'text-blue-400' : 'text-blue-600'
+                      }`}
+                    >
+                      Cyber
+                    </span>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`p-2 rounded-full transition-colors duration-200 ${
+                    darkMode
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  aria-label="Close menu"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-                {/* Divider */}
+              {/* Menu Content */}
+              <div className="flex flex-col h-full overflow-y-auto">
+                <div className="flex-1 p-6 space-y-1">
+                  {/* Navigation Links */}
+                  <div className="space-y-1">
+                    <ButtonLoader
+                      isLoading={loadingNavItem === '/shop'}
+                      onClick={() => handleNavigation('/shop', 'Shop')}
+                      className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                        darkMode
+                          ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      } bg-transparent border-none group`}
+                      loadingText="Loading Shop..."
+                      size="sm"
+                    >
+                      <span className="text-xl mr-4">🛍️</span>
+                      <span className="font-medium">Shop</span>
+                      <motion.div
+                        className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ x: 5 }}
+                      >
+                        →
+                      </motion.div>
+                    </ButtonLoader>
+
+                    <ButtonLoader
+                      isLoading={loadingNavItem === '/services'}
+                      onClick={() => handleNavigation('/services', 'Services')}
+                      className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                        darkMode
+                          ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      } bg-transparent border-none group`}
+                      loadingText="Loading Services..."
+                      size="sm"
+                    >
+                      <span className="text-xl mr-4">⚙️</span>
+                      <span className="font-medium">Services</span>
+                      <motion.div
+                        className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ x: 5 }}
+                      >
+                        →
+                      </motion.div>
+                    </ButtonLoader>
+
+                    <ButtonLoader
+                      isLoading={loadingNavItem === '/websites'}
+                      onClick={() => handleNavigation('/websites', 'Websites')}
+                      className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                        darkMode
+                          ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      } bg-transparent border-none group`}
+                      loadingText="Loading Websites..."
+                      size="sm"
+                    >
+                      <span className="text-xl mr-4">🌐</span>
+                      <span className="font-medium">Websites</span>
+                      <motion.div
+                        className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ x: 5 }}
+                      >
+                        →
+                      </motion.div>
+                    </ButtonLoader>
+
+                    {/* Admin Link */}
+                    {(user?.role === 'admin' ||
+                      user?.role === 'super_admin') && (
+                      <ButtonLoader
+                        isLoading={loadingNavItem === '/admin'}
+                        onClick={() =>
+                          handleNavigation('/admin', 'Admin Dashboard')
+                        }
+                        className="flex items-center w-full text-left py-4 px-4 text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl transition-all duration-200 group"
+                        loadingText="Loading Admin..."
+                        size="sm"
+                      >
+                        <span className="text-xl mr-4">👑</span>
+                        <span className="font-medium">Admin Dashboard</span>
+                        <motion.div
+                          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                          whileHover={{ x: 5 }}
+                        >
+                          →
+                        </motion.div>
+                      </ButtonLoader>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div
+                    className={`border-t pt-6 mt-6 ${
+                      darkMode ? 'border-gray-700' : 'border-gray-200'
+                    }`}
+                  >
+                    {/* Auth Section */}
+                    {!user ? (
+                      <div className="space-y-1">
+                        <ButtonLoader
+                          isLoading={isAuthLoading}
+                          onClick={() => handleAuthModal('login')}
+                          className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          } bg-transparent border-none group`}
+                          loadingText="Opening Login..."
+                          size="sm"
+                        >
+                          <span className="text-xl mr-4">🔐</span>
+                          <span className="font-medium">Login</span>
+                          <motion.div
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ x: 5 }}
+                          >
+                            →
+                          </motion.div>
+                        </ButtonLoader>
+
+                        <ButtonLoader
+                          isLoading={isAuthLoading}
+                          onClick={() => handleAuthModal('register')}
+                          className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          } bg-transparent border-none group`}
+                          loadingText="Opening Register..."
+                          size="sm"
+                        >
+                          <span className="text-xl mr-4">📝</span>
+                          <span className="font-medium">Register</span>
+                          <motion.div
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ x: 5 }}
+                          >
+                            →
+                          </motion.div>
+                        </ButtonLoader>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {/* User Info */}
+                        <div
+                          className={`px-4 py-4 rounded-xl ${
+                            darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                darkMode ? 'bg-blue-600' : 'bg-blue-100'
+                              }`}
+                            >
+                              <User
+                                size={20}
+                                className={
+                                  darkMode ? 'text-white' : 'text-blue-600'
+                                }
+                              />
+                            </div>
+                            <div className="ml-3">
+                              <p
+                                className={`font-medium ${
+                                  darkMode ? 'text-white' : 'text-gray-900'
+                                }`}
+                              >
+                                {user.name}
+                              </p>
+                              <p
+                                className={`text-sm ${
+                                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}
+                              >
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <ButtonLoader
+                          isLoading={loadingNavItem === '/account'}
+                          onClick={() =>
+                            handleNavigation('/account', 'Account')
+                          }
+                          className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          } bg-transparent border-none group`}
+                          loadingText="Loading Account..."
+                          size="sm"
+                        >
+                          <span className="text-xl mr-4">👤</span>
+                          <span className="font-medium">My Account</span>
+                          <motion.div
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ x: 5 }}
+                          >
+                            →
+                          </motion.div>
+                        </ButtonLoader>
+
+                        <ButtonLoader
+                          isLoading={loadingNavItem === '/orders'}
+                          onClick={() => handleNavigation('/orders', 'Orders')}
+                          className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          } bg-transparent border-none group`}
+                          loadingText="Loading Orders..."
+                          size="sm"
+                        >
+                          <span className="text-xl mr-4">📦</span>
+                          <span className="font-medium">Orders</span>
+                          <motion.div
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ x: 5 }}
+                          >
+                            →
+                          </motion.div>
+                        </ButtonLoader>
+
+                        <ButtonLoader
+                          isLoading={loadingNavItem === '/notifications'}
+                          onClick={() =>
+                            handleNavigation('/notifications', 'Notifications')
+                          }
+                          className={`flex items-center w-full text-left py-4 px-4 rounded-xl transition-all duration-200 ${
+                            darkMode
+                              ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          } bg-transparent border-none group`}
+                          loadingText="Loading Notifications..."
+                          size="sm"
+                        >
+                          <span className="text-xl mr-4">🔔</span>
+                          <span className="font-medium">Notifications</span>
+                          <motion.div
+                            className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                            whileHover={{ x: 5 }}
+                          >
+                            →
+                          </motion.div>
+                        </ButtonLoader>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Menu Footer */}
                 <div
-                  className={`border-t pt-4 mt-4 ${
+                  className={`border-t p-6 space-y-1 ${
                     darkMode ? 'border-gray-700' : 'border-gray-200'
                   }`}
                 >
-                  {/* Auth Section */}
-                  {!user ? (
-                    <div className="space-y-2">
-                      <ButtonLoader
-                        isLoading={isAuthLoading}
-                        onClick={() => handleAuthModal('login')}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Opening Login..."
-                        size="sm"
-                      >
-                        🔐 Login
-                      </ButtonLoader>
-
-                      <ButtonLoader
-                        isLoading={isAuthLoading}
-                        onClick={() => handleAuthModal('register')}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Opening Register..."
-                        size="sm"
-                      >
-                        📝 Register
-                      </ButtonLoader>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="px-4 py-3">
-                        <p
-                          className={`font-medium ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}
-                        >
-                          👋 {user.name}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            darkMode ? 'text-gray-400' : 'text-gray-500'
-                          }`}
-                        >
-                          {user.email}
-                        </p>
-                      </div>
-
-                      <ButtonLoader
-                        isLoading={loadingNavItem === '/account'}
-                        onClick={() => handleNavigation('/account', 'Account')}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Loading Account..."
-                        size="sm"
-                      >
-                        👤 My Account
-                      </ButtonLoader>
-
-                      <ButtonLoader
-                        isLoading={loadingNavItem === '/orders'}
-                        onClick={() => handleNavigation('/orders', 'Orders')}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Loading Orders..."
-                        size="sm"
-                      >
-                        📦 Orders
-                      </ButtonLoader>
-
-                      <ButtonLoader
-                        isLoading={loadingNavItem === '/notifications'}
-                        onClick={() =>
-                          handleNavigation('/notifications', 'Notifications')
-                        }
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Loading Notifications..."
-                        size="sm"
-                      >
-                        🔔 Notifications
-                      </ButtonLoader>
-
-                      <ButtonLoader
-                        isLoading={isLoggingOut}
-                        onClick={handleLogout}
-                        className={`block w-full text-left py-3 px-4 rounded-lg transition-colors duration-200 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } bg-transparent border-none`}
-                        loadingText="Logging out..."
-                        size="sm"
-                      >
-                        🚪 Logout
-                      </ButtonLoader>
-                    </div>
-                  )}
-
-                  {/* Additional Links */}
-                  <div className="mt-4 pt-4 border-t space-y-2 border-gray-200 dark:border-gray-700">
-                    <a
-                      href="#"
-                      className={`flex items-center w-full py-3 px-4 rounded-lg transition-colors duration-200 ${
-                        darkMode
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                      }`}
+                  <a
+                    href="#"
+                    className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 ${
+                      darkMode
+                        ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    } group`}
+                  >
+                    <MapPin size={18} className="mr-4" />
+                    <span className="font-medium">Track Order</span>
+                    <motion.div
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      whileHover={{ x: 5 }}
                     >
-                      <MapPin size={18} className="mr-3" />
-                      Track Order
-                    </a>
-                    <a
-                      href="#"
-                      className={`flex items-center w-full py-3 px-4 rounded-lg transition-colors duration-200 ${
-                        darkMode
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                      }`}
+                      →
+                    </motion.div>
+                  </a>
+
+                  <a
+                    href="#"
+                    className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 ${
+                      darkMode
+                        ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    } group`}
+                  >
+                    <Headphones size={18} className="mr-4" />
+                    <span className="font-medium">Customer Support</span>
+                    <motion.div
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      whileHover={{ x: 5 }}
                     >
-                      <Headphones size={18} className="mr-3" />
-                      Customer Support
-                    </a>
+                      →
+                    </motion.div>
+                  </a>
+
+                  <ButtonLoader
+                    isLoading={isTogglingTheme}
+                    onClick={handleToggleTheme}
+                    className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 ${
+                      darkMode
+                        ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    } bg-transparent border-none group`}
+                    loadingText="Switching theme..."
+                    size="sm"
+                  >
+                    {darkMode ? (
+                      <Sun size={18} className="mr-4" />
+                    ) : (
+                      <Moon size={18} className="mr-4" />
+                    )}
+                    <span className="font-medium">
+                      Switch to {darkMode ? 'Light' : 'Dark'} Mode
+                    </span>
+                    <motion.div
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      whileHover={{ x: 5 }}
+                    >
+                      →
+                    </motion.div>
+                  </ButtonLoader>
+
+                  {user && (
                     <ButtonLoader
-                      isLoading={isTogglingTheme}
-                      onClick={handleToggleTheme}
-                      className={`flex items-center w-full py-3 px-4 rounded-lg transition-colors duration-200 ${
+                      isLoading={isLoggingOut}
+                      onClick={handleLogout}
+                      className={`flex items-center w-full py-3 px-4 rounded-xl transition-all duration-200 ${
                         darkMode
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                      } bg-transparent border-none`}
-                      loadingText="Switching theme..."
+                          ? 'text-red-400 hover:bg-red-900/20'
+                          : 'text-red-600 hover:bg-red-50'
+                      } bg-transparent border-none group`}
+                      loadingText="Logging out..."
                       size="sm"
                     >
-                      {darkMode ? (
-                        <Sun size={18} className="mr-3" />
-                      ) : (
-                        <Moon size={18} className="mr-3" />
-                      )}
-                      Switch to {darkMode ? 'Light' : 'Dark'} Mode
+                      <span className="text-xl mr-4">🚪</span>
+                      <span className="font-medium">Logout</span>
+                      <motion.div
+                        className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                        whileHover={{ x: 5 }}
+                      >
+                        →
+                      </motion.div>
                     </ButtonLoader>
-                  </div>
+                  )}
                 </div>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

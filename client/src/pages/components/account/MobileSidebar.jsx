@@ -4,6 +4,7 @@ import { X, LogOut } from 'lucide-react';
 import { logout } from '../../../redux/slices/authSlice';
 import ButtonLoader from '../loaders/ButtonLoader';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 const MobileSidebar = ({
   isMobileMenuOpen,
@@ -46,8 +47,10 @@ const MobileSidebar = ({
             darkMode ? 'border-gray-700' : 'border-gray-200'
           }`}
         >
-          <h2 className={`text-xl font-bold text-blue-600 dark:text-blue-400`}>
-            VoxCyber
+          <h2
+            className={`text-xl font-bold text-blue-600 dark:text-blue-400 cursor-pointer`}
+          >
+            <Link to="/">VoxCyber</Link>
           </h2>
           <ButtonLoader
             onClick={() => setIsMobileMenuOpen(false)}
