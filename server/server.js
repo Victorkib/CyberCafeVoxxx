@@ -41,8 +41,8 @@ const validateEnvironment = () => {
 
   // Set defaults for optional variables
   const optionalDefaults = {
-    NODE_ENV: 'development',
-    PAYMENT_MODE: 'test',
+    NODE_ENV: 'production',
+    PAYMENT_MODE: 'live',
     MPESA_ENV: 'sandbox',
     PAYMENT_TIMEOUT_MINUTES: '10',
     MAX_PAYMENT_RETRIES: '3',
