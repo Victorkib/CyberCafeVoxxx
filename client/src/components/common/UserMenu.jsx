@@ -3,25 +3,25 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { 
-  IconButton, 
-  Menu, 
-  MenuItem, 
-  Avatar, 
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Avatar,
   Divider,
   ListItemIcon,
-  Typography
+  Typography,
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   Dashboard as DashboardIcon,
-  Notifications as NotificationsIcon
+  Notifications as NotificationsIcon,
 } from '@mui/icons-material';
-import { logout } from '../../redux/slices/authSlice';
 import NotificationBell from '../notifications/NotificationBell';
 import NotificationsPage from '../../pages/NotificationsPage';
+import { logoutUser } from '../../redux/slices/authSlice';
 
 const UserMenu = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -39,7 +39,7 @@ const UserMenu = () => {
   };
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
     handleClose();
     navigate('/');
   };
@@ -67,7 +67,7 @@ const UserMenu = () => {
   return (
     <>
       <NotificationBell />
-      
+
       <IconButton
         onClick={handleMenu}
         size="small"
@@ -107,14 +107,15 @@ const UserMenu = () => {
           </ListItemIcon>
           Notifications
         </MenuItem>
-        {user?.role === 'admin' || user?.role === 'super_admin' && (
-          <MenuItem onClick={handleDashboard}>
-            <ListItemIcon>
-              <DashboardIcon fontSize="small" />
-            </ListItemIcon>
-            Admin Dashboard
-          </MenuItem>
-        )}
+        {user?.role === 'admin' ||
+          (user?.role === 'super_admin' && (
+            <MenuItem onClick={handleDashboard}>
+              <ListItemIcon>
+                <DashboardIcon fontSize="small" />
+              </ListItemIcon>
+              Admin Dashboard
+            </MenuItem>
+          ))}
         <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
@@ -123,8 +124,6 @@ const UserMenu = () => {
           Logout
         </MenuItem>
       </Menu>
-
-   
     </>
   );
 };

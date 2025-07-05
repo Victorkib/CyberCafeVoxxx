@@ -43,7 +43,10 @@ export const updateProduct = createAsyncThunk(
   'products/updateProduct',
   async ({ productId, productData }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.put(`/products/${productId}`, productData);
+      const response = await apiRequest.put(
+        `/products/${productId}`,
+        productData
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -81,11 +84,13 @@ export const fetchFeaturedProducts = createAsyncThunk(
   'products/fetchFeaturedProducts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.getProducts({ featured: true });
+      const response = await apiRequest.getFeaturedProducts();
       return response.data;
     } catch (error) {
       console.error('Error fetching featured products:', error);
-      return rejectWithValue(error.response?.data || { message: 'Failed to fetch featured products' });
+      return rejectWithValue(
+        error.response?.data || { message: 'Failed to fetch featured products' }
+      );
     }
   }
 );
@@ -245,7 +250,9 @@ const productsSlice = createSlice({
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.products.findIndex((p) => p._id === action.payload._id);
+        const index = state.products.findIndex(
+          (p) => p._id === action.payload._id
+        );
         if (index !== -1) {
           state.products[index] = action.payload;
         }
@@ -264,7 +271,9 @@ const productsSlice = createSlice({
       })
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = state.products.filter((p) => p._id !== action.payload._id);
+        state.products = state.products.filter(
+          (p) => p._id !== action.payload._id
+        );
         state.totalProducts -= 1;
         if (state.selectedProduct?._id === action.payload._id) {
           state.selectedProduct = null;
@@ -293,7 +302,8 @@ const productsSlice = createSlice({
       })
       .addCase(updateProductStock.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to update product stock';
+        state.error =
+          action.payload?.message || 'Failed to update product stock';
       })
       // Fetch Featured Products
       .addCase(fetchFeaturedProducts.pending, (state) => {
@@ -306,7 +316,8 @@ const productsSlice = createSlice({
       })
       .addCase(fetchFeaturedProducts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch featured products';
+        state.error =
+          action.payload?.message || 'Failed to fetch featured products';
       })
       // Fetch Products by Category
       .addCase(fetchProductsByCategory.pending, (state) => {
@@ -320,7 +331,8 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProductsByCategory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch products by category';
+        state.error =
+          action.payload?.message || 'Failed to fetch products by category';
       })
       // Search Products
       .addCase(searchProducts.pending, (state) => {
@@ -360,7 +372,8 @@ const productsSlice = createSlice({
       })
       .addCase(fetchSaleProducts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch sale products';
+        state.error =
+          action.payload?.message || 'Failed to fetch sale products';
       })
       // Fetch Related Products
       .addCase(fetchRelatedProducts.pending, (state) => {
@@ -373,12 +386,17 @@ const productsSlice = createSlice({
       })
       .addCase(fetchRelatedProducts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch related products';
+        state.error =
+          action.payload?.message || 'Failed to fetch related products';
       });
   },
 });
 
-export const { setFilters, clearFilters, setCurrentPage, clearSelectedProduct } =
-  productsSlice.actions;
+export const {
+  setFilters,
+  clearFilters,
+  setCurrentPage,
+  clearSelectedProduct,
+} = productsSlice.actions;
 
-export default productsSlice.reducer; 
+export default productsSlice.reducer;

@@ -3,18 +3,35 @@ import {
   handleMpesaWebhook,
   handlePaystackWebhook,
   handlePaypalWebhook,
-  verifyPaymentStatus,
+  verifyPaymentWithProvider,
 } from '../controllers/payment.webhooks.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import {
+  validateWebhookSignature,
+  validatePaymentStatusCheck,
+} from '../middleware/paymentValidation.js';
+import { handlePaymentError } from '../middleware/paymentErrorHandler.js';
 
 const router = express.Router();
 
-// Webhook routes (no authentication required as they are called by payment providers)
-router.post('/mpesa/webhook', handleMpesaWebhook);
-router.post('/paystack/webhook', handlePaystackWebhook);
-router.post('/paypal/webhook', handlePaypalWebhook);
+// Webhook endpoints (no authentication required)
+router.post('/mpesa', validateWebhookSignature('mpesa'), handleMpesaWebhook);
+router.post(
+  '/paystack',
+  validateWebhookSignature('paystack'),
+  handlePaystackWebhook
+);
+router.post('/paypal', validateWebhookSignature('paypal'), handlePaypalWebhook);
 
-// Manual verification route (requires authentication)
-router.get('/verify/:paymentId', authMiddleware, verifyPaymentStatus);
+// Protected verification endpoint
+router.get(
+  '/verify/:paymentId',
+  authMiddleware,
+  validatePaymentStatusCheck,
+  verifyPaymentWithProvider
+);
+
+// Error handler
+router.use(handlePaymentError);
 
 export default router;

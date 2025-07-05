@@ -6,6 +6,7 @@ import {
 } from '../utils/payment.js';
 import Order from '../models/order.model.js';
 import Payment from '../models/payment.model.js';
+import Product from '../models/product.model.js'; // Make sure this import exists
 import User from '../models/user.model.js';
 import { createError } from '../utils/error.js';
 import { createPaymentNotification } from '../utils/notificationHelper.js';
@@ -30,6 +31,105 @@ import logger from '../utils/logger.js';
 import axios from 'axios';
 import { mpesa } from '../utils/payment.js';
 
+// Enhanced stock reduction function with better error handling
+export const reduceStock = async (orderItems, session = null) => {
+  let useExternalSession = false;
+  if (session) {
+    useExternalSession = true;
+  } else {
+    session = await mongoose.startSession();
+    await session.startTransaction();
+  }
+
+  try {
+    logger.info('Starting stock reduction process', {
+      itemCount: orderItems.length,
+      items: orderItems.map((item) => ({
+        productId: item.product,
+        quantity: item.quantity,
+      })),
+    });
+
+    // Group quantities by product to handle multiple items of same product
+    const productQuantities = new Map();
+    for (const item of orderItems) {
+      const productId = item.product.toString();
+      const quantity = item.quantity;
+      const current = productQuantities.get(productId) || 0;
+      productQuantities.set(productId, current + quantity);
+    }
+
+    logger.info('Grouped product quantities', {
+      productQuantities: Array.from(productQuantities.entries()),
+    });
+
+    // Process each product
+    for (const [productId, totalQuantity] of productQuantities) {
+      const product = await Product.findById(productId).session(session);
+
+      if (!product) {
+        throw new Error(`Product not found: ${productId}`);
+      }
+
+      logger.info('Processing product stock reduction', {
+        productId,
+        productName: product.name,
+        currentStock: product.stock,
+        quantityToReduce: totalQuantity,
+      });
+
+      // Check if sufficient stock is available
+      if (product.stock < totalQuantity) {
+        throw new Error(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Required: ${totalQuantity}`
+        );
+      }
+
+      // Reduce stock
+      const newStock = product.stock - totalQuantity;
+      product.stock = newStock;
+
+      // Update status if stock depleted
+      if (newStock === 0 && product.status === 'active') {
+        product.status = 'out_of_stock';
+        logger.info('Product marked as out of stock', {
+          productId,
+          productName: product.name,
+        });
+      }
+
+      await product.save({ session });
+
+      logger.info('Stock reduced successfully', {
+        productId,
+        productName: product.name,
+        previousStock: product.stock + totalQuantity,
+        newStock: product.stock,
+        quantityReduced: totalQuantity,
+      });
+    }
+
+    if (!useExternalSession) {
+      await session.commitTransaction();
+      logger.info('Stock reduction transaction committed successfully');
+    }
+  } catch (error) {
+    logger.error('Error in stock reduction process', {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    if (!useExternalSession) {
+      await session.abortTransaction();
+    }
+    throw error;
+  } finally {
+    if (!useExternalSession) {
+      session.endSession();
+    }
+  }
+};
+
 // Get payment methods
 export const getPaymentMethods = handleAsync(async (req, res) => {
   logger.info('Fetching available payment methods');
@@ -50,6 +150,7 @@ export const getPaymentMethods = handleAsync(async (req, res) => {
       enabled: settings.paystackEnabled !== false,
       logo: '/images/payment/paystack.png',
       requiresEmail: true,
+      supportsInline: true,
     },
     {
       id: PAYMENT_METHODS.PAYPAL,
@@ -75,16 +176,16 @@ const getAdminUsers = async () => {
 
 // Initialize payment
 export const initializePayment = handleAsync(async (req, res) => {
-  const { orderId, method, phoneNumber, email } = req.body;
+  const { orderId, method, phoneNumber, email, amount, reference } = req.body;
   const userId = req.user._id;
 
   logger.info(`Initializing payment for order ${orderId} using ${method}`, {
     userId,
     orderId,
     method,
+    reference,
   });
 
-  // Start a database transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -105,45 +206,33 @@ export const initializePayment = handleAsync(async (req, res) => {
       throw createError(400, 'Order is already paid');
     }
 
-    // Generate a unique transaction ID
-    const transactionId = generateTransactionId();
+    const transactionId = reference || generateTransactionId();
 
-    // Create payment record
     const payment = new Payment({
       orderId: order._id,
       userId: order.user,
-      amount: order.totalAmount,
+      amount: amount || order.totalAmount,
       method: method || PAYMENT_METHODS.MPESA,
       transactionId,
-      metadata: {
-        orderNumber: order.orderNumber,
-        items: order.items.map((item) => ({
-          productId: item.product,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        phoneNumber,
-        email,
-      },
+      metadata: new Map([
+        ['orderNumber', order.orderNumber],
+        [
+          'items',
+          order.items.map((item) => ({
+            productId: item.product,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        ],
+        ['phoneNumber', phoneNumber],
+        ['email', email],
+        ['isInlineCheckout', method === PAYMENT_METHODS.PAYSTACK && reference],
+        ['paystackReference', reference],
+      ]),
     });
 
     await payment.save({ session });
 
-    // Get all admin users and create notifications for each
-    const adminUsers = await getAdminUsers();
-
-    // Create notifications (outside transaction since it's not critical)
-    const notificationPromises = adminUsers.map((admin) =>
-      createPaymentNotification({
-        userId: admin._id,
-        title: 'New Payment Initialized',
-        message: `Payment of ${payment.amount} KES initialized for Order #${order.orderNumber}`,
-        link: `/admin/payments/${payment._id}`,
-        priority: PAYMENT_PRIORITY.MEDIUM,
-      })
-    );
-
-    // Initialize payment with the appropriate gateway
     let paymentInitResult;
 
     switch (method) {
@@ -155,40 +244,54 @@ export const initializePayment = handleAsync(async (req, res) => {
           );
         }
         paymentInitResult = await initializeMpesaPayment(order, phoneNumber);
-        payment.metadata.checkoutRequestId =
-          paymentInitResult.checkoutRequestId;
+        payment.metadata.set(
+          'checkoutRequestId',
+          paymentInitResult.checkoutRequestId
+        );
         break;
 
+      // In the PAYSTACK case, make sure we return the reference
       case PAYMENT_METHODS.PAYSTACK:
         if (!email) {
           throw createError(400, 'Email is required for Paystack payments');
         }
-        paymentInitResult = await initializePaystackPayment(order, email);
-        payment.metadata.paystackReference = paymentInitResult.reference;
+
+        if (reference) {
+          paymentInitResult = {
+            reference: reference,
+            amount: amount || order.totalAmount,
+            email: email,
+            inline: true,
+            message: 'Inline checkout initialized',
+          };
+          payment.metadata.set('paystackReference', reference);
+          payment.metadata.set('isInlineCheckout', true);
+        } else {
+          paymentInitResult = await initializePaystackPayment(order, email);
+          payment.metadata.set(
+            'paystackReference',
+            paymentInitResult.reference
+          );
+        }
         break;
 
       case PAYMENT_METHODS.PAYPAL:
         paymentInitResult = await initializePaypalPayment(order);
-        payment.metadata.paypalOrderId = paymentInitResult.paypalOrderId;
+        payment.metadata.set('paypalOrderId', paymentInitResult.paypalOrderId);
         break;
 
       default:
         throw createError(400, 'Invalid payment method');
     }
 
-    // Update payment with gateway-specific details
     await payment.save({ session });
-
-    // Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
-    // Process notifications after transaction is committed
-    await Promise.all(notificationPromises);
-
-    logger.info(`Payment initialized successfully for order ${orderId}`, {
+    logger.info('Payment initialized successfully', {
       paymentId: payment._id,
       transactionId: payment.transactionId,
+      paystackReference: payment.metadata.get('paystackReference'),
     });
 
     res.json({
@@ -198,25 +301,480 @@ export const initializePayment = handleAsync(async (req, res) => {
         amount: payment.amount,
         method: payment.method,
         transactionId: payment.transactionId,
-        ...paymentInitResult,
+        reference: payment.transactionId, // Add this line
+        ...(method === PAYMENT_METHODS.MPESA && {
+          checkoutRequestId: paymentInitResult.checkoutRequestId,
+          message: paymentInitResult.message,
+        }),
+        ...(method === PAYMENT_METHODS.PAYSTACK && {
+          authorizationUrl: paymentInitResult.authorizationUrl,
+          reference: paymentInitResult.reference || payment.transactionId,
+          inline: paymentInitResult.inline || false,
+        }),
+        ...(method === PAYMENT_METHODS.PAYPAL && {
+          approvalUrl: paymentInitResult.approvalUrl,
+          paypalOrderId: paymentInitResult.paypalOrderId,
+        }),
       },
     });
   } catch (error) {
-    // If an error occurred, abort the transaction
     await session.abortTransaction();
     session.endSession();
-
-    logger.error(`Error initializing payment for order ${orderId}`, {
-      error: error.message,
-      orderId,
-      method,
-    });
-
     throw error;
   }
 });
 
-// Process payment callback
+// FIXED: Process inline payment callback with proper Map field handling
+export const processInlineCallback = handleAsync(async (req, res) => {
+  const { orderId, reference, status, transactionId, metadata } = req.body;
+  const userId = req.user._id;
+
+  logger.info(`Processing inline payment callback for order ${orderId}`, {
+    reference,
+    status,
+    transactionId,
+    userId,
+  });
+
+  const session = await mongoose.startSession();
+  let transactionStarted = false;
+
+  try {
+    await session.startTransaction();
+    transactionStarted = true;
+
+    const order = await Order.findOne({ _id: orderId, user: userId }).session(
+      session
+    );
+    if (!order) {
+      throw createError(404, 'Order not found');
+    }
+
+    // FIXED: Debug and find payment with proper Map field handling
+    logger.info('Searching for payment record', {
+      orderId,
+      reference,
+      searchCriteria: 'orderId and reference matching',
+    });
+
+    // First, let's find all payments for this order to debug
+    const allPayments = await Payment.find({ orderId }).session(session);
+    logger.info('All payments found for order', {
+      orderId,
+      paymentCount: allPayments.length,
+      payments: allPayments.map((p) => ({
+        id: p._id,
+        transactionId: p.transactionId,
+        metadata: p.metadata,
+        metadataKeys: p.metadata ? Array.from(p.metadata.keys()) : [],
+        paystackRef: p.metadata ? p.metadata.get('paystackReference') : null,
+      })),
+    });
+
+    // FIXED: Use aggregation pipeline to properly query Map fields
+    const paymentAggregation = await Payment.aggregate([
+      {
+        $match: {
+          orderId: new mongoose.Types.ObjectId(orderId),
+        },
+      },
+      {
+        $addFields: {
+          paystackRef: { $objectToArray: '$metadata' },
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { transactionId: reference },
+            {
+              'paystackRef.k': 'paystackReference',
+              'paystackRef.v': reference,
+            },
+          ],
+        },
+      },
+    ]).session(session);
+
+    let payment = null;
+    if (paymentAggregation.length > 0) {
+      payment = await Payment.findById(paymentAggregation[0]._id).session(
+        session
+      );
+    }
+
+    // Fallback: try to find by transactionId or direct metadata access
+    if (!payment) {
+      logger.info('Trying fallback payment search methods');
+
+      // Try finding by transactionId
+      payment = await Payment.findOne({
+        orderId,
+        transactionId: reference,
+      }).session(session);
+
+      // If still not found, try finding by orderId and check metadata manually
+      if (!payment) {
+        const orderPayments = await Payment.find({ orderId }).session(session);
+        for (const p of orderPayments) {
+          if (p.metadata && p.metadata.get('paystackReference') === reference) {
+            payment = p;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!payment) {
+      logger.error('Payment record not found after all search attempts', {
+        orderId,
+        reference,
+        allPaymentsForOrder: allPayments.length,
+      });
+      throw createError(404, 'Payment record not found');
+    }
+
+    logger.info('Payment record found', {
+      paymentId: payment._id,
+      transactionId: payment.transactionId,
+      currentStatus: payment.status,
+    });
+
+    // Update payment status
+    payment.status =
+      status === 'success' ? PAYMENT_STATUS.PAID : PAYMENT_STATUS.FAILED;
+
+    // Update metadata properly for Map field
+    payment.metadata.set('inlineCallbackProcessed', true);
+    payment.metadata.set('callbackTimestamp', new Date().toISOString());
+    if (metadata) {
+      Object.entries(metadata).forEach(([key, value]) => {
+        payment.metadata.set(key, value);
+      });
+    }
+
+    if (status === 'success') {
+      logger.info('Processing successful payment - reducing stock', {
+        orderId,
+        orderItems: order.items.length,
+      });
+
+      // CRITICAL FIX: Reduce product stock using the enhanced function
+      await reduceStock(order.items, session);
+
+      // Update order status
+      order.paymentStatus = PAYMENT_STATUS.PAID;
+      order.paymentMethod = payment.method;
+      order.status = 'processing';
+      order.paymentDetails = {
+        transactionId: transactionId || reference,
+        method: payment.method,
+        timestamp: new Date(),
+        reference: reference,
+      };
+
+      await order.save({ session });
+      await payment.save({ session });
+
+      // Commit transaction
+      await session.commitTransaction();
+      transactionStarted = false;
+
+      // Handle non-critical operations after transaction is committed
+      try {
+        const notificationPromise = createPaymentNotification({
+          userId: payment.userId,
+          title: 'Payment Successful',
+          message: `Your payment of ${payment.amount} KES for Order #${order.orderNumber} was successful`,
+          link: `/orders/${order._id}`,
+          priority: PAYMENT_PRIORITY.HIGH,
+        });
+
+        const emailPromise = sendPaymentSuccessEmail(req.user.email, order);
+        await Promise.all([notificationPromise, emailPromise]);
+      } catch (notificationError) {
+        logger.warn('Failed to send notifications after successful payment', {
+          error: notificationError.message,
+          orderId,
+        });
+      }
+
+      logger.info(
+        `Inline payment successful and stock reduced for order ${orderId}`,
+        {
+          paymentId: payment._id,
+          reference,
+        }
+      );
+    } else {
+      // Handle failed payment
+      payment.error = {
+        code: PAYMENT_ERRORS.PAYMENT_FAILED,
+        message: metadata?.error || 'Inline payment failed',
+        details: metadata,
+      };
+
+      await payment.save({ session });
+      await session.commitTransaction();
+      transactionStarted = false;
+
+      // Handle non-critical operations after transaction is committed
+      try {
+        const notificationPromise = createPaymentNotification({
+          userId: payment.userId,
+          title: 'Payment Failed',
+          message: `Your payment of ${payment.amount} KES failed. Please try again.`,
+          link: `/orders/${orderId}`,
+          priority: PAYMENT_PRIORITY.HIGH,
+        });
+
+        const emailPromise = sendPaymentFailedEmail(req.user.email, order);
+        await Promise.all([notificationPromise, emailPromise]);
+      } catch (notificationError) {
+        logger.warn('Failed to send notifications after failed payment', {
+          error: notificationError.message,
+          orderId,
+        });
+      }
+
+      logger.warn(`Inline payment failed for order ${orderId}`, {
+        paymentId: payment._id,
+        error: payment.error,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        payment,
+        order: {
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          paymentStatus: order.paymentStatus,
+          status: order.status,
+        },
+      },
+    });
+  } catch (error) {
+    // Only abort transaction if it was started and not yet committed/aborted
+    if (transactionStarted) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        logger.warn(
+          'Error aborting transaction (transaction may have already been aborted)',
+          {
+            abortError: abortError.message,
+          }
+        );
+      }
+    }
+
+    logger.error(
+      `Error processing inline payment callback for order ${orderId}`,
+      {
+        error: error.message,
+        stack: error.stack,
+      }
+    );
+
+    throw error;
+  } finally {
+    // Always end the session
+    try {
+      session.endSession();
+    } catch (endError) {
+      logger.warn('Error ending session', {
+        endError: endError.message,
+      });
+    }
+  }
+});
+
+// FIXED: Verify inline payment with proper transaction handling
+export const verifyInlinePayment = handleAsync(async (req, res) => {
+  const { reference, orderId } = req.body;
+  const userId = req.user._id;
+
+  logger.info(`Verifying inline payment for order ${orderId}`, {
+    reference,
+    userId,
+  });
+
+  const session = await mongoose.startSession();
+  let transactionStarted = false;
+
+  try {
+    await session.startTransaction();
+    transactionStarted = true;
+
+    // Verify with Paystack
+    const paystackResponse = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
+
+    const { data: paystackData } = paystackResponse.data;
+
+    // Find the payment record using the same method as processInlineCallback
+    const paymentAggregation = await Payment.aggregate([
+      {
+        $match: {
+          orderId: new mongoose.Types.ObjectId(orderId),
+        },
+      },
+      {
+        $addFields: {
+          paystackRef: { $objectToArray: '$metadata' },
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { transactionId: reference },
+            {
+              'paystackRef.k': 'paystackReference',
+              'paystackRef.v': reference,
+            },
+          ],
+        },
+      },
+    ]).session(session);
+
+    let payment = null;
+    if (paymentAggregation.length > 0) {
+      payment = await Payment.findById(paymentAggregation[0]._id).session(
+        session
+      );
+    }
+
+    if (!payment) {
+      throw createError(404, 'Payment record not found');
+    }
+
+    // Verify order ownership
+    const order = await Order.findOne({ _id: orderId, user: userId }).session(
+      session
+    );
+    if (!order) {
+      throw createError(404, 'Order not found');
+    }
+
+    const isVerified = paystackData.status === 'success';
+    const amountMatches = paystackData.amount === payment.amount * 100; // Paystack uses kobo
+
+    if (isVerified && amountMatches) {
+      // Update payment and order if not already updated
+      if (payment.status !== PAYMENT_STATUS.PAID) {
+        logger.info('Payment verified - reducing stock', {
+          orderId,
+          orderItems: order.items.length,
+        });
+
+        // CRITICAL FIX: Reduce stock when payment is verified
+        await reduceStock(order.items, session);
+
+        payment.status = PAYMENT_STATUS.PAID;
+        payment.metadata.set('paystackVerified', true);
+        payment.metadata.set('verificationTimestamp', new Date().toISOString());
+        payment.metadata.set('paystackData', paystackData);
+        await payment.save({ session });
+
+        if (order.paymentStatus !== PAYMENT_STATUS.PAID) {
+          order.paymentStatus = PAYMENT_STATUS.PAID;
+          order.paymentMethod = payment.method;
+          order.status = 'processing';
+          order.paymentDetails = {
+            transactionId: paystackData.id,
+            method: payment.method,
+            timestamp: new Date(),
+            reference: reference,
+          };
+
+          await order.save({ session });
+        }
+
+        await session.commitTransaction();
+        transactionStarted = false;
+
+        logger.info(`Payment verified and stock reduced for order ${orderId}`, {
+          paymentId: payment._id,
+          reference,
+        });
+      } else {
+        await session.commitTransaction();
+        transactionStarted = false;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          verified: true,
+          payment,
+          order: {
+            _id: order._id,
+            orderNumber: order.orderNumber,
+            paymentStatus: order.paymentStatus,
+            status: order.status,
+          },
+        },
+      });
+    } else {
+      await session.commitTransaction();
+      transactionStarted = false;
+
+      res.json({
+        success: false,
+        data: {
+          verified: false,
+          message: 'Payment verification failed',
+          details: {
+            paystackStatus: paystackData.status,
+            amountMatches,
+            expectedAmount: payment.amount * 100,
+            actualAmount: paystackData.amount,
+          },
+        },
+      });
+    }
+  } catch (error) {
+    // Only abort transaction if it was started and not yet committed/aborted
+    if (transactionStarted) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        logger.warn(
+          'Error aborting transaction (transaction may have already been aborted)',
+          {
+            abortError: abortError.message,
+          }
+        );
+      }
+    }
+
+    logger.error(`Error verifying inline payment for order ${orderId}`, {
+      error: error.message,
+      reference,
+    });
+
+    throw createError(500, 'Payment verification failed');
+  } finally {
+    // Always end the session
+    try {
+      session.endSession();
+    } catch (endError) {
+      logger.warn('Error ending session', {
+        endError: endError.message,
+      });
+    }
+  }
+});
+
+// FIXED: Process payment callback with proper stock reduction
 export const processPaymentCallback = handleAsync(async (req, res) => {
   const { paymentId, status, transactionId, metadata } = req.body;
 
@@ -225,7 +783,6 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
     transactionId,
   });
 
-  // Start a database transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -245,7 +802,11 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
     }
 
     payment.status = status;
-    payment.metadata = { ...payment.metadata, ...metadata };
+    if (metadata) {
+      Object.entries(metadata).forEach(([key, value]) => {
+        payment.metadata.set(key, value);
+      });
+    }
 
     if (status === PAYMENT_STATUS.PAID) {
       const order = await Order.findById(payment.orderId).session(session);
@@ -256,8 +817,17 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
         throw createError(404, 'Order not found');
       }
 
+      logger.info('Payment callback successful - reducing stock', {
+        orderId: order._id,
+        orderItems: order.items.length,
+      });
+
+      // CRITICAL FIX: Reduce stock when payment is successful
+      await reduceStock(order.items, session);
+
       order.paymentStatus = PAYMENT_STATUS.PAID;
       order.paymentMethod = payment.method;
+      order.status = 'processing';
       order.paymentDetails = {
         transactionId,
         method: payment.method,
@@ -265,8 +835,13 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
       };
 
       await order.save({ session });
+      await payment.save({ session });
 
-      // Create success notification (outside transaction)
+      // Commit transaction first
+      await session.commitTransaction();
+      session.endSession();
+
+      // Then handle non-critical operations
       const notificationPromise = createPaymentNotification({
         userId: payment.userId,
         title: 'Payment Successful',
@@ -275,21 +850,17 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
         priority: PAYMENT_PRIORITY.HIGH,
       });
 
-      // Send email notification (outside transaction)
       const emailPromise = sendPaymentSuccessEmail(req.user.email, order);
 
-      // Commit transaction first
-      await payment.save({ session });
-      await session.commitTransaction();
-      session.endSession();
-
-      // Then handle non-critical operations
       await Promise.all([notificationPromise, emailPromise]);
 
-      logger.info(`Payment successful for order ${payment.orderId}`, {
-        paymentId: payment._id,
-        transactionId,
-      });
+      logger.info(
+        `Payment successful and stock reduced for order ${payment.orderId}`,
+        {
+          paymentId: payment._id,
+          transactionId,
+        }
+      );
     } else if (status === PAYMENT_STATUS.FAILED) {
       payment.error = {
         code: PAYMENT_ERRORS.PAYMENT_FAILED,
@@ -297,7 +868,10 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
         details: metadata,
       };
 
-      // Create failure notification (outside transaction)
+      await payment.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+
       const notificationPromise = createPaymentNotification({
         userId: payment.userId,
         title: 'Payment Failed',
@@ -306,18 +880,11 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
         priority: PAYMENT_PRIORITY.HIGH,
       });
 
-      // Send email notification (outside transaction)
       const emailPromise = sendPaymentFailedEmail(
         req.user.email,
         await Order.findById(payment.orderId)
       );
 
-      // Commit transaction first
-      await payment.save({ session });
-      await session.commitTransaction();
-      session.endSession();
-
-      // Then handle non-critical operations
       await Promise.all([notificationPromise, emailPromise]);
 
       logger.warn(`Payment failed for order ${payment.orderId}`, {
@@ -325,7 +892,6 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
         error: payment.error,
       });
     } else {
-      // For other statuses, just save the payment
       await payment.save({ session });
       await session.commitTransaction();
       session.endSession();
@@ -333,7 +899,6 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
 
     res.json({ success: true, data: payment });
   } catch (error) {
-    // If an error occurred, abort the transaction
     await session.abortTransaction();
     session.endSession();
 
@@ -345,6 +910,255 @@ export const processPaymentCallback = handleAsync(async (req, res) => {
   }
 });
 
+// FIXED: Enhanced checkPaymentStatus with proper transaction handling
+export const checkPaymentStatus = handleAsync(async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user._id;
+
+  logger.info(`Checking payment status for order ${orderId}`, { userId });
+
+  const session = await mongoose.startSession();
+  let transactionStarted = false;
+
+  try {
+    await session.startTransaction();
+    transactionStarted = true;
+
+    const order = await Order.findById(orderId).session(session);
+    if (!order) {
+      throw createError(404, 'Order not found');
+    }
+
+    // Authorization check
+    if (
+      order.user.toString() !== userId.toString() &&
+      !['admin', 'super_admin'].includes(req.user.role)
+    ) {
+      throw createError(403, 'Not authorized to view this order');
+    }
+
+    const payment = await Payment.findOne({ orderId })
+      .sort({ createdAt: -1 })
+      .session(session);
+
+    if (!payment) {
+      throw createError(404, 'Payment not found for this order');
+    }
+
+    // Check payment expiration
+    const isExpired = payment.expiresAt && payment.expiresAt < new Date();
+    if (payment.status === PAYMENT_STATUS.PENDING && isExpired) {
+      payment.status = PAYMENT_STATUS.EXPIRED;
+      payment.error = {
+        code: PAYMENT_ERRORS.TRANSACTION_EXPIRED,
+        message: 'Payment transaction expired',
+      };
+      await payment.save({ session });
+    }
+
+    // Verify pending payments older than 30 seconds
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+    let paymentVerified = false;
+
+    if (
+      payment.status === PAYMENT_STATUS.PENDING &&
+      payment.createdAt < thirtySecondsAgo &&
+      !isExpired
+    ) {
+      try {
+        let verificationResult = { verified: false };
+
+        switch (payment.method) {
+          case PAYMENT_METHODS.MPESA:
+            if (payment.metadata?.get('checkoutRequestId')) {
+              verificationResult = await checkMpesaPaymentStatus(
+                payment.metadata.get('checkoutRequestId')
+              );
+            }
+            break;
+
+          case PAYMENT_METHODS.PAYSTACK:
+            if (
+              payment.metadata?.get('paystackReference') &&
+              payment.metadata?.get('isInlineCheckout')
+            ) {
+              const paystackResponse = await axios.get(
+                `https://api.paystack.co/transaction/verify/${payment.metadata.get(
+                  'paystackReference'
+                )}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                  },
+                }
+              );
+
+              const { data: paystackData } = paystackResponse.data;
+              verificationResult = {
+                verified: true,
+                status:
+                  paystackData.status === 'success'
+                    ? PAYMENT_STATUS.PAID
+                    : PAYMENT_STATUS.FAILED,
+                paystackData,
+              };
+            }
+            break;
+        }
+
+        if (verificationResult.verified) {
+          payment.status = verificationResult.status;
+
+          if (verificationResult.resultCode) {
+            payment.metadata.set('resultCode', verificationResult.resultCode);
+            payment.metadata.set('resultDesc', verificationResult.resultDesc);
+          }
+
+          if (verificationResult.paystackData) {
+            payment.metadata.set('paystackVerified', true);
+            payment.metadata.set(
+              'paystackData',
+              verificationResult.paystackData
+            );
+          }
+
+          await payment.save({ session });
+          paymentVerified = true;
+        }
+      } catch (error) {
+        logger.error('Error verifying payment with provider', {
+          error: error.message,
+        });
+      }
+    }
+
+    // CRITICAL FIX: Process successful payments and reduce stock
+    if (
+      payment.status === PAYMENT_STATUS.PAID &&
+      order.paymentStatus !== PAYMENT_STATUS.PAID
+    ) {
+      logger.info(
+        'Payment status check found successful payment - reducing stock',
+        {
+          orderId: order._id,
+          orderItems: order.items.length,
+        }
+      );
+
+      // Reduce product stock
+      await reduceStock(order.items, session);
+
+      order.paymentStatus = PAYMENT_STATUS.PAID;
+      order.status = 'processing';
+      await order.save({ session });
+
+      logger.info(`Stock reduced during status check for order ${orderId}`, {
+        paymentId: payment._id,
+      });
+    }
+
+    await session.commitTransaction();
+    transactionStarted = false;
+
+    res.json({
+      success: true,
+      data: {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        paymentStatus: payment.status,
+        orderStatus: order.status,
+        paymentMethod: payment.method,
+        paymentDetails: {
+          id: payment._id,
+          status: payment.status,
+          method: payment.method,
+          amount: payment.amount,
+          createdAt: payment.createdAt,
+          transactionId: payment.transactionId,
+          isExpired,
+          metadata: payment.metadata,
+        },
+      },
+    });
+  } catch (error) {
+    // Only abort transaction if it was started and not yet committed/aborted
+    if (transactionStarted) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        logger.warn(
+          'Error aborting transaction (transaction may have already been aborted)',
+          {
+            abortError: abortError.message,
+          }
+        );
+      }
+    }
+    throw error;
+  } finally {
+    // Always end the session
+    try {
+      session.endSession();
+    } catch (endError) {
+      logger.warn('Error ending session', {
+        endError: endError.message,
+      });
+    }
+  }
+});
+
+// Add this function to check M-Pesa payment status directly with the API
+const checkMpesaPaymentStatus = async (checkoutRequestId) => {
+  try {
+    const accessToken = await mpesa.getAccessToken();
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[^0-9]/g, '')
+      .slice(0, -3);
+    const password = Buffer.from(
+      `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
+    ).toString('base64');
+
+    const baseUrl =
+      process.env.MPESA_ENV === 'sandbox' ||
+      process.env.NODE_ENV !== 'production' ||
+      process.env.PAYMENT_MODE === 'test'
+        ? 'https://sandbox.safaricom.co.ke'
+        : 'https://api.safaricom.co.ke';
+
+    const response = await axios.post(
+      `${baseUrl}/mpesa/stkpushquery/v1/query`,
+      {
+        BusinessShortCode: process.env.MPESA_SHORTCODE,
+        Password: password,
+        Timestamp: timestamp,
+        CheckoutRequestID: checkoutRequestId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return {
+      verified: true,
+      status:
+        response.data.ResponseCode === '0'
+          ? PAYMENT_STATUS.PAID
+          : PAYMENT_STATUS.FAILED,
+      resultCode: response.data.ResponseCode,
+      resultDesc: response.data.ResponseDescription,
+    };
+  } catch (error) {
+    logger.error('Error checking M-Pesa payment status', {
+      error: error.message,
+    });
+    return { verified: false };
+  }
+};
+
 // Process refund
 export const processRefund = handleAsync(async (req, res) => {
   const { paymentId, reason } = req.body;
@@ -355,7 +1169,6 @@ export const processRefund = handleAsync(async (req, res) => {
     reason,
   });
 
-  // Start a database transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -374,7 +1187,6 @@ export const processRefund = handleAsync(async (req, res) => {
       throw createError(400, 'Payment cannot be refunded');
     }
 
-    // Process the refund
     payment.status = PAYMENT_STATUS.REFUNDED;
     payment.refundReason = reason;
     payment.refundedAt = new Date();
@@ -382,7 +1194,6 @@ export const processRefund = handleAsync(async (req, res) => {
 
     await payment.save({ session });
 
-    // Update the order status
     const order = await Order.findById(payment.orderId).session(session);
 
     if (!order) {
@@ -391,12 +1202,42 @@ export const processRefund = handleAsync(async (req, res) => {
       throw createError(404, 'Order not found');
     }
 
+    // CRITICAL FIX: Restore stock when refunding
+    logger.info('Processing refund - restoring stock', {
+      orderId: order._id,
+      orderItems: order.items.length,
+    });
+
+    // Restore stock by adding back the quantities
+    for (const item of order.items) {
+      const product = await Product.findById(item.product).session(session);
+      if (product) {
+        const newStock = product.stock + item.quantity;
+        product.stock = newStock;
+
+        // Update status if product was out of stock
+        if (product.status === 'out_of_stock' && newStock > 0) {
+          product.status = 'active';
+        }
+
+        await product.save({ session });
+
+        logger.info('Stock restored for refund', {
+          productId: item.product,
+          productName: product.name,
+          quantityRestored: item.quantity,
+          newStock: newStock,
+        });
+      }
+    }
+
     order.paymentStatus = PAYMENT_STATUS.REFUNDED;
     order.status = 'refunded';
 
     await order.save({ session });
+    await session.commitTransaction();
+    session.endSession();
 
-    // Create refund notification (outside transaction)
     const notificationPromise = createPaymentNotification({
       userId: payment.userId,
       title: 'Payment Refunded',
@@ -405,7 +1246,6 @@ export const processRefund = handleAsync(async (req, res) => {
       priority: PAYMENT_PRIORITY.HIGH,
     });
 
-    // Send refund email notification (outside transaction)
     const emailPromise = sendRefundNotification(
       await User.findById(payment.userId)
         .select('email')
@@ -414,23 +1254,20 @@ export const processRefund = handleAsync(async (req, res) => {
       reason
     );
 
-    // Commit transaction first
-    await session.commitTransaction();
-    session.endSession();
-
-    // Then handle non-critical operations
     await Promise.all([notificationPromise, emailPromise]);
 
-    logger.info(`Refund processed successfully for payment ${paymentId}`, {
-      orderId: payment.orderId,
-    });
+    logger.info(
+      `Refund processed and stock restored for payment ${paymentId}`,
+      {
+        orderId: payment.orderId,
+      }
+    );
 
     res.json({
       success: true,
       data: payment,
     });
   } catch (error) {
-    // If an error occurred, abort the transaction
     await session.abortTransaction();
     session.endSession();
 
@@ -456,7 +1293,6 @@ export const getPaymentAnalytics = handleAsync(async (req, res) => {
     new Date(endDate || Date.now())
   );
 
-  // Get payment method distribution
   const methodDistribution = await Payment.aggregate([
     {
       $match: {
@@ -481,7 +1317,6 @@ export const getPaymentAnalytics = handleAsync(async (req, res) => {
     },
   ]);
 
-  // Get hourly distribution
   const hourlyDistribution = await Payment.aggregate([
     {
       $match: {
@@ -525,7 +1360,6 @@ const generateTransactionId = () => {
 };
 
 // Retry payment
-// Enhance the retryPayment function with better M-Pesa handling
 export const retryPayment = handleAsync(async (req, res) => {
   const { orderId, method, phoneNumber, email } = req.body;
   const userId = req.user._id;
@@ -540,17 +1374,14 @@ export const retryPayment = handleAsync(async (req, res) => {
     throw createError(404, 'Order not found');
   }
 
-  // Verify order ownership
   if (order.user.toString() !== userId.toString()) {
     throw createError(403, 'Not authorized to retry payment for this order');
   }
 
-  // Check if payment is already successful
   if (order.paymentStatus === PAYMENT_STATUS.PAID) {
     throw createError(400, 'Order is already paid');
   }
 
-  // Check retry attempts
   const maxRetries = 3;
   const retryCount = order.paymentRetryCount || 0;
 
@@ -561,12 +1392,10 @@ export const retryPayment = handleAsync(async (req, res) => {
     );
   }
 
-  // Get the latest payment for this order
   const existingPayment = await Payment.findOne({ orderId }).sort({
     createdAt: -1,
   });
 
-  // Only allow retry if the payment is failed, expired, or has been pending for more than 2 minutes
   if (
     existingPayment &&
     existingPayment.status === PAYMENT_STATUS.PENDING &&
@@ -578,32 +1407,28 @@ export const retryPayment = handleAsync(async (req, res) => {
     );
   }
 
-  // Increment retry count
   order.paymentRetryCount = retryCount + 1;
   await order.save();
 
-  // Generate a new transaction ID for this retry
   const transactionId = generateTransactionId();
 
-  // Create a new payment record for this retry
   const payment = new Payment({
     orderId: order._id,
     userId: order.user,
     amount: order.totalAmount,
     method: method,
     transactionId,
-    metadata: {
-      orderNumber: order.orderNumber,
-      retryCount: order.paymentRetryCount,
-      previousPaymentId: existingPayment ? existingPayment._id : null,
-      phoneNumber,
-      email,
-    },
+    metadata: new Map([
+      ['orderNumber', order.orderNumber],
+      ['retryCount', order.paymentRetryCount],
+      ['previousPaymentId', existingPayment ? existingPayment._id : null],
+      ['phoneNumber', phoneNumber],
+      ['email', email],
+    ]),
   });
 
   await payment.save();
 
-  // Initialize new payment attempt
   let paymentResult;
 
   try {
@@ -616,7 +1441,6 @@ export const retryPayment = handleAsync(async (req, res) => {
           );
         }
 
-        // Validate phone number format
         if (!phoneNumber.match(/^254[0-9]{9}$/)) {
           throw createError(
             400,
@@ -625,11 +1449,11 @@ export const retryPayment = handleAsync(async (req, res) => {
         }
 
         paymentResult = await initializeMpesaPayment(order, phoneNumber);
-
-        // Store the checkout request ID
-        payment.metadata.checkoutRequestId = paymentResult.checkoutRequestId;
+        payment.metadata.set(
+          'checkoutRequestId',
+          paymentResult.checkoutRequestId
+        );
         await payment.save();
-
         break;
 
       case PAYMENT_METHODS.PAYSTACK:
@@ -637,20 +1461,14 @@ export const retryPayment = handleAsync(async (req, res) => {
           throw createError(400, 'Email is required for Paystack payments');
         }
         paymentResult = await initializePaystackPayment(order, email);
-
-        // Store the reference
-        payment.metadata.paystackReference = paymentResult.reference;
+        payment.metadata.set('paystackReference', paymentResult.reference);
         await payment.save();
-
         break;
 
       case PAYMENT_METHODS.PAYPAL:
         paymentResult = await initializePaypalPayment(order);
-
-        // Store the PayPal order ID
-        payment.metadata.paypalOrderId = paymentResult.paypalOrderId;
+        payment.metadata.set('paypalOrderId', paymentResult.paypalOrderId);
         await payment.save();
-
         break;
 
       default:
@@ -673,7 +1491,6 @@ export const retryPayment = handleAsync(async (req, res) => {
       },
     });
   } catch (error) {
-    // If payment initialization fails, mark the payment as failed
     payment.status = PAYMENT_STATUS.FAILED;
     payment.error = {
       code: error.code || PAYMENT_ERRORS.PAYMENT_FAILED,
@@ -690,258 +1507,6 @@ export const retryPayment = handleAsync(async (req, res) => {
   }
 });
 
-// Enhance the payment status checking for M-Pesa
-
-// Add this function to check M-Pesa payment status directly with the API
-const checkMpesaPaymentStatus = async (checkoutRequestId) => {
-  try {
-    const accessToken = await mpesa.getAccessToken();
-
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[^0-9]/g, '')
-      .slice(0, -3);
-
-    const password = Buffer.from(
-      `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
-    ).toString('base64');
-
-    // Use sandbox URL in development/test mode
-    const baseUrl =
-      process.env.MPESA_ENV === 'sandbox' ||
-      process.env.NODE_ENV !== 'production' ||
-      process.env.PAYMENT_MODE === 'test'
-        ? 'https://sandbox.safaricom.co.ke'
-        : 'https://api.safaricom.co.ke';
-
-    logger.info('Checking M-Pesa payment status', {
-      checkoutRequestId,
-      baseUrl,
-    });
-
-    const response = await axios.post(
-      `${baseUrl}/mpesa/stkpushquery/v1/query`,
-      {
-        BusinessShortCode: process.env.MPESA_SHORTCODE,
-        Password: password,
-        Timestamp: timestamp,
-        CheckoutRequestID: checkoutRequestId,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    logger.info('M-Pesa status check response', {
-      ResponseCode: response.data.ResponseCode,
-      ResponseDescription: response.data.ResponseDescription,
-      checkoutRequestId,
-    });
-
-    return {
-      verified: true,
-      status:
-        response.data.ResponseCode === '0'
-          ? PAYMENT_STATUS.PAID
-          : PAYMENT_STATUS.FAILED,
-      resultCode: response.data.ResponseCode,
-      resultDesc: response.data.ResponseDescription,
-    };
-  } catch (error) {
-    logger.error('Error checking M-Pesa payment status', {
-      error: error.message,
-      checkoutRequestId,
-    });
-
-    return { verified: false };
-  }
-};
-
-// Enhance the checkPaymentStatus function to use the direct M-Pesa status check
-export const checkPaymentStatus = handleAsync(async (req, res) => {
-  const { orderId } = req.params;
-  const userId = req.user._id;
-
-  logger.info(`Checking payment status for order ${orderId}`, {
-    userId: userId,
-  });
-
-  // Find the order and verify ownership
-  const order = await Order.findById(orderId);
-
-  if (!order) {
-    throw createError(404, 'Order not found');
-  }
-
-  // Verify order ownership
-  if (
-    order.user.toString() !== userId.toString() &&
-    !['admin', 'super_admin'].includes(req.user.role)
-  ) {
-    throw createError(403, 'Not authorized to view this order');
-  }
-
-  // Get the latest payment for this order
-  const payment = await Payment.findOne({ orderId }).sort({ createdAt: -1 });
-
-  if (!payment) {
-    throw createError(404, 'Payment not found for this order');
-  }
-
-  // Check if payment is expired
-  const isExpired = payment.expiresAt && payment.expiresAt < new Date();
-
-  // If payment is still pending and expired, mark it as failed
-  if (payment.status === PAYMENT_STATUS.PENDING && isExpired) {
-    payment.status = PAYMENT_STATUS.EXPIRED;
-    payment.error = {
-      code: PAYMENT_ERRORS.TRANSACTION_EXPIRED,
-      message: 'Payment transaction expired',
-    };
-    await payment.save();
-
-    // Create payment failure notification
-    await createPaymentNotification({
-      userId: payment.userId,
-      title: 'Payment Expired',
-      message: `Your payment for Order #${order.orderNumber} has expired. Please retry payment.`,
-      link: `/orders/${order._id}`,
-      priority: 'high',
-    });
-  }
-
-  // If payment is still pending and it's been more than 30 seconds, check with the payment provider
-  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
-  if (
-    payment.status === PAYMENT_STATUS.PENDING &&
-    payment.createdAt < thirtySecondsAgo &&
-    !isExpired
-  ) {
-    // Attempt to verify payment with the provider
-    try {
-      let verificationResult = { verified: false };
-
-      switch (payment.method) {
-        case PAYMENT_METHODS.MPESA:
-          if (payment.metadata && payment.metadata.checkoutRequestId) {
-            logger.info(
-              `Checking M-Pesa payment status for ${payment.metadata.checkoutRequestId}`
-            );
-            verificationResult = await checkMpesaPaymentStatus(
-              payment.metadata.checkoutRequestId
-            );
-          }
-          break;
-        case PAYMENT_METHODS.PAYSTACK:
-          if (payment.metadata && payment.metadata.paystackReference) {
-            logger.info(
-              `Checking Paystack payment status for ${payment.metadata.paystackReference}`
-            );
-            // Implementation would be similar to M-Pesa check
-          }
-          break;
-        case PAYMENT_METHODS.PAYPAL:
-          if (payment.metadata && payment.metadata.paypalOrderId) {
-            logger.info(
-              `Checking PayPal payment status for ${payment.metadata.paypalOrderId}`
-            );
-            // Implementation would be similar to M-Pesa check
-          }
-          break;
-      }
-
-      // If verification was successful, update payment status
-      if (verificationResult.verified) {
-        payment.status = verificationResult.status;
-
-        if (verificationResult.resultCode) {
-          payment.metadata = {
-            ...payment.metadata,
-            resultCode: verificationResult.resultCode,
-            resultDesc: verificationResult.resultDesc,
-          };
-        }
-
-        await payment.save();
-
-        // If payment is now confirmed as paid, update the order
-        if (payment.status === PAYMENT_STATUS.PAID) {
-          order.paymentStatus = PAYMENT_STATUS.PAID;
-          order.status = 'processing';
-          order.paymentDetails = {
-            transactionId: payment.transactionId,
-            method: payment.method,
-            timestamp: new Date(),
-          };
-          await order.save();
-
-          // Create success notification
-          await createPaymentNotification({
-            userId: payment.userId,
-            title: 'Payment Successful',
-            message: `Your payment for Order #${order.orderNumber} was successful.`,
-            link: `/orders/${order._id}`,
-            priority: 'high',
-          });
-
-          // Send email notification
-          try {
-            await sendPaymentSuccessEmail(req.user.email, order);
-          } catch (emailError) {
-            logger.error(
-              `Error sending payment success email: ${emailError.message}`
-            );
-          }
-        } else if (payment.status === PAYMENT_STATUS.FAILED) {
-          // Create failure notification
-          await createPaymentNotification({
-            userId: payment.userId,
-            title: 'Payment Failed',
-            message: `Your payment for Order #${order.orderNumber} failed: ${
-              verificationResult.resultDesc || 'Unknown error'
-            }`,
-            link: `/orders/${order._id}`,
-            priority: 'high',
-          });
-        }
-      }
-    } catch (error) {
-      logger.error(
-        `Error verifying payment status with provider for order ${orderId}`,
-        {
-          error: error.message,
-          paymentId: payment._id,
-        }
-      );
-      // Continue with the current status even if verification fails
-    }
-  }
-
-  res.json({
-    success: true,
-    data: {
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      paymentStatus: payment.status,
-      orderStatus: order.status,
-      paymentMethod: payment.method,
-      paymentDetails: {
-        id: payment._id,
-        status: payment.status,
-        method: payment.method,
-        amount: payment.amount,
-        createdAt: payment.createdAt,
-        transactionId: payment.transactionId,
-        isExpired: isExpired,
-        metadata: payment.metadata,
-      },
-    },
-  });
-});
-
 // Get payment history
 export const getPaymentHistory = handleAsync(async (req, res) => {
   const { page = 1, limit = 10, status, paymentMethod } = req.query;
@@ -954,19 +1519,16 @@ export const getPaymentHistory = handleAsync(async (req, res) => {
     paymentMethod,
   });
 
-  // Build query
   const query = { userId: req.user._id };
   if (status) query.status = status;
   if (paymentMethod) query.method = paymentMethod;
 
-  // Get paginated payments
   const payments = await Payment.find(query)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(Number.parseInt(limit))
     .populate('orderId', 'orderNumber totalAmount status');
 
-  // Get total count for pagination
   const total = await Payment.countDocuments(query);
 
   res.json({
@@ -990,7 +1552,6 @@ export const getPaymentDetails = handleAsync(async (req, res) => {
     userId: req.user._id,
   });
 
-  // Get order with populated fields
   const order = await Order.findOne({ _id: orderId, user: req.user._id })
     .populate('items.product', 'name images price')
     .populate('user', 'name email');
@@ -999,7 +1560,6 @@ export const getPaymentDetails = handleAsync(async (req, res) => {
     throw createError(404, 'Order not found');
   }
 
-  // Get payment details
   const payment = await Payment.findOne({ orderId });
 
   res.json({
@@ -1021,7 +1581,6 @@ export const getRefundHistory = handleAsync(async (req, res) => {
     limit,
   });
 
-  // Get paginated refunds
   const payments = await Payment.find({
     userId: req.user._id,
     status: PAYMENT_STATUS.REFUNDED,
@@ -1031,7 +1590,6 @@ export const getRefundHistory = handleAsync(async (req, res) => {
     .limit(Number.parseInt(limit))
     .populate('orderId', 'orderNumber totalAmount');
 
-  // Get total count for pagination
   const total = await Payment.countDocuments({
     userId: req.user._id,
     status: PAYMENT_STATUS.REFUNDED,
@@ -1058,7 +1616,6 @@ export const updatePaymentSettings = handleAsync(async (req, res) => {
 
   const settings = await updateSettings(req.body);
 
-  // Notify admins about settings update
   await createPaymentNotification({
     userId: req.user._id,
     title: 'Payment Settings Updated',
@@ -1068,7 +1625,6 @@ export const updatePaymentSettings = handleAsync(async (req, res) => {
     metadata: { settings: req.body },
   });
 
-  // Send email notification to admins
   await sendPaymentSettingsUpdateEmail(req.body);
 
   logger.info('Payment settings updated successfully');

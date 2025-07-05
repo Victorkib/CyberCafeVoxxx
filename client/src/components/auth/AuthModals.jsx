@@ -5,7 +5,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import { isValidPassword, getPasswordValidationMessage } from '../../utils/validation';
+import {
+  isValidPassword,
+  getPasswordValidationMessage,
+} from '../../utils/validation';
 import {
   loginUser,
   registerUser,
@@ -14,18 +17,17 @@ import {
   resetLoginAttempts,
   MAX_LOGIN_ATTEMPTS,
 } from '../../redux/slices/authSlice';
-import {
-  closeAuthModal,
-  setAuthModalView,
-} from '../../redux/slices/uiSlice';
-import { toast } from 'react-hot-toast';
+import { closeAuthModal, setAuthModalView } from '../../redux/slices/uiSlice';
+import { toast, ToastContainer } from 'react-toastify';
 
 const AuthModals = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { authModalView, isLoading } = useSelector((state) => state.ui);
-  const { error, loginAttempts, user, isAuthenticated } = useSelector((state) => state.auth);
+  const { error, loginAttempts, user, isAuthenticated } = useSelector(
+    (state) => state.auth
+  );
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -59,7 +61,7 @@ const AuthModals = () => {
         }
         dispatch(closeAuthModal());
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, user, navigate, dispatch, location.state]);
@@ -167,7 +169,7 @@ const AuthModals = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     if (!validateLoginForm()) {
       // Display form validation errors
       Object.entries(formErrors).forEach(([field, error]) => {
@@ -178,14 +180,16 @@ const AuthModals = () => {
 
     try {
       setFormErrors({});
-      const result = await dispatch(loginUser({
-        email: loginForm.email,
-        password: loginForm.password,
-      })).unwrap();
+      const result = await dispatch(
+        loginUser({
+          email: loginForm.email,
+          password: loginForm.password,
+        })
+      ).unwrap();
 
       // Reset login attempts on successful login
       dispatch(resetLoginAttempts());
-      
+
       // Clear form
       setLoginForm({
         email: '',
@@ -198,18 +202,18 @@ const AuthModals = () => {
         if (lockExpiry) {
           setFormErrors({
             ...formErrors,
-            general: `Account is locked. Please try again in ${lockExpiry[1]} minutes.`
+            general: `Account is locked. Please try again in ${lockExpiry[1]} minutes.`,
           });
         } else {
           setFormErrors({
             ...formErrors,
-            general: error
+            general: error,
           });
         }
       } else {
         setFormErrors({
           ...formErrors,
-          general: error
+          general: error,
         });
       }
     }
@@ -226,11 +230,13 @@ const AuthModals = () => {
       return;
     }
 
-    await dispatch(registerUser({
-      name: registerForm.name,
-      email: registerForm.email,
-      password: registerForm.password,
-    }));
+    await dispatch(
+      registerUser({
+        name: registerForm.name,
+        email: registerForm.email,
+        password: registerForm.password,
+      })
+    );
   };
 
   const handleForgotPassword = async (e) => {
@@ -251,7 +257,7 @@ const AuthModals = () => {
     } catch (error) {
       setFormErrors({
         ...formErrors,
-        general: error
+        general: error,
       });
     }
   };
@@ -262,12 +268,8 @@ const AuthModals = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div 
-        className="fixed inset-0"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
-      
+      <div className="fixed inset-0" onClick={handleClose} aria-hidden="true" />
+
       <div className="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div className="max-h-[90vh] overflow-y-auto">
           <button
@@ -281,13 +283,15 @@ const AuthModals = () => {
           <div className="p-8">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {authModalView === 'login' ? 'Welcome Back' : 
-                 authModalView === 'register' ? 'Create Account' : 
-                 'Reset Password'}
+                {authModalView === 'login'
+                  ? 'Welcome Back'
+                  : authModalView === 'register'
+                  ? 'Create Account'
+                  : 'Reset Password'}
               </h2>
               <p className="text-gray-600 dark:text-gray-300">
-                {authModalView === 'login' 
-                  ? 'Sign in to access your account' 
+                {authModalView === 'login'
+                  ? 'Sign in to access your account'
                   : authModalView === 'register'
                   ? 'Join us to get started'
                   : 'Enter your email to reset your password'}
@@ -306,20 +310,26 @@ const AuthModals = () => {
               </div>
             )}
 
-            {authModalView === 'login' && loginAttempts > 0 && remainingAttempts > 0 && (
-              <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700">
-                <p className="text-sm">
-                  Warning: You have {remainingAttempts} login {remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining.
-                </p>
-              </div>
-            )}
+            {authModalView === 'login' &&
+              loginAttempts > 0 &&
+              remainingAttempts > 0 && (
+                <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700">
+                  <p className="text-sm">
+                    Warning: You have {remainingAttempts} login{' '}
+                    {remainingAttempts === 1 ? 'attempt' : 'attempts'}{' '}
+                    remaining.
+                  </p>
+                </div>
+              )}
 
-            <form 
+            <form
               onSubmit={
-                authModalView === 'login' ? handleLogin : 
-                authModalView === 'register' ? handleRegister :
-                handleForgotPassword
-              } 
+                authModalView === 'login'
+                  ? handleLogin
+                  : authModalView === 'register'
+                  ? handleRegister
+                  : handleForgotPassword
+              }
               className="space-y-6"
             >
               {authModalView === 'register' && (
@@ -337,13 +347,17 @@ const AuthModals = () => {
                       value={registerForm.name}
                       onChange={handleRegisterChange}
                       className={`w-full pl-10 pr-4 py-3 border ${
-                        formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        formErrors.name
+                          ? 'border-red-500'
+                          : 'border-gray-300 dark:border-gray-600'
                       } rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                       placeholder="Enter your full name"
                     />
                   </div>
                   {formErrors.name && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
               )}
@@ -360,23 +374,31 @@ const AuthModals = () => {
                     type="email"
                     name="email"
                     value={
-                      authModalView === 'login' ? loginForm.email :
-                      authModalView === 'register' ? registerForm.email :
-                      forgotPasswordForm.email
+                      authModalView === 'login'
+                        ? loginForm.email
+                        : authModalView === 'register'
+                        ? registerForm.email
+                        : forgotPasswordForm.email
                     }
                     onChange={
-                      authModalView === 'login' ? handleLoginChange :
-                      authModalView === 'register' ? handleRegisterChange :
-                      handleForgotPasswordChange
+                      authModalView === 'login'
+                        ? handleLoginChange
+                        : authModalView === 'register'
+                        ? handleRegisterChange
+                        : handleForgotPasswordChange
                     }
                     className={`w-full pl-10 pr-4 py-3 border ${
-                      formErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      formErrors.email
+                        ? 'border-red-500'
+                        : 'border-gray-300 dark:border-gray-600'
                     } rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     placeholder="Enter your email"
                   />
                 </div>
                 {formErrors.email && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                  <p className="mt-1 text-sm text-red-500">
+                    {formErrors.email}
+                  </p>
                 )}
               </div>
 
@@ -393,20 +415,26 @@ const AuthModals = () => {
                       type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={
-                        authModalView === 'login' ? loginForm.password :
-                        registerForm.password
+                        authModalView === 'login'
+                          ? loginForm.password
+                          : registerForm.password
                       }
                       onChange={
-                        authModalView === 'login' ? handleLoginChange :
-                        handleRegisterChange
+                        authModalView === 'login'
+                          ? handleLoginChange
+                          : handleRegisterChange
                       }
                       className={`w-full pl-10 pr-10 py-3 border ${
-                        formErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        formErrors.password
+                          ? 'border-red-500'
+                          : 'border-gray-300 dark:border-gray-600'
                       } rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                       placeholder="Enter your password"
                     />
                     {authModalView === 'register' && (
-                      <PasswordStrengthIndicator password={registerForm.password} />
+                      <PasswordStrengthIndicator
+                        password={registerForm.password}
+                      />
                     )}
                     <button
                       type="button"
@@ -421,7 +449,9 @@ const AuthModals = () => {
                     </button>
                   </div>
                   {formErrors.password && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.password}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.password}
+                    </p>
                   )}
                 </div>
               )}
@@ -441,13 +471,17 @@ const AuthModals = () => {
                       value={registerForm.confirmPassword}
                       onChange={handleRegisterChange}
                       className={`w-full pl-10 pr-4 py-3 border ${
-                        formErrors.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                        formErrors.confirmPassword
+                          ? 'border-red-500'
+                          : 'border-gray-300 dark:border-gray-600'
                       } rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                       placeholder="Confirm your password"
                     />
                   </div>
                   {formErrors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.confirmPassword}</p>
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.confirmPassword}
+                    </p>
                   )}
                 </div>
               )}
@@ -460,17 +494,37 @@ const AuthModals = () => {
                 >
                   {isLoading ? (
                     <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
-                      {authModalView === 'login' ? 'Logging in...' : 
-                       authModalView === 'register' ? 'Registering...' : 
-                       'Sending reset instructions...'}
+                      {authModalView === 'login'
+                        ? 'Logging in...'
+                        : authModalView === 'register'
+                        ? 'Registering...'
+                        : 'Sending reset instructions...'}
                     </span>
+                  ) : authModalView === 'login' ? (
+                    'Sign in'
+                  ) : authModalView === 'register' ? (
+                    'Create Account'
                   ) : (
-                    authModalView === 'login' ? 'Sign in' : 
-                    authModalView === 'register' ? 'Create Account' : 
                     'Reset Password'
                   )}
                 </button>
@@ -521,13 +575,16 @@ const AuthModals = () => {
 
               {loginAttempts > 0 && (
                 <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                  {remainingAttempts} attempts remaining before account is locked
+                  {remainingAttempts} attempts remaining before account is
+                  locked
                 </div>
               )}
             </form>
           </div>
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 };

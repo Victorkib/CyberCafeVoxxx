@@ -3,60 +3,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ShoppingCart,
-  X,
-  Headphones,
-  Coffee,
-  Monitor,
-  Wifi,
-  Printer,
-  BookOpen,
-  Star,
-  Mail,
-  Sun,
-  Moon,
-  Check,
-  ShoppingBag,
-  RefreshCw,
-  Plus,
-  Minus,
-  Wrench,
-  Tag,
-  AlertCircle,
-  Truck,
-  Shield,
-  Search,
-  Heart,
-  ChevronDown,
-  ChevronLeft,
-  Filter,
-  Percent,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube,
-  MapPin,
-  Phone,
-  Clock1,
-  Menu,
-} from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ChevronUp } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+
+// Redux actions
 import {
   addToCart,
   fetchCart,
   removeFromCart,
   updateCartItemQuantity,
 } from '../redux/slices/cartSlice';
-import { openAuthModal } from '../redux/slices/uiSlice';
-import { toggleDarkMode } from '../redux/slices/uiSlice';
-import CheckoutModal from '../components/checkout/CheckoutModal';
 import {
   fetchProducts,
   fetchFeaturedProducts,
   fetchNewArrivals,
   fetchSaleProducts,
-  setFilters,
 } from '../redux/slices/productsSlice';
 import {
   fetchCategories,
@@ -64,18 +26,33 @@ import {
 } from '../redux/slices/categoriesSlice';
 import { fetchSpecialOffers } from '../redux/slices/specialOffersSlice';
 import { fetchHeroSlides } from '../redux/slices/heroSlidesSlice';
-import {
-  clearError,
-  clearSuccess,
-  subscribeToNewsletter,
-} from '../redux/slices/newsletterSlice';
 
-// Import our enhanced components
+// Components
+import Header from './components/Header';
+import HeroSlider from './components/HeroSlider';
+import ServicesBar from './components/ServicesBar';
+import SectionHeader from './components/SectionHeader';
+import QuickViewModal from './components/QuickViewModal';
+import NewsletterPopup from './components/NewsletterPopup';
+import Footer from './components/Footer';
 import LoadingScreen from './common/LoadingScreen';
 import ErrorFallback from './common/ErrorFallback';
 import StatusMessage from './common/StatusMessage';
+import CheckoutModal from '../components/checkout/CheckoutModal';
+// import DialogflowChatbot from './DialogflowChatbot';
 
-//import dummy data
+// Loaders
+import GlobalLoader from './components/loaders/GlobalLoader';
+import SectionLoader from './components/loaders/SectionLoader';
+import ToastLoader from './components/loaders/ToastLoader';
+import SkeletonLoader from './components/loaders/SkeletonLoader';
+
+// Enhanced Components
+import EnhancedCategoryCard from './components/EnhancedCategoryCard';
+import EnhancedSpecialOffers from './components/EnhancedSpecialOffers';
+import DynamicProductsSection from './components/DynamicProductsSection';
+
+// Data
 import {
   fallbackHeroSlides,
   fallbackCategories,
@@ -83,59 +60,58 @@ import {
   fallbackSpecialOffers,
 } from '../lib/data/data';
 
-// Define services array
-const services = [
-  {
-    id: 1,
-    title: 'Gaming',
-    description: 'High-performance gaming PCs',
-    icon: <Monitor className="w-6 h-6" />,
-  },
-  {
-    id: 2,
-    title: 'Internet',
-    description: 'High-speed internet access',
-    icon: <Wifi className="w-6 h-6" />,
-  },
-  {
-    id: 3,
-    title: 'Printing',
-    description: 'Print, scan, and copy services',
-    icon: <Printer className="w-6 h-6" />,
-  },
-  {
-    id: 4,
-    title: 'Study Area',
-    description: 'Quiet space for studying',
-    icon: <BookOpen className="w-6 h-6" />,
-  },
-  {
-    id: 5,
-    title: 'Snacks',
-    description: 'Refreshments and snacks',
-    icon: <Coffee className="w-6 h-6" />,
-  },
-  {
-    id: 6,
-    title: 'Support',
-    description: 'Technical support available',
-    icon: <Headphones className="w-6 h-6" />,
-  },
-  {
-    id: 7,
-    title: 'Shop',
-    description: 'Tech accessories for sale',
-    icon: <ShoppingBag className="w-6 h-6" />,
-  },
-  {
-    id: 8,
-    title: 'Services',
-    description: 'Computer repair and maintenance',
-    icon: <Wrench className="w-6 h-6" />,
-  },
-];
+// Custom hooks
+const useThemeDetector = () => {
+  const [isDarkTheme, setIsDarkTheme] = useState(
+    window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
 
-// Define testimonials array
+  useEffect(() => {
+    const darkThemeMq = window.matchMedia('(prefers-color-scheme: dark)');
+    const mqListener = (e) => {
+      setIsDarkTheme(e.matches);
+    };
+
+    darkThemeMq.addEventListener('change', mqListener);
+    return () => darkThemeMq.removeEventListener('change', mqListener);
+  }, []);
+
+  return isDarkTheme;
+};
+
+const useIntersectionObserver = (options = {}) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px',
+        ...options,
+      }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
+
+  return [ref, isIntersecting];
+};
+
+// Testimonials data
 const testimonials = [
   {
     id: 1,
@@ -164,985 +140,28 @@ const testimonials = [
     avatar: '/user.png',
     rating: 5,
   },
-  {
-    id: 4,
-    name: 'Emily Rodriguez',
-    role: 'Teacher',
-    content:
-      'I bring my students here for computer lab sessions sometimes. The staff is very accommodating and the facilities are perfect for educational purposes.',
-    avatar: '/user.png',
-    rating: 4,
-  },
-  {
-    id: 5,
-    name: 'David Kim',
-    role: 'Business Owner',
-    content:
-      'I often have meetings here. The private rooms are perfect for client presentations, and the printing services have saved me many times.',
-    avatar: '/user.png',
-    rating: 5,
-  },
-  {
-    id: 6,
-    name: 'Lisa Thompson',
-    role: 'Artist',
-    content:
-      'The high-resolution monitors here are perfect for digital art. I love coming here to work on my projects. The atmosphere is inspiring!',
-    avatar: '/user.png',
-    rating: 4,
-  },
 ];
 
-// Add a function to check if data is empty and use fallback data
 const useDataWithFallback = (serverData, fallbackData, isLoading, error) => {
-  // If there's an error or the data is empty (but not loading), use fallback data
   if (
     (error || (Array.isArray(serverData) && serverData.length === 0)) &&
     !isLoading
   ) {
     return fallbackData;
   }
-
-  // Otherwise use the server data
   return serverData;
 };
 
-// Custom hook for theme detection
-const useThemeDetector = () => {
-  const [isDarkTheme, setIsDarkTheme] = useState(
-    window.matchMedia &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-  );
-
-  useEffect(() => {
-    const darkThemeMq = window.matchMedia('(prefers-color-scheme: dark)');
-    const mqListener = (e) => {
-      setIsDarkTheme(e.matches);
-    };
-
-    darkThemeMq.addEventListener('change', mqListener);
-    return () => darkThemeMq.removeEventListener('change', mqListener);
-  }, []);
-
-  return isDarkTheme;
-};
-
-// Custom hook for intersection observer
-const useIntersectionObserver = (options = {}) => {
-  const [isIntersecting, setIsIntersecting] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      setIsIntersecting(entry.isIntersecting);
-    }, options);
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [options]);
-
-  return [ref, isIntersecting];
-};
-
-// Format date helper function
-const formatDate = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-// Calculate days remaining helper function
-const getDaysRemaining = (endDate) => {
-  if (!endDate) return 0;
-  const end = new Date(endDate);
-  const now = new Date();
-  const diffTime = end - now;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 0 ? diffDays : 0;
-};
-
-// Product Quick View Modal Component
-const QuickViewModal = ({
-  product,
-  isOpen,
-  onClose,
-  onAddToCart,
-  onBuyNow,
-}) => {
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const { darkMode } = useSelector((state) => state.ui);
-  const [isClosing, setIsClosing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('description');
-  const modalRef = useRef(null);
-
-  const incrementQuantity = () => setQuantity((prev) => prev + 1);
-  const decrementQuantity = () =>
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      // Add styles to body to prevent scrolling
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-    } else {
-      // Restore scroll position when modal closes
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, Number.parseInt(scrollY || '0') * -1);
-    }
-
-    return () => {
-      // Clean up in case component unmounts while modal is open
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-    };
-  }, [isOpen]);
-
-  // Handle click outside to close
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        handleClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  // Handle escape key to close
-  useEffect(() => {
-    const handleEscKey = (e) => {
-      if (e.key === 'Escape') {
-        handleClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscKey);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isOpen]);
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-      setIsClosing(false);
-      setSelectedTab('description'); // Reset tab when closing
-      setQuantity(1); // Reset quantity when closing
-    }, 300);
-  };
-
-  if (!isOpen || !product) return null;
-
-  // Use real product images
-  const productImages = product.images || [product.image || '/placeholder.svg'];
-
-  // Calculate discount percentage
-  const discountPercentage =
-    product.salePrice && product.price
-      ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-      : 0;
-
-  // Get product status label
-  const getStatusLabel = () => {
-    if (product.stock <= 0 || product.status === 'out_of_stock') {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-          <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
-          Out of Stock
-        </span>
-      );
-    } else if (product.stock < 10) {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-          <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
-          Low Stock ({product.stock} left)
-        </span>
-      );
-    } else {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-          In Stock
-        </span>
-      );
-    }
-  };
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-0 overflow-hidden"
-      initial={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
-      animate={{
-        backgroundColor: isClosing ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: isClosing ? 'blur(0px)' : 'blur(5px)',
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        ref={modalRef}
-        className={`relative w-full max-w-4xl rounded-2xl shadow-2xl ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        } max-h-[90vh] flex flex-col`}
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{
-          opacity: isClosing ? 0 : 1,
-          scale: isClosing ? 0.9 : 1,
-          y: isClosing ? 20 : 0,
-        }}
-        transition={{
-          type: 'spring',
-          damping: 25,
-          stiffness: 300,
-          duration: 0.3,
-        }}
-      >
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 rounded-full bg-white/10 backdrop-blur-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 shadow-md"
-          aria-label="Close modal"
-        >
-          <X size={20} />
-        </button>
-
-        <div className="flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
-          {/* Product Images - Reduced width */}
-          <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 md:w-2/5">
-            <div className="aspect-square overflow-hidden">
-              <motion.img
-                key={selectedImage}
-                src={productImages[selectedImage] || '/placeholder.svg'}
-                alt={product.name}
-                className="w-full h-full object-contain p-2 sm:p-4"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-
-              {/* Product badges */}
-              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex flex-col gap-2">
-                {product.onSale && (
-                  <div className="px-2 sm:px-3 py-1 text-xs font-bold rounded-full bg-red-600 text-white shadow-md backdrop-blur-sm bg-opacity-90">
-                    Sale
-                  </div>
-                )}
-                {product.isNewProduct && (
-                  <div className="px-2 sm:px-3 py-1 text-xs font-bold rounded-full bg-green-600 text-white shadow-md backdrop-blur-sm bg-opacity-90">
-                    New
-                  </div>
-                )}
-                {product.featured && (
-                  <div className="px-2 sm:px-3 py-1 text-xs font-bold rounded-full bg-yellow-500 text-white shadow-md backdrop-blur-sm bg-opacity-90">
-                    Featured
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Thumbnail Navigation */}
-            <div className="flex justify-center mt-2 sm:mt-4 space-x-1 sm:space-x-2 px-2 sm:px-4 pb-2 sm:pb-4 overflow-x-auto">
-              {productImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                    selectedImage === idx
-                      ? 'border-blue-600 dark:border-blue-400 shadow-md scale-110'
-                      : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600 opacity-70 hover:opacity-100'
-                  }`}
-                  aria-label={`View image ${idx + 1}`}
-                >
-                  <img
-                    src={img || '/placeholder.svg'}
-                    alt={`Thumbnail ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Product Details - Increased width */}
-          <div className="p-4 sm:p-6 md:p-8 flex flex-col overflow-y-auto md:w-3/5 max-h-[90vh] md:max-h-none">
-            <div className="mb-2 flex flex-wrap gap-2">
-              <span className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
-                {product.category?.name || 'Uncategorized'}
-              </span>
-              {product.sku && (
-                <span className="text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                  SKU: {product.sku}
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {product.name}
-            </h2>
-
-            <div className="flex items-center mb-3 sm:mb-4">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    className={
-                      i < Math.floor(product.rating || 0)
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300 dark:text-gray-600'
-                    }
-                  />
-                ))}
-              </div>
-              <span className="ml-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                {product.rating?.toFixed(1) || '0.0'} ({product.numReviews || 0}{' '}
-                reviews)
-              </span>
-            </div>
-
-            <div className="mb-4 sm:mb-6">
-              <div className="flex items-baseline">
-                {product.salePrice ? (
-                  <>
-                    <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                      ${product.salePrice?.toFixed(2)}
-                    </span>
-                    <span className="ml-2 sm:ml-3 text-base sm:text-lg text-gray-500 dark:text-gray-400 line-through">
-                      ${product.price?.toFixed(2)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    ${product.price?.toFixed(2) || '0.00'}
-                  </span>
-                )}
-              </div>
-              {discountPercentage > 0 && (
-                <span className="inline-block mt-1 text-xs sm:text-sm font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
-                  Save {discountPercentage}% for a limited time
-                </span>
-              )}
-            </div>
-
-            {/* Tabs for product information */}
-            <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setSelectedTab('description')}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === 'description'
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Description
-                </button>
-                <button
-                  onClick={() => setSelectedTab('specifications')}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === 'specifications'
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Specifications
-                </button>
-                <button
-                  onClick={() => setSelectedTab('shipping')}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === 'shipping'
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Shipping
-                </button>
-              </div>
-            </div>
-
-            {/* Tab content */}
-            <div className="mb-4 sm:mb-6">
-              {selectedTab === 'description' && (
-                <div>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {product.description}
-                  </p>
-
-                  <div className="mt-4 bg-gray-50 dark:bg-gray-700/50 p-3 sm:p-4 rounded-xl">
-                    <h3 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">
-                      Key Features:
-                    </h3>
-                    <ul className="space-y-1 sm:space-y-2">
-                      <li className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
-                          <Check
-                            size={10}
-                            className="text-green-600 dark:text-green-400"
-                          />
-                        </div>
-                        Premium quality materials
-                      </li>
-                      <li className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
-                          <Check
-                            size={10}
-                            className="text-green-600 dark:text-green-400"
-                          />
-                        </div>
-                        Enhanced performance
-                      </li>
-                      <li className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
-                          <Check
-                            size={10}
-                            className="text-green-600 dark:text-green-400"
-                          />
-                        </div>
-                        Durable construction
-                      </li>
-                      <li className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
-                          <Check
-                            size={10}
-                            className="text-green-600 dark:text-green-400"
-                          />
-                        </div>
-                        1-year warranty
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {selectedTab === 'specifications' && (
-                <div>
-                  {product.specifications &&
-                  Object.keys(product.specifications).length > 0 ? (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                          {Object.entries(product.specifications).map(
-                            ([key, value]) => (
-                              <tr key={key}>
-                                <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white capitalize">
-                                  {key.replace(/([A-Z])/g, ' $1').trim()}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
-                                  {value}
-                                </td>
-                              </tr>
-                            )
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                      Detailed specifications not available for this product.
-                    </p>
-                  )}
-
-                  {product.tags && product.tags.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400 mb-2">
-                        Tags:
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {product.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                          >
-                            <Tag size={12} className="mr-1" />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {selectedTab === 'shipping' && (
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        Free Shipping
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">
-                        On orders over $50. Delivery within 3-5 business days.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <RefreshCw className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        Easy Returns
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">
-                        30-day money back guarantee. Return shipping is free.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        Warranty
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">
-                        All products come with a 1-year limited warranty.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-4 sm:mb-6 bg-gray-50 dark:bg-gray-700/50 p-3 sm:p-4 rounded-xl">
-              <div className="w-full sm:w-auto">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-                  <button
-                    onClick={decrementQuantity}
-                    className="px-2 sm:px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    disabled={product.stock <= 0}
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-8 sm:w-10 text-center py-2 font-medium text-gray-900 dark:text-white">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={incrementQuantity}
-                    className="px-2 sm:px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    disabled={product.stock <= 0 || quantity >= product.stock}
-                    aria-label="Increase quantity"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="w-full sm:w-auto">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                  Availability
-                </label>
-                {getStatusLabel()}
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-auto">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  onAddToCart(product, quantity);
-                  onClose();
-                }}
-                autoFocus
-                className="flex-1 flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 border border-transparent rounded-lg shadow-sm text-sm sm:text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={product.stock <= 0}
-              >
-                <ShoppingCart size={16} className="mr-1 sm:mr-2" />
-                Add to Cart
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  onBuyNow(product);
-                  onClose();
-                }}
-                autoFocus
-                className="flex-1 flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm sm:text-base font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={product.stock <= 0}
-              >
-                Buy Now
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// Newsletter Popup Component
-const NewsletterPopup = ({ isOpen, onClose }) => {
-  const dispatch = useDispatch();
-  const { subscribeLoading, subscribeError, subscribeSuccess } = useSelector(
-    (state) => state.newsletter
-  );
-  const [email, setEmail] = useState('');
-  const [isClosing, setIsClosing] = useState(false);
-  const modalRef = useRef(null);
-  const { darkMode } = useSelector((state) => state.ui);
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      // Save current scroll position
-      const scrollY = window.scrollY;
-      // Add styles to body to prevent scrolling
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-    } else {
-      // Restore scroll position when modal closes
-      const scrollY = document.body.style.top;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, Number.parseInt(scrollY || '0') * -1);
-    }
-
-    return () => {
-      // Clean up in case component unmounts while modal is open
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    // Clear error and success messages when component unmounts
-    return () => {
-      dispatch(clearError());
-      dispatch(clearSuccess());
-    };
-  }, [dispatch]);
-
-  // Handle click outside to close
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        handleClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  // Handle escape key to close
-  useEffect(() => {
-    const handleEscKey = (e) => {
-      if (e.key === 'Escape') {
-        handleClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscKey);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [isOpen]);
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-      setIsClosing(false);
-    }, 300);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-
-    try {
-      await dispatch(
-        subscribeToNewsletter({
-          email,
-          source: 'popup',
-          preferences: ['marketing', 'updates'],
-        })
-      ).unwrap();
-      setEmail('');
-      if (subscribeSuccess) {
-        setTimeout(() => {
-          handleClose();
-        }, 2000);
-      }
-    } catch (err) {
-      // Error is handled by the slice
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-0 flex items-center justify-center z-50 overflow-hidden"
-      initial={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
-      animate={{
-        backgroundColor: isClosing ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: isClosing ? 'blur(0px)' : 'blur(5px)',
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        ref={modalRef}
-        className={`${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        } p-0 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden max-h-[90vh] flex flex-col`}
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{
-          opacity: isClosing ? 0 : 1,
-          scale: isClosing ? 0.9 : 1,
-          y: isClosing ? 20 : 0,
-        }}
-        transition={{
-          type: 'spring',
-          damping: 25,
-          stiffness: 300,
-          duration: 0.3,
-        }}
-      >
-        <div
-          className={`${darkMode ? 'bg-blue-900' : 'bg-blue-600'} p-6 relative`}
-        >
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
-            aria-label="Close newsletter popup"
-          >
-            <X size={20} />
-          </button>
-
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-4">
-            <Mail className="h-8 w-8 text-white" />
-          </div>
-
-          <h2 className="text-2xl font-bold text-white mb-2">Stay Updated</h2>
-          <p className="text-blue-100 text-sm">
-            Join our newsletter for exclusive deals and tech tips
-          </p>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          {subscribeError && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4"
-            >
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-red-500" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm">{subscribeError}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {subscribeSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-4"
-            >
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Check className="h-5 w-5 text-green-500" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm">
-                    Thank you for subscribing! Please check your email to
-                    confirm your subscription.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className={`block text-sm font-medium ${
-                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                } mb-1`}
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail
-                    size={16}
-                    className={`${
-                      darkMode ? 'text-gray-500' : 'text-gray-400'
-                    }`}
-                  />
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
-                  }`}
-                  required
-                  disabled={subscribeLoading}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label
-                  htmlFor="terms"
-                  className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
-                >
-                  I agree to receive marketing emails and accept the{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={handleClose}
-                className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                  darkMode
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                } transition-colors`}
-                disabled={subscribeLoading}
-              >
-                Maybe Later
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
-                disabled={subscribeLoading}
-              >
-                {subscribeLoading ? (
-                  <div className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Subscribing...
-                  </div>
-                ) : (
-                  'Subscribe Now'
-                )}
-              </motion.button>
-            </div>
-          </form>
-
-          <div className="mt-4 text-center">
-            <p
-              className={`text-xs ${
-                darkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}
-            >
-              We respect your privacy. Unsubscribe at any time.
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// Enhanced CyberCafeLandingPage Component
 const CyberCafeLandingPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { darkMode } = useSelector((state) => state.ui);
-  const systemPrefersDark = useThemeDetector(); // Add this line to use the hook
+  const systemPrefersDark = useThemeDetector();
 
   // Redux state
   const {
     products: productsData,
-    featuredProducts,
-    newArrivals,
-    saleProducts,
     loading: productsLoading,
     error: productsError,
     filters,
@@ -1150,7 +169,6 @@ const CyberCafeLandingPage = () => {
 
   const {
     categories: categoriesData,
-    featuredCategories = [],
     loading: categoriesLoading,
     error: categoriesError,
   } = useSelector((state) => state.categories);
@@ -1167,57 +185,34 @@ const CyberCafeLandingPage = () => {
     error: slidesError,
   } = useSelector((state) => state.heroSlides);
 
-  const { items: cartItems } = useSelector((state) => state.cart);
+  const { items: cartItems, loading: cartLoading } = useSelector(
+    (state) => state.cart
+  );
 
-  // Use the hook to get data with fallback
-  const heroSlides = useDataWithFallback(
+  // Effective data with fallbacks
+  const effectiveHeroSlides = useDataWithFallback(
     heroSlidesData,
     fallbackHeroSlides,
     slidesLoading,
     slidesError
   );
-  const categories = useDataWithFallback(
+
+  const effectiveCategories = useDataWithFallback(
     categoriesData,
     fallbackCategories,
     categoriesLoading,
     categoriesError
   );
-  const products = useDataWithFallback(
+
+  const effectiveProducts = useDataWithFallback(
     productsData,
     fallbackProducts,
     productsLoading,
     productsError
   );
-  const specialOffers = useDataWithFallback(
-    specialOffersData,
-    fallbackSpecialOffers,
-    offersLoading,
-    offersError
-  );
 
-  // Add this after the Redux state declarations
-
-  // Use fallback data when server data is empty
-  const effectiveHeroSlides = useDataWithFallback(
-    heroSlides,
-    fallbackHeroSlides,
-    slidesLoading,
-    slidesError
-  );
-  const effectiveCategories = useDataWithFallback(
-    categories,
-    fallbackCategories,
-    categoriesLoading,
-    categoriesError
-  );
-  const effectiveProducts = useDataWithFallback(
-    products,
-    fallbackProducts,
-    productsLoading,
-    productsError
-  );
   const effectiveSpecialOffers = useDataWithFallback(
-    specialOffers,
+    specialOffersData,
     fallbackSpecialOffers,
     offersLoading,
     offersError
@@ -1225,61 +220,81 @@ const CyberCafeLandingPage = () => {
 
   // Local state
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const [statusMessages, setStatusMessages] = useState([]);
-  const [retryCount, setRetryCount] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedSort, setSelectedSort] = useState('featured');
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [sectionLoadingStates, setSectionLoadingStates] = useState({
-    hero: true,
-    categories: true,
-    products: true,
-    offers: true,
-  });
-  const [areFiltersShown, setAreFiltersShown] = useState(false);
 
-  // Refs for intersection observer
-  const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 });
-  const [categoriesRef, categoriesVisible] = useIntersectionObserver({
-    threshold: 0.1,
-  });
-  const [productsRef, productsVisible] = useIntersectionObserver({
-    threshold: 0.1,
-  });
-  const [specialOffersRef, specialOffersVisible] = useIntersectionObserver({
-    threshold: 0.1,
-  });
-  const [ctaRef, ctaVisible] = useIntersectionObserver({ threshold: 0.1 });
+  // Loading states for different operations
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isFilteringCategory, setIsFilteringCategory] = useState(false);
+  const [currentLoadingProduct, setCurrentLoadingProduct] = useState(null);
+  const [globalLoadingMessage, setGlobalLoadingMessage] = useState('');
+  const [showGlobalLoader, setShowGlobalLoader] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToastLoader, setShowToastLoader] = useState(false);
 
-  // Add a status message
+  const [categoriesRef] = useIntersectionObserver();
+  const [productsRef] = useIntersectionObserver();
+  const [specialOffersRef] = useIntersectionObserver();
+  const [ctaRef] = useIntersectionObserver();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Status message functions
   const addStatusMessage = useCallback((message) => {
     const id = Date.now();
     setStatusMessages((prev) => [...prev, { id, ...message }]);
     return id;
   }, []);
 
-  // Remove a status message
   const removeStatusMessage = useCallback((id) => {
     setStatusMessages((prev) => prev.filter((msg) => msg.id !== id));
   }, []);
 
-  // Fetch all necessary data
-  const fetchAllData = useCallback(async () => {
-    setLoadingProgress(10);
+  // Show global loader helper
+  const showGlobalLoaderWithMessage = useCallback(
+    (message, submessage = '') => {
+      setGlobalLoadingMessage(message);
+      setShowGlobalLoader(true);
+    },
+    []
+  );
 
+  const hideGlobalLoader = useCallback(() => {
+    setShowGlobalLoader(false);
+    setGlobalLoadingMessage('');
+  }, []);
+
+  // Show toast loader helper
+  const showToastLoaderWithMessage = useCallback((message) => {
+    setToastMessage(message);
+    setShowToastLoader(true);
+  }, []);
+
+  const hideToastLoader = useCallback(() => {
+    setShowToastLoader(false);
+    setToastMessage('');
+  }, []);
+
+  // Fetch all data
+  const fetchAllData = useCallback(async () => {
     try {
-      // Fetch data in parallel
+      if (!isInitialLoading) {
+        showGlobalLoaderWithMessage(
+          'Refreshing content...',
+          'Please wait while we update the latest data'
+        );
+      }
+
       const promises = [
         dispatch(fetchProducts(filters)).unwrap(),
         dispatch(fetchFeaturedProducts()).unwrap(),
@@ -1291,38 +306,10 @@ const CyberCafeLandingPage = () => {
         dispatch(fetchHeroSlides()).unwrap(),
       ];
 
-      // Update progress as promises resolve
-      let completedPromises = 0;
-      const totalPromises = promises.length;
+      await Promise.all(promises);
 
-      const progressInterval = setInterval(() => {
-        setLoadingProgress((prev) => {
-          if (prev >= 90) return prev;
-          return prev + 1;
-        });
-      }, 200);
-
-      // Wait for all promises to resolve
-      await Promise.all(
-        promises.map((promise) =>
-          promise
-            .then(() => {
-              completedPromises++;
-              setLoadingProgress(
-                10 + Math.floor((completedPromises / totalPromises) * 80)
-              );
-            })
-            .catch((error) => {
-              throw error;
-            })
-        )
-      );
-
-      clearInterval(progressInterval);
-      setLoadingProgress(100);
-
-      // Show success message if not initial load
       if (!isInitialLoading) {
+        hideGlobalLoader();
         addStatusMessage({
           type: 'success',
           title: 'Content Updated',
@@ -1337,92 +324,48 @@ const CyberCafeLandingPage = () => {
       console.error('Error fetching data:', error);
       setHasError(true);
       setErrorDetails(error);
+      hideGlobalLoader();
 
-      // Show error message if not initial load
       if (!isInitialLoading) {
         addStatusMessage({
           type: 'error',
           title: 'Update Failed',
           message: 'Failed to refresh content. Please try again.',
           duration: 5,
-          actions: [
-            {
-              text: 'Retry',
-              primary: true,
-              icon: <RefreshCw size={14} />,
-              onClick: handleRefresh,
-            },
-          ],
         });
       }
     } finally {
-      // Set section loading states to false
-      setSectionLoadingStates({
-        hero: false,
-        categories: false,
-        products: false,
-        offers: false,
-      });
-
-      // Set initial loading to false after first load
       setIsInitialLoading(false);
     }
-  }, [dispatch, filters, isInitialLoading, addStatusMessage]);
+  }, [
+    dispatch,
+    filters,
+    isInitialLoading,
+    addStatusMessage,
+    showGlobalLoaderWithMessage,
+    hideGlobalLoader,
+  ]);
 
   // Initial data fetch
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
 
-  //fetch cart data when the component mounts
+  // Fetch cart data
   useEffect(() => {
     if (user?._id) {
-      // Fetch cart data when user is logged in
-      dispatch(fetchCart());
+      showToastLoaderWithMessage('Loading your cart...');
+      dispatch(fetchCart()).finally(() => {
+        hideToastLoader();
+      });
     }
-  }, [dispatch, user]);
+  }, [dispatch, user, showToastLoaderWithMessage, hideToastLoader]);
 
-  // Handle refresh
-  const handleRefresh = useCallback(() => {
-    setRetryCount((prev) => prev + 1);
-
-    // Reset section loading states
-    setSectionLoadingStates({
-      hero: true,
-      categories: true,
-      products: true,
-      offers: true,
-    });
-
-    // Add status message
-    addStatusMessage({
-      type: 'info',
-      title: 'Refreshing Content',
-      message: 'Please wait while we update the page...',
-      duration: 2,
-    });
-
-    // Fetch data
-    fetchAllData();
-  }, [fetchAllData, addStatusMessage]);
-
-  // Auto-cycle through hero slides
+  // Newsletter popup
   useEffect(() => {
-    if (!effectiveHeroSlides || effectiveHeroSlides.length <= 1) return;
+    if (isInitialLoading) return;
 
-    const interval = setInterval(() => {
-      setCurrentSlide((prevSlide) =>
-        prevSlide === effectiveHeroSlides.length - 1 ? 0 : prevSlide + 1
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [effectiveHeroSlides]);
-
-  // Show newsletter popup after 5 seconds
-  useEffect(() => {
     const timer = setTimeout(() => {
-      // Check if user hasn't seen it yet
       const hasSeenNewsletter = localStorage.getItem('hasSeenNewsletter');
       if (!hasSeenNewsletter) {
         setIsNewsletterOpen(true);
@@ -1431,73 +374,111 @@ const CyberCafeLandingPage = () => {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isInitialLoading]);
 
   // Handle scroll events
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setShowScrollTop(window.scrollY > 300);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Initialize theme based on user preference or system preference
+  // Payment status handling
   useEffect(() => {
-    // If user hasn't set a preference, use system preference
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === null && systemPrefersDark !== darkMode) {
-      dispatch(toggleDarkMode());
+    const paymentStatus = searchParams.get('payment');
+
+    if (paymentStatus) {
+      switch (paymentStatus) {
+        case 'success': {
+          const successData = localStorage.getItem('paymentSuccess');
+          if (successData) {
+            const { orderId } = JSON.parse(successData);
+            toast.success(`Payment successful! Order ID: ${orderId}`);
+            localStorage.removeItem('paymentSuccess');
+          }
+          break;
+        }
+        case 'failed': {
+          const failureData = localStorage.getItem('paymentFailure');
+          if (failureData) {
+            const { reason } = JSON.parse(failureData);
+            toast.error(`Payment failed: ${reason}`);
+            localStorage.removeItem('paymentFailure');
+          }
+          break;
+        }
+        case 'pending':
+          toast.info(
+            'Payment is still being processed. We will notify you once completed.'
+          );
+          break;
+        case 'error':
+          toast.error(
+            'There was an error processing your payment. Please try again.'
+          );
+          break;
+      }
+      setSearchParams({});
     }
-  }, [systemPrefersDark, darkMode, dispatch]);
+  }, [searchParams, setSearchParams]);
 
-  // Navigation functions
-  const nextSlide = () => {
-    setCurrentSlide((prevSlide) =>
-      prevSlide === effectiveHeroSlides.length - 1 ? 0 : prevSlide + 1
-    );
-  };
+  // Event handlers
+  const handleSearch = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setIsSearching(true);
+      showToastLoaderWithMessage('Searching products...');
 
-  const prevSlide = () => {
-    setCurrentSlide((prevSlide) =>
-      prevSlide === 0 ? effectiveHeroSlides.length - 1 : prevSlide - 1
-    );
-  };
+      try {
+        // Simulate search delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        document
+          .getElementById('featured-products')
+          ?.scrollIntoView({ behavior: 'smooth' });
+      } finally {
+        setIsSearching(false);
+        hideToastLoader();
+      }
+    },
+    [showToastLoaderWithMessage, hideToastLoader]
+  );
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // Scroll to products section
-    document
-      .getElementById('featured-products')
-      .scrollIntoView({ behavior: 'smooth' });
-  };
+  const handleAddToCart = useCallback(
+    async (product, quantity = 1) => {
+      if (!product || !product._id) {
+        console.error('Invalid product data:', product);
+        addStatusMessage({
+          type: 'error',
+          title: 'Error',
+          message: 'Could not add product to cart. Invalid product data.',
+          duration: 3,
+        });
+        return;
+      }
 
-  // Cart and checkout functions
-  const handleAddToCart = (product, quantity = 1) => {
-    if (!product || !product._id) {
-      console.error('Invalid product data:', product);
-      addStatusMessage({
-        type: 'error',
-        title: 'Error',
-        message: 'Could not add product to cart. Invalid product data.',
-        duration: 3,
-      });
-      return;
-    }
-    console.log('product: ', product);
-    console.log('quantity: ', quantity);
+      setIsAddingToCart(true);
+      setCurrentLoadingProduct(product._id);
+      showToastLoaderWithMessage(`Adding ${product.name} to cart...`);
 
-    // Use the updated addToCart action that expects productId and quantity
-    dispatch(
-      addToCart({
-        productId: product._id,
-        quantity,
-      })
-    )
-      .unwrap()
-      .then(() => {
-        // Show feedback via status message
+      try {
+        await dispatch(
+          addToCart({
+            productId: product._id,
+            quantity,
+          })
+        ).unwrap();
+
         addStatusMessage({
           type: 'success',
           title: 'Added to Cart',
@@ -1511,8 +492,7 @@ const CyberCafeLandingPage = () => {
             },
           ],
         });
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error adding to cart:', error);
         addStatusMessage({
           type: 'error',
@@ -1520,33 +500,58 @@ const CyberCafeLandingPage = () => {
           message: `Failed to add ${product.name} to cart: ${error}`,
           duration: 3,
         });
-      });
-  };
+      } finally {
+        setIsAddingToCart(false);
+        setCurrentLoadingProduct(null);
+        hideToastLoader();
+      }
+    },
+    [dispatch, addStatusMessage, showToastLoaderWithMessage, hideToastLoader]
+  );
 
-  // 3. Add a function to update cart item quantity
-  const handleUpdateCartQuantity = (productId, quantity) => {
-    dispatch(updateCartItemQuantity({ productId, quantity }));
-  };
+  const handleUpdateCartQuantity = useCallback(
+    async (productId, quantity) => {
+      showToastLoaderWithMessage('Updating cart...');
+      try {
+        await dispatch(updateCartItemQuantity({ productId, quantity }));
+      } finally {
+        hideToastLoader();
+      }
+    },
+    [dispatch, showToastLoaderWithMessage, hideToastLoader]
+  );
 
-  // 4. Add a function to remove item from cart
-  const handleRemoveFromCart = (productId) => {
-    dispatch(removeFromCart(productId));
+  const handleRemoveFromCart = useCallback(
+    async (productId) => {
+      showToastLoaderWithMessage('Removing item from cart...');
+      try {
+        await dispatch(removeFromCart(productId));
+        addStatusMessage({
+          type: 'info',
+          title: 'Item Removed',
+          message: 'Item has been removed from your cart.',
+          duration: 3,
+        });
+      } finally {
+        hideToastLoader();
+      }
+    },
+    [dispatch, addStatusMessage, showToastLoaderWithMessage, hideToastLoader]
+  );
 
-    addStatusMessage({
-      type: 'info',
-      title: 'Item Removed',
-      message: 'Item has been removed from your cart.',
-      duration: 3,
-    });
-  };
+  const handleBuyNow = useCallback(
+    async (product) => {
+      showGlobalLoaderWithMessage(
+        'Adding item to cart...',
+        'Adding item to cart and redirecting'
+      );
 
-  const handleBuyNow = (product) => {
-    dispatch(addToCart({ productId: product._id, quantity: 1 }))
-      .unwrap()
-      .then(() => {
-        navigate('/checkout'); // Redirect to checkout page
-      })
-      .catch((error) => {
+      try {
+        await dispatch(
+          addToCart({ productId: product._id, quantity: 1 })
+        ).unwrap();
+        // navigate('/checkout');
+      } catch (error) {
         console.error('Error adding to cart:', error);
         addStatusMessage({
           type: 'error',
@@ -1554,55 +559,72 @@ const CyberCafeLandingPage = () => {
           message: `Failed to add ${product.name} to cart: ${error}`,
           duration: 3,
         });
-      });
-  };
+      } finally {
+        hideGlobalLoader();
+      }
+    },
+    [
+      dispatch,
+      navigate,
+      addStatusMessage,
+      showGlobalLoaderWithMessage,
+      hideGlobalLoader,
+    ]
+  );
 
-  const handleQuickView = (product) => {
+  const handleQuickView = useCallback((product) => {
     setQuickViewProduct(product);
     setIsQuickViewOpen(true);
-  };
+  }, []);
 
-  // Theme toggle function
-  const handleToggleTheme = () => {
-    dispatch(toggleDarkMode());
-    localStorage.setItem('darkMode', !darkMode ? 'true' : 'false');
-  };
+  const handleCategoryFilter = useCallback(
+    async (categoryName) => {
+      setIsFilteringCategory(true);
+      showToastLoaderWithMessage(`Loading ${categoryName} products...`);
 
-  // Scroll to top function
-  const scrollToTop = () => {
+      try {
+        // Simulate filtering delay for smooth UX
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        setSelectedCategory(categoryName);
+
+        // Scroll to products section smoothly
+        setTimeout(() => {
+          document.getElementById('featured-products')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }, 100);
+
+        addStatusMessage({
+          type: 'success',
+          title: 'Category Filtered',
+          message: `Now showing ${categoryName} products.`,
+          duration: 2,
+        });
+      } finally {
+        setIsFilteringCategory(false);
+        hideToastLoader();
+      }
+    },
+    [showToastLoaderWithMessage, hideToastLoader, addStatusMessage]
+  );
+
+  const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  // Handle filter changes
-  const handleFilterChange = (newFilters) => {
-    dispatch(setFilters(newFilters));
-
-    // Show loading state for products section
-    setSectionLoadingStates((prev) => ({
-      ...prev,
-      products: true,
-    }));
-
-    // Add status message
-    addStatusMessage({
-      type: 'info',
-      title: 'Filters Applied',
-      message: 'Updating product list...',
-      duration: 2,
-    });
-  };
-
-  // If initial loading, show loading screen
+  // Loading screen
   if (isInitialLoading) {
     return <LoadingScreen message="Loading VoxCyber..." />;
   }
 
-  // If there's an error during initial load, show error fallback
+  // Error fallback
   if (hasError && errorDetails) {
     return (
       <ErrorFallback
         error={errorDetails}
-        resetErrorBoundary={handleRefresh}
+        resetErrorBoundary={fetchAllData}
         onHome={() => navigate('/')}
         onSupport={() => window.open('/support', '_blank')}
       />
@@ -1615,8 +637,21 @@ const CyberCafeLandingPage = () => {
         darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
       } overflow-x-hidden transition-colors duration-300`}
     >
+      {/* Global Loaders */}
+      <GlobalLoader
+        isVisible={showGlobalLoader}
+        message={globalLoadingMessage}
+        variant="pulse"
+      />
+
+      <ToastLoader
+        isVisible={showToastLoader}
+        message={toastMessage}
+        position="top-center"
+      />
+
       {/* Status Messages */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
+      <div className="fixed top-4 right-4 z-[9997] flex flex-col gap-2 max-w-md">
         <AnimatePresence>
           {statusMessages.map((msg) => (
             <motion.div
@@ -1646,6 +681,7 @@ const CyberCafeLandingPage = () => {
         onClose={() => setIsCheckoutOpen(false)}
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveFromCart}
+        isLoading={cartLoading}
       />
       <QuickViewModal
         product={quickViewProduct}
@@ -1659,1818 +695,277 @@ const CyberCafeLandingPage = () => {
           handleAddToCart(product, quantity);
         }}
         onBuyNow={handleBuyNow}
+        isLoading={currentLoadingProduct === quickViewProduct?._id}
       />
       <NewsletterPopup
         isOpen={isNewsletterOpen}
         onClose={() => setIsNewsletterOpen(false)}
       />
 
-      {/* Top Bar - Announcements & Quick Links */}
-      <div className="bg-blue-900 text-white py-2 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0">
-            🔥 Special Promotion: Get 15% off all electronics with code:{' '}
-            <span className="font-bold">CYBER15</span>
-          </p>
-          <div className="flex space-x-4 text-sm">
-            <a href="#" className="hover:underline">
-              Track Order
-            </a>
-            <span className="hidden sm:inline">|</span>
-            <a href="#" className="hover:underline">
-              Support
-            </a>
-            <span className="hidden sm:inline">|</span>
-            <a href="#" className="hover:underline">
-              Find Store
-            </a>
-            <span className="hidden sm:inline">|</span>
-            <button
-              onClick={handleToggleTheme}
-              className="hover:underline flex items-center"
-            >
-              {darkMode ? (
-                <Sun size={14} className="mr-1" />
-              ) : (
-                <Moon size={14} className="mr-1" />
-              )}
-              {darkMode ? 'Light Mode' : 'Dark Mode'}
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* <DialogflowChatbot /> */}
 
-      {/* Header and Navigation */}
-      <header
-        className={`sticky top-0 z-40 ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        } shadow-md transition-colors duration-300`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-between items-center py-4">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                <Coffee
-                  size={28}
-                  className={`${
-                    darkMode ? 'text-blue-400' : 'text-blue-700'
-                  } mr-2`}
-                />
-                <span
-                  className={`font-bold text-2xl ${
-                    darkMode ? 'text-white' : 'text-blue-900'
-                  }`}
-                >
-                  Vox
-                  <span
-                    className={darkMode ? 'text-blue-400' : 'text-blue-600'}
-                  >
-                    Cyber
-                  </span>
-                </span>
-              </Link>
-            </div>
-
-            {/* Search Bar */}
-            <div
-              className={`hidden md:block relative flex-1 mx-10 max-w-2xl transition-all ${
-                isSearchFocused ? 'scale-105' : ''
-              }`}
-            >
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for products, categories, brands..."
-                  className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${
-                    darkMode
-                      ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-500'
-                      : 'border-gray-200 bg-white text-gray-900 focus:border-blue-500'
-                  } focus:outline-none transition-all`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  aria-label="Search"
-                />
-                <Search
-                  className="absolute left-3 top-2.5 text-gray-400"
-                  size={20}
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1 bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700 transition-colors"
-                  aria-label="Submit search"
-                >
-                  <Search size={16} />
-                </button>
-              </form>
-            </div>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              <Link
-                to="/shop"
-                className={`text-sm font-medium ${
-                  darkMode
-                    ? 'text-gray-300 hover:text-blue-400'
-                    : 'text-gray-700 hover:text-blue-600'
-                } transition-colors`}
-              >
-                Shop
-              </Link>
-              <Link
-                to="/services"
-                className={`text-sm font-medium ${
-                  darkMode
-                    ? 'text-gray-300 hover:text-blue-400'
-                    : 'text-gray-700 hover:text-blue-600'
-                } transition-colors`}
-              >
-                Services
-              </Link>
-              <Link
-                to="/websites"
-                className={`text-sm font-medium ${
-                  darkMode
-                    ? 'text-gray-300 hover:text-blue-400'
-                    : 'text-gray-700 hover:text-blue-600'
-                } transition-colors`}
-              >
-                Websites
-              </Link>
-
-              {/* Show Admin link if user is admin */}
-              {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                <Link
-                  to="/admin"
-                  className="text-sm font-medium text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Admin
-                </Link>
-              )}
-            </nav>
-
-            {/* Icons */}
-            <div className="flex items-center space-x-4">
-              <button
-                className={`relative p-2 ${
-                  darkMode
-                    ? 'text-gray-300 hover:text-blue-400'
-                    : 'text-gray-700 hover:text-blue-600'
-                } transition-colors`}
-                aria-label="Wishlist"
-              >
-                <Heart size={24} />
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  3
-                </span>
-              </button>
-              <button
-                className={`relative p-2 ${
-                  darkMode
-                    ? 'text-gray-300 hover:text-blue-400'
-                    : 'text-gray-700 hover:text-blue-600'
-                } transition-colors`}
-                onClick={() => setIsCheckoutOpen(true)}
-                aria-label="Cart"
-              >
-                <ShoppingCart size={24} />
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              </button>
-
-              {/* Auth Buttons / User Menu */}
-              <div className="hidden md:block">
-                {user ? (
-                  <div className="relative group">
-                    <button
-                      className={`flex items-center space-x-1 ${
-                        darkMode
-                          ? 'text-white hover:text-blue-400'
-                          : 'text-gray-900 hover:text-blue-600'
-                      }`}
-                    >
-                      <span className="font-medium text-sm">{user.name}</span>
-                      <ChevronDown size={16} />
-                    </button>
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
-                      <Link
-                        to="/account"
-                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        My Account
-                      </Link>
-                      <Link
-                        to="/orders"
-                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        Orders
-                      </Link>
-                      <button
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => {
-                          // Handle logout
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => dispatch(openAuthModal('login'))}
-                      className="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                    >
-                      Login
-                    </button>
-                    <button
-                      onClick={() => dispatch(openAuthModal('register'))}
-                      className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Register
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                className={`lg:hidden p-2 ${
-                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Search (Only visible on mobile) */}
-          <div className="md:hidden pb-4">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-700 text-white'
-                    : 'border-gray-200 bg-white text-gray-900'
-                } focus:border-blue-500 focus:outline-none`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Search"
-              />
-              <Search
-                className="absolute left-3 top-2.5 text-gray-400"
-                size={20}
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1 bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700 transition-colors"
-                aria-label="Submit search"
-              >
-                <Search size={16} />
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`lg:hidden ${
-                darkMode ? 'bg-gray-800' : 'bg-white'
-              } absolute w-full shadow-lg z-50 overflow-hidden`}
-            >
-              <div className="p-4 space-y-3">
-                <Link
-                  to="/shop"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } rounded-lg`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Shop
-                </Link>
-                <Link
-                  to="/services"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } rounded-lg`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Services
-                </Link>
-                <Link
-                  to="/websites"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  } rounded-lg`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Websites
-                </Link>
-
-                {/* Show Admin link if user is admin */}
-                {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                  <Link
-                    to="/admin"
-                    className="block py-2 px-4 text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Dashboard
-                  </Link>
-                )}
-
-                <div
-                  className={`border-t pt-4 mt-4 ${
-                    darkMode ? 'border-gray-700' : 'border-gray-200'
-                  }`}
-                >
-                  {!user ? (
-                    <>
-                      <button
-                        onClick={() => {
-                          dispatch(openAuthModal('login'));
-                          setIsMenuOpen(false);
-                        }}
-                        className={`block w-full text-left py-2 px-4 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } rounded-lg`}
-                      >
-                        Login
-                      </button>
-                      <button
-                        onClick={() => {
-                          dispatch(openAuthModal('register'));
-                          setIsMenuOpen(false);
-                        }}
-                        className={`block w-full text-left py-2 px-4 ${
-                          darkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                        } rounded-lg`}
-                      >
-                        Register
-                      </button>
-                    </>
-                  ) : (
-                    <div className="px-4 py-2">
-                      <p
-                        className={`font-medium ${
-                          darkMode ? 'text-white' : 'text-gray-900'
-                        }`}
-                      >
-                        Logged in as: {user.name}
-                      </p>
-                      <p
-                        className={`text-sm ${
-                          darkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`}
-                      >
-                        {user.email}
-                      </p>
-                      <div className="mt-2 space-y-1">
-                        <Link
-                          to="/account"
-                          className={`block py-1 px-2 text-sm ${
-                            darkMode
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                          } rounded`}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          My Account
-                        </Link>
-                        <Link
-                          to="/orders"
-                          className={`block py-1 px-2 text-sm ${
-                            darkMode
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                          } rounded`}
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Orders
-                        </Link>
-                        <button
-                          className={`block w-full text-left py-1 px-2 text-sm ${
-                            darkMode
-                              ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                              : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                          } rounded`}
-                          onClick={() => {
-                            // Handle logout
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <a
-                    href="#"
-                    className={`block py-2 px-4 ${
-                      darkMode
-                        ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                    } rounded-lg`}
-                  >
-                    Track Order
-                  </a>
-                  <a
-                    href="#"
-                    className={`block py-2 px-4 ${
-                      darkMode
-                        ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                    } rounded-lg`}
-                  >
-                    Customer Support
-                  </a>
-                  <button
-                    onClick={handleToggleTheme}
-                    className={`flex items-center w-full py-2 px-4 ${
-                      darkMode
-                        ? 'text-gray-300 hover:bg-gray-700 hover:text-blue-400'
-                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                    } rounded-lg`}
-                  >
-                    {darkMode ? (
-                      <Sun size={18} className="mr-2" />
-                    ) : (
-                      <Moon size={18} className="mr-2" />
-                    )}
-                    Switch to {darkMode ? 'Light' : 'Dark'} Mode
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
+      {/* Header */}
+      <Header
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSearchFocused={isSearchFocused}
+        setIsSearchFocused={setIsSearchFocused}
+        handleSearch={handleSearch}
+        setIsCheckoutOpen={setIsCheckoutOpen}
+        cartItems={cartItems}
+        isSearching={isSearching}
+      />
 
       <main>
-        {/* Hero Slider Section */}
-        <section ref={heroRef} className="relative">
-          {sectionLoadingStates.hero ? (
-            <div className="flex items-center justify-center h-[500px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Loading hero content...
-                </p>
-              </div>
-            </div>
-          ) : slidesError ? (
-            <div className="py-12">
-              <ErrorFallback
-                error={slidesError}
-                resetErrorBoundary={() => {
-                  setSectionLoadingStates((prev) => ({ ...prev, hero: true }));
-                  dispatch(fetchHeroSlides());
-                }}
-              />
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: heroVisible ? 1 : 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden"
-            >
-              {Array.isArray(effectiveHeroSlides) &&
-              effectiveHeroSlides.length > 0 ? (
-                <>
-                  {effectiveHeroSlides.map((slide, index) => (
-                    <div
-                      key={slide._id}
-                      className={`absolute inset-0 flex items-center transition-opacity duration-1000 ease-in-out ${
-                        index === currentSlide ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      aria-hidden={index !== currentSlide}
-                    >
-                      <div
-                        className={`absolute inset-0 ${
-                          slide.backgroundColor || 'bg-black'
-                        } bg-opacity-80`}
-                      ></div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent opacity-70"></div>
-                      <img
-                        src={slide.image || '/placeholder.svg'}
-                        alt={slide.title}
-                        className="absolute object-cover w-full h-full mix-blend-overlay"
-                      />
-                      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center h-full">
-                        <div className="max-w-xl">
-                          <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="text-3xl md:text-5xl font-bold text-white mb-2 md:mb-4"
-                          >
-                            {slide.title}
-                          </motion.h1>
-                          <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="text-lg md:text-xl text-white mb-3"
-                          >
-                            {slide.subtitle}
-                          </motion.p>
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                          >
-                            <button className="mt-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md">
-                              Shop Now
-                            </button>
-                          </motion.div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Navigation Arrows */}
-                  <button
-                    onClick={prevSlide}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white p-2 rounded-full z-10 transition-colors"
-                    aria-label="Previous slide"
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    onClick={nextSlide}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white p-2 rounded-full z-10 transition-colors"
-                    aria-label="Next slide"
-                  >
-                    <ChevronLeft size={24} className="transform rotate-180" />
-                  </button>
-
-                  {/* Slide Indicators */}
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
-                    {effectiveHeroSlides.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentSlide(index)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                          index === currentSlide
-                            ? 'bg-white'
-                            : 'bg-white/50 hover:bg-white/70'
-                        }`}
-                        aria-label={`Go to slide ${index + 1}`}
-                        aria-current={index === currentSlide}
-                      ></button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-white text-xl">No slides available</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </section>
+        {/* Hero Slider */}
+        <HeroSlider
+          heroSlides={effectiveHeroSlides}
+          isLoading={slidesLoading}
+          error={slidesError}
+        />
 
         {/* Services Bar */}
-        <section
-          className={`py-6 ${darkMode ? 'bg-gray-800' : 'bg-white'} border-b ${
-            darkMode ? 'border-gray-700' : 'border-gray-200'
-          }`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {services.slice(0, 4).map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-center justify-center md:justify-start"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      darkMode
-                        ? 'bg-blue-900/50 text-blue-400'
-                        : 'bg-blue-100 text-blue-600'
-                    } mr-3`}
-                  >
-                    {service.icon}
-                  </div>
-                  <div>
-                    <h3
-                      className={`text-sm font-medium ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
-                      {service.title}
-                    </h3>
-                    <p
-                      className={`text-xs ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}
-                    >
-                      {service.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <ServicesBar darkMode={darkMode} />
+
+        {/* Categories Section - ENHANCED */}
+        <section ref={categoriesRef} className="py-20 relative overflow-hidden">
+          {/* Background Decorations */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-500 to-yellow-500 rounded-full blur-3xl" />
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+            <motion.div
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-6">
+                🎯 Explore Categories
+              </div>
+              <h2
+                className={`text-4xl lg:text-5xl font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                } mb-4`}
+              >
+                Browse By Category
+              </h2>
+              <p
+                className={`text-xl ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                } max-w-2xl mx-auto`}
+              >
+                Discover everything you need for work, study, and entertainment
+              </p>
+            </motion.div>
+
+            <SectionLoader
+              isLoading={categoriesLoading || isFilteringCategory}
+              message="Loading categories..."
+              height="400px"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {effectiveCategories.length > 0 ? (
+                  effectiveCategories.map((category, index) => (
+                    <EnhancedCategoryCard
+                      key={category._id}
+                      category={category}
+                      darkMode={darkMode}
+                      onCategorySelect={handleCategoryFilter}
+                      isSelected={selectedCategory === category.name}
+                      index={index}
+                    />
+                  ))
+                ) : (
+                  <SkeletonLoader
+                    variant="card"
+                    count={8}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                  />
+                )}
+              </div>
+            </SectionLoader>
           </div>
         </section>
 
-        {/* Categories Section */}
-        <section ref={categoriesRef} className="py-16">
-          {sectionLoadingStates.categories ? (
-            <div className="flex items-center justify-center h-[400px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Loading categories...
-                </p>
-              </div>
-            </div>
-          ) : categoriesError ? (
-            <div className="py-12">
-              <ErrorFallback
-                error={categoriesError}
-                resetErrorBoundary={() => {
-                  setSectionLoadingStates((prev) => ({
-                    ...prev,
-                    categories: true,
-                  }));
-                  dispatch(fetchCategories());
-                }}
-              />
-            </div>
-          ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: categoriesVisible ? 1 : 0,
-                  y: categoriesVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5 }}
-                className="text-center mb-12"
-              >
-                <h2
-                  className={`text-3xl font-bold ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  } mb-2`}
-                >
-                  Browse By Category
-                </h2>
-                <p
-                  className={`text-lg ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}
-                >
-                  Find everything you need for work or study
-                </p>
-              </motion.div>
+        {/* Dynamic Products Section - REPLACES FEATURED PRODUCTS */}
+        <DynamicProductsSection
+          products={effectiveProducts}
+          categories={effectiveCategories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onQuickView={handleQuickView}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+          currentLoadingProduct={currentLoadingProduct}
+          isLoading={productsLoading}
+          darkMode={darkMode}
+        />
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: categoriesVisible ? 1 : 0,
-                  y: categoriesVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        {/* Special Offers Section - ENHANCED */}
+        <section
+          ref={specialOffersRef}
+          className="py-20 relative overflow-hidden"
+        >
+          {/* Background Elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-1/4 left-0 w-72 h-72 bg-gradient-to-br from-red-500 to-pink-500 rounded-full blur-3xl -translate-x-1/2" />
+            <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full blur-3xl translate-x-1/2" />
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+            <motion.div
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 text-red-600 dark:text-red-400 text-sm font-medium mb-6 animate-pulse">
+                🔥 Limited Time Only
+              </div>
+              <h2
+                className={`text-4xl lg:text-5xl font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                } mb-4`}
               >
-                {effectiveCategories.map((category) => (
-                  <motion.a
-                    key={category._id}
-                    href="#featured-products"
-                    onClick={() => setSelectedCategory(category.name)}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`${
-                      darkMode
-                        ? 'bg-gray-800 border-gray-700 hover:border-blue-500'
-                        : 'bg-gray-50 border-gray-100 hover:border-blue-200'
-                    } border rounded-xl p-6 text-center hover:shadow-md transition-all group`}
-                  >
-                    <div className="flex justify-center mb-4">
-                      <img
-                        className={`w-16 h-16 flex items-center justify-center rounded-full ${
-                          darkMode
-                            ? 'bg-blue-900/40 text-blue-400 group-hover:bg-blue-800 group-hover:text-blue-300'
-                            : 'bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
-                        } transition-colors`}
-                        src={category.image}
-                      ></img>
-                    </div>
-                    <h3
-                      className={`font-medium ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      } mb-1`}
-                    >
-                      {category.name}
-                    </h3>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}
-                    >
-                      {category.order || 0} items
-                    </p>
-                    <p
-                      className={`text-xs mt-2 ${
-                        darkMode ? 'text-gray-500' : 'text-gray-600'
-                      }`}
-                    >
-                      {category.description}
-                    </p>
-                  </motion.a>
-                ))}
-              </motion.div>
-            </div>
-          )}
+                Special Deals & Bundles
+              </h2>
+              <p
+                className={`text-xl ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                } max-w-3xl mx-auto`}
+              >
+                Take advantage of these exclusive offers before they're gone
+                forever
+              </p>
+            </motion.div>
+
+            <SectionLoader
+              isLoading={offersLoading}
+              message="Loading special offers..."
+              height="500px"
+            >
+              <EnhancedSpecialOffers
+                offers={effectiveSpecialOffers}
+                darkMode={darkMode}
+              />
+            </SectionLoader>
+          </div>
         </section>
 
-        {/* Products Section */}
-        <section ref={productsRef} id="featured-products" className="py-16">
-          {sectionLoadingStates.products ? (
-            <div className="flex items-center justify-center h-[500px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Loading products...
-                </p>
-              </div>
+        {/* Call to Action Section */}
+        <section ref={ctaRef} className="py-24">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+            <div className="inline-block px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-4 animate-fade-in">
+              Ready to get started?
             </div>
-          ) : productsError ? (
-            <div className="py-12">
-              <ErrorFallback
-                error={productsError}
-                resetErrorBoundary={() => {
-                  setSectionLoadingStates((prev) => ({
-                    ...prev,
-                    products: true,
-                  }));
-                  dispatch(fetchProducts(filters));
-                }}
-              />
+            <h2
+              className={`text-4xl font-bold ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              } mb-4 animate-fade-in`}
+            >
+              Explore the future of tech with VoxCyber
+            </h2>
+            <p
+              className={`text-xl ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              } max-w-3xl mx-auto mb-8 animate-fade-in`}
+            >
+              Join our community of tech enthusiasts and discover the latest
+              innovations in gaming, internet, and computer services.
+            </p>
+            <div className="flex justify-center gap-4 animate-fade-in">
+              <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md">
+                Get Started Now
+              </button>
+              <button className="px-8 py-4 border rounded-lg transition-colors shadow-md">
+                Learn More
+              </button>
             </div>
-          ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: productsVisible ? 1 : 0,
-                  y: productsVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5 }}
-                className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
-              >
-                <div>
-                  <h2
-                    className={`text-3xl font-bold ${
-                      darkMode ? 'text-white' : 'text-gray-900'
-                    } mb-2`}
-                  >
-                    Featured Products
-                  </h2>
-                  <p
-                    className={`text-lg ${
-                      darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    Hand-picked products for your tech needs
-                  </p>
-                </div>
-                <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={() => setAreFiltersShown(!areFiltersShown)}
-                    className={`flex items-center px-4 py-2 ${
-                      darkMode
-                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                        : 'bg-white hover:bg-gray-100 text-gray-700'
-                    } rounded-lg border ${
-                      darkMode ? 'border-gray-600' : 'border-gray-300'
-                    }`}
-                    aria-expanded={areFiltersShown}
-                    aria-controls="product-filters"
-                  >
-                    <Filter size={18} className="mr-2" />
-                    Filters
-                    <ChevronDown
-                      size={18}
-                      className={`ml-2 transition-transform ${
-                        areFiltersShown ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  <select
-                    value={selectedSort}
-                    onChange={(e) => setSelectedSort(e.target.value)}
-                    className={`px-4 py-2 rounded-lg border ${
-                      darkMode
-                        ? 'bg-gray-700 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700'
-                    }`}
-                    aria-label="Sort products"
-                  >
-                    <option value="featured">Featured</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="newest">Newest</option>
-                  </select>
-                </div>
-              </motion.div>
-
-              {/* Filters */}
-              <AnimatePresence>
-                {areFiltersShown && (
-                  <motion.div
-                    id="product-filters"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`mb-8 p-4 rounded-lg ${
-                      darkMode ? 'bg-gray-700' : 'bg-white'
-                    } overflow-hidden`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <h3
-                          className={`text-sm font-medium mb-3 ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}
-                        >
-                          Categories
-                        </h3>
-                        <div className="space-y-2">
-                          <button
-                            onClick={() => setSelectedCategory('All')}
-                            className={`block px-3 py-2 rounded-md text-sm w-full text-left ${
-                              selectedCategory === 'All'
-                                ? darkMode
-                                  ? 'bg-blue-900/30 text-blue-400'
-                                  : 'bg-blue-100 text-blue-700'
-                                : darkMode
-                                ? 'text-gray-300 hover:bg-gray-600'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            All Categories
-                          </button>
-                          {effectiveCategories.map((category) => (
-                            <button
-                              key={category._id}
-                              onClick={() => setSelectedCategory(category.name)}
-                              className={`block px-3 py-2 rounded-md text-sm w-full text-left ${
-                                selectedCategory === category.name
-                                  ? darkMode
-                                    ? 'bg-blue-900/30 text-blue-400'
-                                    : 'bg-blue-100 text-blue-700'
-                                  : darkMode
-                                  ? 'text-gray-300 hover:bg-gray-600'
-                                  : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              {category.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <h3
-                          className={`text-sm font-medium mb-3 ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}
-                        >
-                          Price Range
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <input
-                              type="range"
-                              min="0"
-                              max="200"
-                              className="w-full"
-                              aria-label="Price range"
-                            />
-                          </div>
-                          <div className="flex justify-between">
-                            <span
-                              className={`text-sm ${
-                                darkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}
-                            >
-                              $0
-                            </span>
-                            <span
-                              className={`text-sm ${
-                                darkMode ? 'text-gray-400' : 'text-gray-600'
-                              }`}
-                            >
-                              $200+
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h3
-                          className={`text-sm font-medium mb-3 ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}
-                        >
-                          Availability
-                        </h3>
-                        <div className="space-y-2">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              className="rounded text-blue-600 focus:ring-blue-500"
-                              defaultChecked
-                            />
-                            <span
-                              className={`ml-2 text-sm ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                              }`}
-                            >
-                              In Stock
-                            </span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              className="rounded text-blue-600 focus:ring-blue-500"
-                            />
-                            <span
-                              className={`ml-2 text-sm ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                              }`}
-                            >
-                              On Sale
-                            </span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              className="rounded text-blue-600 focus:ring-blue-500"
-                            />
-                            <span
-                              className={`ml-2 text-sm ${
-                                darkMode ? 'text-gray-300' : 'text-gray-700'
-                              }`}
-                            >
-                              New Arrivals
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Products Grid */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: productsVisible ? 1 : 0,
-                  y: productsVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-              >
-                {effectiveProducts.length > 0 ? (
-                  effectiveProducts.map((product) => (
-                    <motion.div
-                      key={product._id}
-                      whileHover={{ y: -5 }}
-                      className={`${
-                        darkMode
-                          ? 'bg-gray-700 border-gray-600'
-                          : 'bg-white border-gray-200'
-                      } rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group`}
-                    >
-                      <div className="relative">
-                        <img
-                          src={
-                            product.images?.[0] ||
-                            product.image ||
-                            '/placeholder.svg'
-                          }
-                          alt={product.name}
-                          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        {/* Product badges */}
-                        <div className="absolute top-2 left-2 flex flex-col gap-2">
-                          {product.onSale && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-red-600 text-white">
-                              Sale
-                            </div>
-                          )}
-                          {product.isNewProduct && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-green-600 text-white">
-                              New
-                            </div>
-                          )}
-                          {product.featured && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-yellow-500 text-white">
-                              Featured
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            onClick={() => handleQuickView(product)}
-                            className="px-4 py-2 bg-white text-gray-900 rounded-full font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform"
-                          >
-                            Quick View
-                          </button>
-                        </div>
-                        <button
-                          className="absolute bottom-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Add to wishlist functionality
-                          }}
-                          aria-label="Add to wishlist"
-                        >
-                          <Heart size={18} />
-                        </button>
-                      </div>
-                      <div className="p-4">
-                        <div
-                          className={`text-xs ${
-                            darkMode ? 'text-gray-400' : 'text-gray-500'
-                          } mb-1`}
-                        >
-                          {product.category?.name || 'Uncategorized'}
-                        </div>
-                        <h3
-                          className={`font-medium ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          } mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer`}
-                          onClick={() => handleQuickView(product)}
-                        >
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={14}
-                              className={
-                                i < Math.floor(product.rating || 0)
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : darkMode
-                                  ? 'text-gray-600'
-                                  : 'text-gray-300'
-                              }
-                            />
-                          ))}
-                          <span
-                            className={`text-xs ${
-                              darkMode ? 'text-gray-400' : 'text-gray-500'
-                            } ml-1`}
-                          >
-                            {product.rating?.toFixed(1) || '0.0'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-3">
-                          {product.salePrice ? (
-                            <div>
-                              <span
-                                className={`font-bold ${
-                                  darkMode ? 'text-white' : 'text-gray-900'
-                                }`}
-                              >
-                                ${product.salePrice.toFixed(2)}
-                              </span>
-                              <span className="ml-2 text-sm text-gray-500 line-through">
-                                ${product.price.toFixed(2)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span
-                              className={`font-bold ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                              }`}
-                            >
-                              ${product.price?.toFixed(2) || '0.00'}
-                            </span>
-                          )}
-                          <button
-                            className={`p-2 ${
-                              darkMode
-                                ? 'bg-blue-600 hover:bg-blue-700'
-                                : 'bg-blue-600 hover:bg-blue-700'
-                            } text-white rounded-full transition-colors ${
-                              product.stock <= 0
-                                ? 'opacity-50 cursor-not-allowed'
-                                : ''
-                            }`}
-                            onClick={() => handleAddToCart(product)}
-                            disabled={product.stock <= 0}
-                            aria-label="Add to cart"
-                          >
-                            <ShoppingCart size={16} />
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => handleBuyNow(product)}
-                          className={`w-full py-1.5 text-center text-sm font-medium ${
-                            darkMode
-                              ? 'text-blue-400 border-blue-400 hover:bg-blue-900/20'
-                              : 'text-blue-600 border-blue-600 hover:bg-blue-50'
-                          } border rounded-lg transition-colors ${
-                            product.stock <= 0
-                              ? 'opacity-50 cursor-not-allowed'
-                              : ''
-                          }`}
-                          disabled={product.stock <= 0}
-                        >
-                          {product.stock <= 0 ? 'Out of Stock' : 'Buy Now'}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div
-                    className={`col-span-full text-center py-12 ${
-                      darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}
-                  >
-                    <ShoppingBag
-                      size={48}
-                      className="mx-auto mb-4 opacity-30"
-                    />
-                    <h3
-                      className={`text-xl font-medium ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      } mb-2`}
-                    >
-                      No products found
-                    </h3>
-                    <p>Try adjusting your search or filter criteria</p>
-                    <button
-                      onClick={() => {
-                        setSelectedCategory('All');
-                        setSearchQuery('');
-                      }}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Reset Filters
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-
-              {effectiveProducts.length > 0 && (
-                <div className="mt-8 text-center">
-                  <button
-                    className={`inline-flex items-center px-6 py-3 ${
-                      darkMode
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white font-medium rounded-lg transition-colors shadow-md`}
-                  >
-                    Load More Products
-                    <ChevronDown size={20} className="ml-2" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Special Offers Section */}
-        <section ref={specialOffersRef} className="py-16">
-          {sectionLoadingStates.offers ? (
-            <div className="flex items-center justify-center h-[400px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Loading special offers...
-                </p>
-              </div>
-            </div>
-          ) : offersError ? (
-            <div className="py-12">
-              <ErrorFallback
-                error={offersError}
-                resetErrorBoundary={() => {
-                  setSectionLoadingStates((prev) => ({
-                    ...prev,
-                    offers: true,
-                  }));
-                  dispatch(fetchSpecialOffers());
-                }}
-              />
-            </div>
-          ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: specialOffersVisible ? 1 : 0,
-                  y: specialOffersVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5 }}
-                className="text-center mb-12"
-              >
-                <div className="inline-block px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium mb-4">
-                  Limited Time Offers
-                </div>
-                <h2
-                  className={`text-3xl font-bold ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  } mb-2`}
-                >
-                  Special Deals & Bundles
-                </h2>
-                <p
-                  className={`text-lg ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  } max-w-2xl mx-auto`}
-                >
-                  Take advantage of these exclusive offers before they're gone
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: specialOffersVisible ? 1 : 0,
-                  y: specialOffersVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-8"
-              >
-                {effectiveSpecialOffers.map((offer) => {
-                  // Calculate days remaining
-                  const daysRemaining = getDaysRemaining(offer.endDate);
-
-                  return (
-                    <motion.div
-                      key={offer._id}
-                      whileHover={{ scale: 1.02 }}
-                      className={`${
-                        darkMode
-                          ? 'bg-gray-800 border-gray-700'
-                          : 'bg-gray-50 border-gray-200'
-                      } rounded-xl border overflow-hidden shadow-md`}
-                    >
-                      <div className="flex flex-col md:flex-row">
-                        <div className="md:w-2/5">
-                          <div className="relative h-48 md:h-full">
-                            <img
-                              src={offer.image || '/placeholder.svg'}
-                              alt={offer.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-600/20 to-transparent"></div>
-                            <div className="absolute top-4 left-4 px-3 py-1 bg-red-600 text-white text-sm font-bold rounded-md">
-                              {offer.discount ||
-                                `${offer.discountPercentage}% OFF`}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-6 md:w-3/5">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3
-                              className={`text-xl font-bold ${
-                                darkMode ? 'text-white' : 'text-gray-900'
-                              }`}
-                            >
-                              {offer.title}
-                            </h3>
-                            <span
-                              className={`text-sm font-medium ${
-                                darkMode ? 'text-yellow-400' : 'text-yellow-600'
-                              }`}
-                            >
-                              {daysRemaining > 0
-                                ? `Ends in ${daysRemaining} day${
-                                    daysRemaining !== 1 ? 's' : ''
-                                  }`
-                                : offer.expiry || 'Limited time offer'}
-                            </span>
-                          </div>
-                          <p
-                            className={`text-sm ${
-                              darkMode ? 'text-gray-400' : 'text-gray-600'
-                            } mb-4`}
-                          >
-                            {offer.description}
-                          </p>
-                          <div className="mb-4">
-                            <div className="flex items-baseline">
-                              <span
-                                className={`text-2xl font-bold ${
-                                  darkMode ? 'text-white' : 'text-gray-900'
-                                } mr-2`}
-                              >
-                                ${offer.salePrice?.toFixed(2)}
-                              </span>
-                              <span
-                                className={`text-sm line-through ${
-                                  darkMode ? 'text-gray-500' : 'text-gray-500'
-                                }`}
-                              >
-                                ${offer.regularPrice?.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mb-4">
-                            <h4
-                              className={`text-xs font-medium uppercase ${
-                                darkMode ? 'text-gray-400' : 'text-gray-500'
-                              } mb-2`}
-                            >
-                              Includes:
-                            </h4>
-                            <ul className="space-y-1">
-                              {offer.items?.map((item, idx) => (
-                                <li
-                                  key={idx}
-                                  className={`text-sm flex items-start ${
-                                    darkMode ? 'text-gray-300' : 'text-gray-700'
-                                  }`}
-                                >
-                                  <Check
-                                    size={16}
-                                    className={`mr-2 mt-0.5 flex-shrink-0 ${
-                                      darkMode
-                                        ? 'text-green-400'
-                                        : 'text-green-500'
-                                    }`}
-                                  />
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          {offer.terms && (
-                            <p
-                              className={`text-xs ${
-                                darkMode ? 'text-gray-500' : 'text-gray-500'
-                              } mb-4 italic`}
-                            >
-                              {offer.terms}
-                            </p>
-                          )}
-                          <div className="flex flex-col sm:flex-row gap-3">
-                            <button
-                              className={`flex-1 py-2 px-4 ${
-                                darkMode
-                                  ? 'bg-blue-600 hover:bg-blue-700'
-                                  : 'bg-blue-600 hover:bg-blue-700'
-                              } text-white font-medium rounded-lg transition-colors`}
-                            >
-                              Add Bundle to Cart
-                            </button>
-                            <div className="flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                              <Percent
-                                size={16}
-                                className={`mr-2 ${
-                                  darkMode ? 'text-blue-400' : 'text-blue-600'
-                                }`}
-                              />
-                              <span
-                                className={`text-sm font-medium ${
-                                  darkMode ? 'text-white' : 'text-gray-900'
-                                }`}
-                              >
-                                Code: {offer.code}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            </div>
-          )}
+          </div>
         </section>
 
         {/* Testimonials Section */}
-        <section className={`py-12 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <h2
-                className={`text-3xl font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                } mb-2`}
-              >
-                What Our Customers Say
-              </h2>
-              <p
-                className={`text-lg ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}
-              >
-                Don't just take our word for it
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="py-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <SectionHeader
+              title="What Our Customers Say"
+              subtitle="Real stories from real people"
+              darkMode={darkMode}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial.id}
                   className={`${
                     darkMode
-                      ? 'bg-gray-700 border-gray-600'
+                      ? 'bg-gray-800 border-gray-700'
                       : 'bg-white border-gray-200'
-                  } rounded-xl border p-6 shadow-md`}
+                  } rounded-xl border overflow-hidden shadow-md`}
                 >
-                  <div className="flex items-center mb-4">
-                    <img
-                      src={testimonial.avatar || '/placeholder.svg'}
-                      alt={testimonial.name}
-                      className="w-12 h-12 rounded-full object-cover mr-4"
-                    />
-                    <div>
-                      <h3
-                        className={`font-medium ${
-                          darkMode ? 'text-white' : 'text-gray-900'
-                        }`}
-                      >
-                        {testimonial.name}
-                      </h3>
-                      <p
-                        className={`text-sm ${
-                          darkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`}
-                      >
-                        {testimonial.role}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        className={
-                          i < testimonial.rating
-                            ? 'text-yellow-400 fill-yellow-400 inline-block mr-1'
-                            : 'text-gray-300 dark:text-gray-600 inline-block mr-1'
-                        }
+                  <div className="p-6">
+                    <div className="flex items-center mb-4">
+                      <img
+                        src={testimonial.avatar || '/placeholder.svg'}
+                        alt={testimonial.name}
+                        className="w-12 h-12 rounded-full mr-4"
+                        loading="lazy"
                       />
-                    ))}
+                      <div>
+                        <h4
+                          className={`text-lg font-medium ${
+                            darkMode ? 'text-white' : 'text-gray-900'
+                          }`}
+                        >
+                          {testimonial.name}
+                        </h4>
+                        <p
+                          className={`text-sm ${
+                            darkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}
+                        >
+                          {testimonial.role}
+                        </p>
+                      </div>
+                    </div>
+                    <p
+                      className={`text-sm ${
+                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {testimonial.content}
+                    </p>
                   </div>
-                  <p
-                    className={`text-sm italic ${
-                      darkMode ? 'text-gray-300' : 'text-gray-600'
-                    }`}
-                  >
-                    "{testimonial.content}"
-                  </p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Call To Action Section */}
-        <section
-          ref={ctaRef}
-          className={`py-16 ${darkMode ? 'bg-gray-900' : 'bg-blue-50'}`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: ctaVisible ? 1 : 0, y: ctaVisible ? 0 : 20 }}
-              transition={{ duration: 0.5 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
-            >
-              <div>
-                <h2
-                  className={`text-3xl md:text-4xl font-bold ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  } mb-4`}
-                >
-                  Ready to Upgrade Your Tech?
-                </h2>
-                <p
-                  className={`text-lg ${
-                    darkMode ? 'text-gray-300' : 'text-gray-600'
-                  } mb-6`}
-                >
-                  Explore our wide selection of products and services designed
-                  to enhance your digital experience. Whether you're a student,
-                  professional, or tech enthusiast, we have everything you need.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    className={`${
-                      darkMode
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg`}
-                    onClick={() => setIsCheckoutOpen(true)}
-                  >
-                    View Cart
-                  </button>
-                  <button
-                    className={`${
-                      darkMode
-                        ? 'bg-gray-800 text-blue-400 border-blue-400 hover:bg-gray-700'
-                        : 'bg-white text-blue-600 border-blue-600 hover:bg-blue-50'
-                    } font-bold py-3 px-8 rounded-lg border-2 transition-colors`}
-                  >
-                    Contact Sales
-                  </button>
-                </div>
-              </div>
-              <div className="flex justify-center">
-                <img
-                  src="/Techsetup.jpg"
-                  alt="Tech setup"
-                  className="rounded-xl shadow-xl"
-                />
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Newsletter Section */}
-        <section className={`py-12 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-            <div
-              className={`p-8 ${
-                darkMode
-                  ? 'bg-gray-700 border-gray-600'
-                  : 'bg-blue-50 border-blue-100'
-              } rounded-2xl border`}
-            >
-              <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                <Mail className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h2
-                className={`text-2xl font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                } mb-2`}
-              >
-                Subscribe to Our Newsletter
-              </h2>
-              <p className={`text-${darkMode ? 'gray-300' : 'gray-600'} mb-6`}>
-                Get the latest updates, offers and tech tips delivered straight
-                to your inbox
-              </p>
-              <form className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className={`flex-1 px-4 py-3 rounded-lg ${
-                    darkMode
-                      ? 'bg-gray-800 border-gray-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } border focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  required
-                  aria-label="Email address"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Subscribe
-                </button>
-              </form>
-              <p
-                className={`mt-4 text-xs ${
-                  darkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                By subscribing, you agree to our Terms and Privacy Policy
-              </p>
             </div>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer
-        className={`${
-          darkMode ? 'bg-gray-900 text-white' : 'bg-blue-900 text-white'
-        }`}
-      >
-        {/* Main Footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Company Info */}
-            <div>
-              <div className="flex items-center mb-4">
-                <Coffee size={28} className="text-blue-300 mr-2" />
-                <span className="font-bold text-2xl text-white">
-                  Vox<span className="text-blue-300">Cyber</span>
-                </span>
-              </div>
-              <p className="text-blue-100 mb-6">
-                Your one-stop shop for all things tech, stationery, and digital
-                services. Serving both online and in-store customers with the
-                best products and experiences.
-              </p>
-              <div className="flex space-x-4">
-                <a
-                  href="#"
-                  className="bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition-colors"
-                  aria-label="Facebook"
-                >
-                  <Facebook size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition-colors"
-                  aria-label="Twitter"
-                >
-                  <Twitter size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition-colors"
-                  aria-label="Instagram"
-                >
-                  <Instagram size={20} />
-                </a>
-                <a
-                  href="#"
-                  className="bg-blue-800 hover:bg-blue-700 p-2 rounded-full transition-colors"
-                  aria-label="YouTube"
-                >
-                  <Youtube size={20} />
-                </a>
-              </div>
-            </div>
+      <Footer darkMode={darkMode} />
 
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-white">Quick Links</h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    to="/"
-                    className="text-blue-100 hover:text-white transition-colors"
-                  >
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/shop"
-                    className="text-blue-100 hover:text-white transition-colors"
-                  >
-                    Shop
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/services"
-                    className="text-blue-100 hover:text-white transition-colors"
-                  >
-                    Services
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/websites"
-                    className="text-blue-100 hover:text-white transition-colors"
-                  >
-                    Websites
-                  </Link>
-                </li>
-                {(user?.role === 'admin' || user?.role === 'super_admin') && (
-                  <li>
-                    <Link
-                      to="/admin"
-                      className="text-blue-100 hover:text-white transition-colors"
-                    >
-                      Admin Dashboard
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            {/* Contact Information */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-white">Contact Us</h3>
-              <ul className="space-y-4">
-                <li className="flex items-start">
-                  <MapPin
-                    size={20}
-                    className="text-blue-300 mr-2 mt-1 flex-shrink-0"
-                  />
-                  <span className="text-blue-100">
-                    123 Tech Avenue, Downtown District, City, State, 12345
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <Phone
-                    size={20}
-                    className="text-blue-300 mr-2 flex-shrink-0"
-                  />
-                  <span className="text-blue-100">+1 (234) 567-8900</span>
-                </li>
-                <li className="flex items-center">
-                  <Mail
-                    size={20}
-                    className="text-blue-300 mr-2 flex-shrink-0"
-                  />
-                  <span className="text-blue-100">info@VoxCyber.com</span>
-                </li>
-                <li className="flex items-center">
-                  <Clock1
-                    size={20}
-                    className="text-blue-300 mr-2 flex-shrink-0"
-                  />
-                  <span className="text-blue-100">
-                    Mon-Sat: 9AM-9PM, Sun: 10AM-6PM
-                  </span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Newsletter Form */}
-            <div>
-              <h3 className="text-lg font-bold mb-4 text-white">Newsletter</h3>
-              <p className="text-blue-100 mb-4">
-                Subscribe to our newsletter for the latest updates and offers.
-              </p>
-              <form className="flex">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className="flex-1 py-2 px-4 rounded-l-lg focus:outline-none dark:bg-gray-700 dark:text-white"
-                  required
-                  aria-label="Email for newsletter"
-                />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white font-medium py-2 px-4 rounded-r-lg hover:bg-blue-500 transition-colors"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Copyright */}
-          <div className="mt-12 pt-8 border-t border-blue-800 text-center">
-            <p className="text-blue-200 text-sm">
-              © {new Date().getFullYear()} Vox Cyber. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      {/* Floating Button - Back to Top */}
+      {/* Scroll to Top Button */}
       <AnimatePresence>
         {showScrollTop && (
           <motion.button
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors z-[9996]"
+            aria-label="Scroll to top"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            onClick={scrollToTop}
-            className="fixed bottom-6 right-6 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
-            aria-label="Back to top"
+            transition={{ duration: 0.2 }}
           >
-            <ChevronLeft size={24} className="transform rotate-90" />
+            <ChevronUp size={24} />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Cart Notification */}
-      <div id="cart-notification" className="fixed bottom-4 right-4 z-50"></div>
+      <ToastContainer />
     </div>
   );
 };

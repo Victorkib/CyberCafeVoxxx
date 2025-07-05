@@ -1,93 +1,109 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { ShoppingBag, Wrench, Globe, ArrowRight, Menu, X, User, RefreshCw, Package, Loader2 } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
-import { useSelector, useDispatch } from "react-redux"
-import AuthButtons from "../components/common/AuthButtons"
-import { openAuthModal } from "../redux/slices/uiSlice"
-import { fetchFeaturedProducts } from "../redux/slices/productsSlice"
-import { fetchFeaturedCategories } from "../redux/slices/categoriesSlice"
-import LoadingSpinner from "./common/LoadingSpinner"
-import ErrorMessage from "./common/ErrorMessage"
-import StatusMessage from "./common/StatusMessage"
-import EmptyState from "./common/EmptyState"
-import LoadingOverlay from "./common/LoadingOverlay"
+import { useState, useEffect } from 'react';
+import {
+  ShoppingBag,
+  Wrench,
+  Globe,
+  ArrowRight,
+  Menu,
+  X,
+  User,
+  RefreshCw,
+  Package,
+  Loader2,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import AuthButtons from '../components/common/AuthButtons';
+import { openAuthModal } from '../redux/slices/uiSlice';
+import { fetchFeaturedProducts } from '../redux/slices/productsSlice';
+import { fetchFeaturedCategories } from '../redux/slices/categoriesSlice';
+import LoadingSpinner from './common/LoadingSpinner';
+import ErrorMessage from './common/ErrorMessage';
+import StatusMessage from './common/StatusMessage';
+import EmptyState from './common/EmptyState';
+import LoadingOverlay from './common/LoadingOverlay';
+// import DialogflowChatbot from './DialogflowChatbot';
 
 export default function LandingPage() {
-  const [activeService, setActiveService] = useState("shop")
-  const [hoveredLinks, setHoveredLinks] = useState({})
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [statusMessages, setStatusMessages] = useState([])
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
+  const [activeService, setActiveService] = useState('shop');
+  const [hoveredLinks, setHoveredLinks] = useState({});
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [statusMessages, setStatusMessages] = useState([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { user, loading: authLoading } = useSelector((state) => state.auth)
-  const { featuredProducts, loading: productsLoading, error: productsError } = useSelector((state) => state.products)
+  const { user, loading: authLoading } = useSelector((state) => state.auth);
+  const {
+    featuredProducts,
+    loading: productsLoading,
+    error: productsError,
+  } = useSelector((state) => state.products);
   const {
     featuredCategories,
     loading: categoriesLoading,
     error: categoriesError,
-  } = useSelector((state) => state.categories)
+  } = useSelector((state) => state.categories);
 
   const [floatingCardPosition, setFloatingCardPosition] = useState({
-    top: "30%",
-    right: "10%",
-  })
+    top: '30%',
+    right: '10%',
+  });
 
   // Add a status message
   const addStatusMessage = (message) => {
-    const id = Date.now()
-    setStatusMessages((prev) => [...prev, { id, ...message }])
-    return id
-  }
+    const id = Date.now();
+    setStatusMessages((prev) => [...prev, { id, ...message }]);
+    return id;
+  };
 
   // Remove a status message
   const removeStatusMessage = (id) => {
-    setStatusMessages((prev) => prev.filter((msg) => msg.id !== id))
-  }
+    setStatusMessages((prev) => prev.filter((msg) => msg.id !== id));
+  };
 
   // Fetch featured data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await dispatch(fetchFeaturedProducts()).unwrap()
-        await dispatch(fetchFeaturedCategories()).unwrap()
+        await dispatch(fetchFeaturedProducts()).unwrap();
+        await dispatch(fetchFeaturedCategories()).unwrap();
 
         // Show success message only if not initial load
         if (!isInitialLoad) {
           addStatusMessage({
-            type: "success",
-            title: "Content Updated",
-            message: "Featured products and categories have been refreshed.",
+            type: 'success',
+            title: 'Content Updated',
+            message: 'Featured products and categories have been refreshed.',
             duration: 3,
-          })
+          });
         }
       } catch (error) {
         // Don't show error message on initial load
         if (!isInitialLoad) {
           addStatusMessage({
-            type: "error",
-            title: "Update Failed",
-            message: "Failed to refresh content. Please try again.",
+            type: 'error',
+            title: 'Update Failed',
+            message: 'Failed to refresh content. Please try again.',
             duration: 5,
-          })
+          });
         }
       } finally {
-        setIsInitialLoad(false)
+        setIsInitialLoad(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [dispatch])
+    fetchData();
+  }, [dispatch]);
 
   // Handle manual refresh
   const handleRefresh = () => {
-    setIsInitialLoad(false) // Ensure messages show on manual refresh
-    dispatch(fetchFeaturedProducts())
-    dispatch(fetchFeaturedCategories())
-  }
+    setIsInitialLoad(false); // Ensure messages show on manual refresh
+    dispatch(fetchFeaturedProducts());
+    dispatch(fetchFeaturedCategories());
+  };
 
   // Update floating card position based on window size
   useEffect(() => {
@@ -95,83 +111,84 @@ export default function LandingPage() {
       if (window.innerWidth >= 1024) {
         // lg breakpoint
         setFloatingCardPosition({
-          top: "30%",
-          right: "10%",
-        })
+          top: '30%',
+          right: '10%',
+        });
       } else if (window.innerWidth >= 768) {
         // md breakpoint
         setFloatingCardPosition({
-          top: "45%",
-          right: "5%",
-        })
+          top: '45%',
+          right: '5%',
+        });
       } else {
         setFloatingCardPosition({
-          top: "60%",
-          right: "5%",
-        })
+          top: '60%',
+          right: '5%',
+        });
       }
-    }
+    };
 
-    updateCardPosition()
-    window.addEventListener("resize", updateCardPosition)
-    return () => window.removeEventListener("resize", updateCardPosition)
-  }, [])
+    updateCardPosition();
+    window.addEventListener('resize', updateCardPosition);
+    return () => window.removeEventListener('resize', updateCardPosition);
+  }, []);
 
   // Close mobile menu when window is resized to desktop size
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768 && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false)
+        setIsMobileMenuOpen(false);
       }
-    }
+    };
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [isMobileMenuOpen])
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
 
   const services = {
     shop: {
-      title: "Online Shop",
+      title: 'Online Shop',
       description:
-        "Create and manage your online store with powerful e-commerce tools, inventory management, and secure payment processing.",
+        'Create and manage your online store with powerful e-commerce tools, inventory management, and secure payment processing.',
       icon: <ShoppingBag className="w-6 h-6" />,
-      link: "/shop",
+      link: '/shop',
     },
     services: {
-      title: "Digital Services",
+      title: 'Digital Services',
       description:
-        "Offer your services online with booking systems, client management, and automated workflows to streamline your business.",
+        'Offer your services online with booking systems, client management, and automated workflows to streamline your business.',
       icon: <Wrench className="w-6 h-6" />,
-      link: "/services",
+      link: '/services',
     },
     websites: {
-      title: "Website Builder",
+      title: 'Website Builder',
       description:
-        "Design and deploy stunning websites with our intuitive builder, custom templates, and powerful SEO tools.",
+        'Design and deploy stunning websites with our intuitive builder, custom templates, and powerful SEO tools.',
       icon: <Globe className="w-6 h-6" />,
-      link: "/websites",
+      link: '/websites',
     },
-  }
+  };
 
   const handleLinkHover = (linkId, isHovered) => {
-    setHoveredLinks({ ...hoveredLinks, [linkId]: isHovered })
-  }
+    setHoveredLinks({ ...hoveredLinks, [linkId]: isHovered });
+  };
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   // Handle empty featured products and categories
-  const hasFeaturedProducts = featuredProducts && featuredProducts.length > 0
-  const hasFeaturedCategories = featuredCategories && featuredCategories.length > 0
+  const hasFeaturedProducts = featuredProducts && featuredProducts?.length > 0;
+  const hasFeaturedCategories =
+    featuredCategories && featuredCategories.length > 0;
 
   // Determine loading states
-  const isLoading = productsLoading && categoriesLoading && isInitialLoad
-  const hasError = productsError && categoriesError
+  const isLoading = productsLoading && categoriesLoading && isInitialLoad;
+  const hasError = productsError && categoriesError;
 
   // Show full-page loading spinner only on initial load
   if (isLoading) {
-    return <LoadingSpinner fullScreen message="Loading VoxCyber..." />
+    return <LoadingSpinner fullScreen message="Loading VoxCyber..." />;
   }
 
   // Show full-page error only if both have errors
@@ -185,7 +202,7 @@ export default function LandingPage() {
           type="error"
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -235,10 +252,10 @@ export default function LandingPage() {
           <Link
             to="/shop"
             className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
-              hoveredLinks["shop"] ? "text-blue-600" : ""
+              hoveredLinks['shop'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("shop", true)}
-            onMouseLeave={() => handleLinkHover("shop", false)}
+            onMouseEnter={() => handleLinkHover('shop', true)}
+            onMouseLeave={() => handleLinkHover('shop', false)}
           >
             Shop
           </Link>
@@ -246,10 +263,10 @@ export default function LandingPage() {
           <Link
             to="/services"
             className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
-              hoveredLinks["services"] ? "text-blue-600" : ""
+              hoveredLinks['services'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("services", true)}
-            onMouseLeave={() => handleLinkHover("services", false)}
+            onMouseEnter={() => handleLinkHover('services', true)}
+            onMouseLeave={() => handleLinkHover('services', false)}
           >
             Services
           </Link>
@@ -257,25 +274,26 @@ export default function LandingPage() {
           <Link
             to="/websites"
             className={`text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors ${
-              hoveredLinks["websites"] ? "text-blue-600" : ""
+              hoveredLinks['websites'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("websites", true)}
-            onMouseLeave={() => handleLinkHover("websites", false)}
+            onMouseEnter={() => handleLinkHover('websites', true)}
+            onMouseLeave={() => handleLinkHover('websites', false)}
           >
             Websites
           </Link>
 
           {/* Show Admin link if user is admin */}
-          {!authLoading && (user?.role === "admin" || user?.role === "super_admin") && (
-            <Link
-              to="/admin"
-              className="text-sm font-medium text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
-              onMouseEnter={() => handleLinkHover("admin", true)}
-              onMouseLeave={() => handleLinkHover("admin", false)}
-            >
-              Admin
-            </Link>
-          )}
+          {!authLoading &&
+            (user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Link
+                to="/admin"
+                className="text-sm font-medium text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition-colors"
+                onMouseEnter={() => handleLinkHover('admin', true)}
+                onMouseLeave={() => handleLinkHover('admin', false)}
+              >
+                Admin
+              </Link>
+            )}
         </nav>
 
         {/* Auth Buttons for Desktop */}
@@ -287,7 +305,11 @@ export default function LandingPage() {
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
         >
-          {isMobileMenuOpen ? <X className="w-6 h-6 text-gray-800" /> : <Menu className="w-6 h-6 text-gray-800" />}
+          {isMobileMenuOpen ? (
+            <X className="w-6 h-6 text-gray-800" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-800" />
+          )}
         </button>
       </header>
 
@@ -317,23 +339,24 @@ export default function LandingPage() {
               Websites
             </Link>
 
-            {!authLoading && (user?.role === "admin" || user?.role === "super_admin") && (
-              <Link
-                to="/admin"
-                className="text-white bg-blue-600 py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Admin Dashboard
-              </Link>
-            )}
+            {!authLoading &&
+              (user?.role === 'admin' || user?.role === 'super_admin') && (
+                <Link
+                  to="/admin"
+                  className="text-white bg-blue-600 py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Admin Dashboard
+                </Link>
+              )}
 
             <div className="pt-3 border-t border-gray-200">
               {!authLoading && !user ? (
                 <>
                   <button
                     onClick={() => {
-                      dispatch(openAuthModal("login"))
-                      setIsMobileMenuOpen(false)
+                      dispatch(openAuthModal('login'));
+                      setIsMobileMenuOpen(false);
                     }}
                     className="w-full text-left py-2 px-4 text-gray-700 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
                   >
@@ -341,8 +364,8 @@ export default function LandingPage() {
                   </button>
                   <button
                     onClick={() => {
-                      dispatch(openAuthModal("register"))
-                      setIsMobileMenuOpen(false)
+                      dispatch(openAuthModal('register'));
+                      setIsMobileMenuOpen(false);
                     }}
                     className="w-full text-left py-2 px-4 text-gray-700 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
                   >
@@ -374,16 +397,20 @@ export default function LandingPage() {
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
               Welcome to <span className="text-blue-600">VoxCyber</span>
-              {!authLoading && user && <span className="text-blue-400 text-2xl ml-2 font-normal">, {user.name}</span>}
+              {!authLoading && user && (
+                <span className="text-blue-400 text-2xl ml-2 font-normal">
+                  , {user.name}
+                </span>
+              )}
             </h1>
             <p className="text-gray-600 text-lg leading-relaxed mb-8">
-              Empowering your digital presence with cutting-edge cybersecurity solutions and comprehensive digital
-              services.
+              Empowering your digital presence with cutting-edge cybersecurity
+              solutions and comprehensive digital services.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                onClick={() => navigate("/shop")}
+                onClick={() => navigate('/shop')}
               >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
@@ -401,20 +428,24 @@ export default function LandingPage() {
               <button
                 key={key}
                 className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
-                  activeService === key ? "bg-blue-500/10" : "hover:bg-blue-500/5"
+                  activeService === key
+                    ? 'bg-blue-500/10'
+                    : 'hover:bg-blue-500/5'
                 }`}
                 onClick={() => setActiveService(key)}
               >
                 <div
                   className={`w-12 h-12 flex items-center justify-center rounded-full transition-all ${
-                    activeService === key ? "bg-blue-600 text-white" : "bg-blue-500/10 text-blue-600"
+                    activeService === key
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500/10 text-blue-600'
                   }`}
                 >
                   {services[key].icon}
                 </div>
                 <span
                   className={`text-sm font-medium transition-colors ${
-                    activeService === key ? "text-blue-600" : "text-gray-700"
+                    activeService === key ? 'text-blue-600' : 'text-gray-700'
                   }`}
                 >
                   {services[key].title}
@@ -427,17 +458,23 @@ export default function LandingPage() {
             <div className="w-16 h-16 flex items-center justify-center bg-blue-500/10 text-blue-600 rounded-full mb-6">
               {services[activeService].icon}
             </div>
-            <h2 className="text-2xl font-bold mb-4">{services[activeService].title}</h2>
-            <p className="text-gray-600 leading-relaxed mb-6">{services[activeService].description}</p>
+            <h2 className="text-2xl font-bold mb-4">
+              {services[activeService].title}
+            </h2>
+            <p className="text-gray-600 leading-relaxed mb-6">
+              {services[activeService].description}
+            </p>
             <Link
               to={services[activeService].link}
               className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors"
-              onMouseEnter={() => handleLinkHover("serviceLink", true)}
-              onMouseLeave={() => handleLinkHover("serviceLink", false)}
+              onMouseEnter={() => handleLinkHover('serviceLink', true)}
+              onMouseLeave={() => handleLinkHover('serviceLink', false)}
             >
               Explore {services[activeService].title}
               <ArrowRight
-                className={`ml-2 w-5 h-5 transition-transform ${hoveredLinks["serviceLink"] ? "translate-x-1" : ""}`}
+                className={`ml-2 w-5 h-5 transition-transform ${
+                  hoveredLinks['serviceLink'] ? 'translate-x-1' : ''
+                }`}
               />
             </Link>
           </div>
@@ -446,7 +483,9 @@ export default function LandingPage() {
         {/* Floating service cards */}
         <div
           className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
-            activeService === "shop" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"
+            activeService === 'shop'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
           }`}
           style={{
             top: floatingCardPosition.top,
@@ -474,7 +513,9 @@ export default function LandingPage() {
 
         <div
           className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
-            activeService === "services" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"
+            activeService === 'services'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
           }`}
           style={{
             top: floatingCardPosition.top,
@@ -502,7 +543,9 @@ export default function LandingPage() {
 
         <div
           className={`absolute w-[220px] p-5 bg-white rounded-xl shadow-lg transition-all duration-500 z-[5] ${
-            activeService === "websites" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"
+            activeService === 'websites'
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-5 pointer-events-none'
           }`}
           style={{
             top: floatingCardPosition.top,
@@ -533,7 +576,9 @@ export default function LandingPage() {
       <section className="py-16 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Featured Products
+            </h2>
             {(productsLoading || categoriesLoading) && !isInitialLoad && (
               <div className="flex items-center text-blue-600">
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -552,24 +597,32 @@ export default function LandingPage() {
           </div>
 
           {/* Loading overlay for products */}
-          <LoadingOverlay isLoading={productsLoading && !isInitialLoad} message="Updating products..." opacity={70}>
+          <LoadingOverlay
+            isLoading={productsLoading && !isInitialLoad}
+            message="Updating products..."
+            opacity={70}
+          >
             {hasFeaturedProducts ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {featuredProducts.map((product) => (
+                {featuredProducts?.map((product) => (
                   <div
                     key={product._id}
                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                   >
                     <img
-                      src={product.image || "/placeholder.svg"}
+                      src={product.images[0] || '/placeholder.svg'}
                       alt={product.name}
                       className="w-full h-48 object-cover"
                     />
                     <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
-                      <p className="text-gray-600 mt-1">${product.price.toFixed(2)}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {product.name}
+                      </h3>
+                      <p className="text-gray-600 mt-1">
+                        ${product.price.toFixed(2)}
+                      </p>
                       <Link
-                        to={`/product/${product._id}`}
+                        to={`/shop`}
                         className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                       >
                         View Details
@@ -581,7 +634,10 @@ export default function LandingPage() {
             ) : productsError ? (
               <ErrorMessage
                 message="Couldn't load products"
-                description={productsError.message || "There was an error loading the featured products."}
+                description={
+                  productsError.message ||
+                  'There was an error loading the featured products.'
+                }
                 onRetry={handleRefresh}
                 fullWidth
               />
@@ -600,7 +656,9 @@ export default function LandingPage() {
       <section className="py-16 px-6 bg-gray-50 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Featured Categories</h2>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Featured Categories
+            </h2>
             {categoriesLoading && !isInitialLoad && (
               <div className="flex items-center text-blue-600">
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -610,7 +668,11 @@ export default function LandingPage() {
           </div>
 
           {/* Loading overlay for categories */}
-          <LoadingOverlay isLoading={categoriesLoading && !isInitialLoad} message="Updating categories..." opacity={70}>
+          <LoadingOverlay
+            isLoading={categoriesLoading && !isInitialLoad}
+            message="Updating categories..."
+            opacity={70}
+          >
             {hasFeaturedCategories ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {featuredCategories.map((category) => (
@@ -619,12 +681,14 @@ export default function LandingPage() {
                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                   >
                     <img
-                      src={category.image || "/placeholder.svg"}
+                      src={category.image || '/placeholder.svg'}
                       alt={category.name}
                       className="w-full h-48 object-cover"
                     />
                     <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {category.name}
+                      </h3>
                       <Link
                         to={`/shop?category=${category._id}`}
                         className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -638,7 +702,10 @@ export default function LandingPage() {
             ) : categoriesError ? (
               <ErrorMessage
                 message="Couldn't load categories"
-                description={categoriesError.message || "There was an error loading the featured categories."}
+                description={
+                  categoriesError.message ||
+                  'There was an error loading the featured categories.'
+                }
                 onRetry={handleRefresh}
                 fullWidth
               />
@@ -653,6 +720,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* <DialogflowChatbot /> */}
       {/* Footer */}
       <footer className="flex flex-col sm:flex-row items-center justify-between px-6 py-6 border-t border-gray-200 relative z-10">
         <p className="text-xs text-gray-600 mb-4 sm:mb-0">
@@ -662,35 +730,35 @@ export default function LandingPage() {
           <a
             href="/terms"
             className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["terms"] ? "text-blue-600" : ""
+              hoveredLinks['terms'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("terms", true)}
-            onMouseLeave={() => handleLinkHover("terms", false)}
+            onMouseEnter={() => handleLinkHover('terms', true)}
+            onMouseLeave={() => handleLinkHover('terms', false)}
           >
             Terms
           </a>
           <a
             href="/privacy"
             className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["privacy"] ? "text-blue-600" : ""
+              hoveredLinks['privacy'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("privacy", true)}
-            onMouseLeave={() => handleLinkHover("privacy", false)}
+            onMouseEnter={() => handleLinkHover('privacy', true)}
+            onMouseLeave={() => handleLinkHover('privacy', false)}
           >
             Privacy
           </a>
           <a
             href="/contact"
             className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["contact"] ? "text-blue-600" : ""
+              hoveredLinks['contact'] ? 'text-blue-600' : ''
             }`}
-            onMouseEnter={() => handleLinkHover("contact", true)}
-            onMouseLeave={() => handleLinkHover("contact", false)}
+            onMouseEnter={() => handleLinkHover('contact', true)}
+            onMouseLeave={() => handleLinkHover('contact', false)}
           >
             Contact
           </a>
         </div>
       </footer>
     </div>
-  )
+  );
 }

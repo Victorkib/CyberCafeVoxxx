@@ -609,20 +609,32 @@ export const initializeMpesaPayment = async (order, phoneNumber) => {
     logger.info('Initializing M-Pesa payment', {
       orderId: order._id,
       phoneNumber,
+      amount: order.totalAmount,
     });
 
-    // Initiate M-Pesa payment
+    // IMPROVEMENT 2: Validate inputs before making API call
+    if (!phoneNumber.match(/^254[0-9]{9}$/)) {
+      throw new Error(
+        'Invalid phone number format. Must start with 254 followed by 9 digits'
+      );
+    }
+
+    if (order.totalAmount <= 0) {
+      throw new Error('Invalid amount. Must be greater than 0');
+    }
+
     const result = await mpesa.initiateSTKPush(
       phoneNumber,
       order.totalAmount,
       order._id.toString()
     );
 
+    // IMPROVEMENT 3: Return consistent structure
     return {
       success: true,
-      checkoutRequestId: result.CheckoutRequestID,
-      merchantRequestId: result.MerchantRequestID,
-      message: 'M-Pesa payment initiated successfully',
+      checkoutRequestId: result.checkoutRequestId,
+      merchantRequestId: result.merchantRequestId,
+      message: result.message || 'M-Pesa payment initiated successfully',
     };
   } catch (error) {
     logger.error('M-Pesa payment initialization error:', {
@@ -631,7 +643,13 @@ export const initializeMpesaPayment = async (order, phoneNumber) => {
       orderId: order._id,
     });
 
-    throw error;
+    // IMPROVEMENT 4: Throw structured errors
+    const err = new Error(
+      error.message || 'Failed to initialize M-Pesa payment'
+    );
+    err.provider = 'mpesa';
+    err.code = error.code || 'MPESA_INIT_FAILED';
+    throw err;
   }
 };
 
@@ -641,14 +659,24 @@ export const initializePaystackPayment = async (order, email) => {
     logger.info('Initializing Paystack payment', {
       orderId: order._id,
       email,
+      amount: order.totalAmount,
     });
 
-    // Initiate Paystack payment
+    // IMPROVEMENT 6: Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('Invalid email format');
+    }
+
     const result = await paystackPayment.initializePayment(
       email,
       order.totalAmount,
       order._id.toString()
     );
+
+    // IMPROVEMENT 7: Handle Paystack response structure
+    if (!result.status || !result.data) {
+      throw new Error('Invalid response from Paystack');
+    }
 
     return {
       success: true,
@@ -663,10 +691,14 @@ export const initializePaystackPayment = async (order, email) => {
       orderId: order._id,
     });
 
-    throw error;
+    const err = new Error(
+      error.message || 'Failed to initialize Paystack payment'
+    );
+    err.provider = 'paystack';
+    err.code = error.code || 'PAYSTACK_INIT_FAILED';
+    throw err;
   }
 };
-
 // Initialize PayPal payment
 export const initializePaypalPayment = async (order) => {
   try {

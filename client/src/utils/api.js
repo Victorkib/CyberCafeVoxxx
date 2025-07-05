@@ -75,12 +75,15 @@ export const createApi = (dispatch) => {
 
       // Extract error message from response
       const message =
-        error?.response?.data?.message || error?.message || 'An error occurred';
-      const errors =
-        error?.response?.data?.errors || error?.response?.data?.error;
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'An error occurred';
 
       // Show error toast
-      if (message) {
+      if (message == 'Not authorized, no token') {
+        console.log('Not authorized, no token');
+      } else {
         toast.error(message);
       }
 
@@ -111,6 +114,7 @@ export const endpoints = {
   },
   products: {
     list: '/products',
+    featured: '/products/featured',
     detail: (id) => `/products/${id}`,
     create: '/products',
     update: (id) => `/products/${id}`,
@@ -216,8 +220,20 @@ export const endpoints = {
     methods: '/payments/methods',
     initialize: '/payments/initialize',
     callback: '/payments/callback',
+    // NEW: Add inline checkout endpoints
+    inlineCallback: '/payments/inline/callback',
+    inlineVerify: '/payments/inline/verify',
+    retry: '/payments/retry',
+    status: (orderId) => `/payments/status/${orderId}`,
+    history: '/payments/history',
+    details: (orderId) => `/payments/details/${orderId}`,
+    refunds: '/payments/refunds',
     refund: '/payments/refund',
     analytics: '/payments/analytics',
+    // Admin endpoints
+    adminAnalytics: '/payments/admin/analytics',
+    adminRefund: '/payments/admin/refund',
+    adminSettings: '/payments/admin/settings',
   },
 };
 
@@ -251,6 +267,7 @@ const apiRequest = {
 
   // Products
   getProducts: (params) => defaultApi.get(endpoints.products.list, { params }),
+  getFeaturedProducts: () => defaultApi.get(endpoints.products.featured),
   getProduct: (id) => defaultApi.get(endpoints.products.detail(id)),
   createProduct: (data) => defaultApi.post(endpoints.products.create, data),
   updateProduct: (id, data) =>
@@ -580,14 +597,35 @@ export const notificationAPI = {
     defaultApi.post(endpoints.notifications.adminRetryDelivery),
 };
 
-// Payments API
+// Payments API (updated)
 export const paymentAPI = {
   getMethods: () => defaultApi.get(endpoints.payments.methods),
   initialize: (data) => defaultApi.post(endpoints.payments.initialize, data),
   processCallback: (data) => defaultApi.post(endpoints.payments.callback, data),
+  // NEW: Inline checkout methods
+  processInlineCallback: (data) =>
+    defaultApi.post(endpoints.payments.inlineCallback, data),
+  verifyInlinePayment: (data) =>
+    defaultApi.post(endpoints.payments.inlineVerify, data),
+  retry: (data) => defaultApi.post(endpoints.payments.retry, data),
+  checkStatus: (orderId) => defaultApi.get(endpoints.payments.status(orderId)),
+  getHistory: (params) =>
+    defaultApi.get(endpoints.payments.history, { params }),
+  getDetails: (orderId) => defaultApi.get(endpoints.payments.details(orderId)),
+  getRefundHistory: (params) =>
+    defaultApi.get(endpoints.payments.refunds, { params }),
   getAnalytics: (params) =>
     defaultApi.get(endpoints.payments.analytics, { params }),
-  refund: (data) => defaultApi.post(endpoints.payments.refund, data),
+  refund: (paymentId, reason) =>
+    defaultApi.post(endpoints.payments.refund, { paymentId, reason }),
+  // Admin methods
+  getAdminAnalytics: (params) =>
+    defaultApi.get(endpoints.payments.adminAnalytics, { params }),
+  adminRefund: (paymentId, reason) =>
+    defaultApi.post(endpoints.payments.adminRefund, { paymentId, reason }),
+  getSettings: () => defaultApi.get(endpoints.payments.adminSettings),
+  updateSettings: (settings) =>
+    defaultApi.put(endpoints.payments.adminSettings, settings),
 };
 
 // Error handling

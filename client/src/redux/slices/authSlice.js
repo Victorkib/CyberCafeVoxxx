@@ -116,13 +116,12 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
+      const response = await apiRequest.post('/auth/logout');
+
       // Clear token from localStorage
       localStorage.removeItem('token');
 
-      // Show success message
-      toast.success('Logged out successfully');
-
-      return null;
+      return response.data;
     } catch (error) {
       const message = error?.response?.data?.message || 'Logout failed';
       toast.error(message);

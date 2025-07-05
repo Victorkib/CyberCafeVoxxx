@@ -1,68 +1,116 @@
-import { apiRequest } from './api';
+// Import the existing API setup
+import { defaultApi, endpoints } from './api.js';
 
-/**
- * Payment API client that matches the server endpoints
- */
+// ENHANCED: Extend the existing endpoints with additional payment endpoints
+const paymentEndpoints = {
+  ...endpoints.payments,
+  // FIXED: Update inline checkout endpoints to match backend
+  inlineCallback: '/payments/inline-callback',
+  inlineVerify: '/payments/verify-inline',
+  retry: '/payments/retry',
+  status: (orderId) => `/payments/status/${orderId}`,
+  history: '/payments/history',
+  details: (orderId) => `/payments/details/${orderId}`,
+  refunds: '/payments/refunds',
+  // Admin endpoints
+  adminAnalytics: '/payments/analytics',
+  adminRefund: '/payments/refund',
+  adminSettings: '/payments/settings',
+};
+
 export const paymentAPI = {
   // Get available payment methods
-  getMethods: () => apiRequest.get('/payments/methods'),
+  getMethods: () => {
+    console.log('🌐 API: Fetching payment methods');
+    return defaultApi.get(paymentEndpoints.methods);
+  },
 
   // Initialize payment
   initialize: (paymentData) => {
-    const { orderId, method, phoneNumber, email } = paymentData;
-    return apiRequest.post('/payments/initialize', {
-      orderId,
-      method,
-      phoneNumber,
-      email,
-    });
+    console.log('🌐 API: Initializing payment with data:', paymentData);
+    return defaultApi.post(paymentEndpoints.initialize, paymentData);
   },
 
-  // Process payment callback
-  processCallback: (callbackData) =>
-    apiRequest.post('/payments/callback', callbackData),
+  // FIXED: Process inline callback (critical for stock reduction)
+  processInlineCallback: (callbackData) => {
+    console.log('🌐 API: Processing inline callback with data:', callbackData);
+    return defaultApi.post(paymentEndpoints.inlineCallback, callbackData);
+  },
 
-  // Check payment status
-  checkStatus: (orderId) => apiRequest.get(`/payments/status/${orderId}`),
+  // FIXED: Verify inline payment (critical for stock reduction)
+  verifyInlinePayment: (verificationData) => {
+    console.log(
+      '🌐 API: Verifying inline payment with data:',
+      verificationData
+    );
+    return defaultApi.post(paymentEndpoints.inlineVerify, verificationData);
+  },
 
   // Retry payment
-  retry: (paymentData) => apiRequest.post('/payments/retry', paymentData),
+  retry: (retryData) => {
+    console.log('🌐 API: Retrying payment with data:', retryData);
+    return defaultApi.post(paymentEndpoints.retry, retryData);
+  },
+
+  // Check payment status
+  checkStatus: (orderId) => {
+    console.log('🌐 API: Checking payment status for order:', orderId);
+    return defaultApi.get(paymentEndpoints.status(orderId));
+  },
 
   // Get payment history
-  getHistory: (params = {}) => apiRequest.get('/payments/history', { params }),
+  getHistory: (params) => {
+    console.log('🌐 API: Fetching payment history with params:', params);
+    return defaultApi.get(paymentEndpoints.history, { params });
+  },
 
   // Get payment details
-  getDetails: (orderId) => apiRequest.get(`/payments/details/${orderId}`),
-
-  // Process refund (admin only)
-  refund: (paymentId, reason) =>
-    apiRequest.post('/payments/admin/refund', { paymentId, reason }),
-
-  // Get payment analytics (admin only)
-  getAnalytics: (params = {}) =>
-    apiRequest.get('/payments/admin/analytics', { params }),
+  getDetails: (orderId) => {
+    console.log('🌐 API: Fetching payment details for order:', orderId);
+    return defaultApi.get(paymentEndpoints.details(orderId));
+  },
 
   // Get refund history
-  getRefundHistory: (params = {}) =>
-    apiRequest.get('/payments/refunds', { params }),
+  getRefundHistory: (params) => {
+    console.log('🌐 API: Fetching refund history with params:', params);
+    return defaultApi.get(paymentEndpoints.refunds, { params });
+  },
 
-  // Get payment settings (admin only)
-  getSettings: () => apiRequest.get('/payments/admin/settings'),
+  // ENHANCED: Admin endpoints with better logging
+  getAnalytics: (params) => {
+    console.log('🌐 API: Fetching payment analytics with params:', params);
+    return defaultApi.get(paymentEndpoints.adminAnalytics, { params });
+  },
 
-  // Update payment settings (admin only)
-  updateSettings: (settings) =>
-    apiRequest.put('/payments/admin/settings', settings),
-};
+  refund: (paymentId, reason) => {
+    console.log('🌐 API: Processing refund:', { paymentId, reason });
+    return defaultApi.post(paymentEndpoints.adminRefund, { paymentId, reason });
+  },
 
-// Check payment status
-export const checkStatus = async (orderId) => {
-  try {
-    const response = await apiRequest.get(`/payments/status/${orderId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error checking payment status:', error);
-    throw error;
-  }
+  getSettings: () => {
+    console.log('🌐 API: Fetching payment settings');
+    return defaultApi.get(paymentEndpoints.adminSettings);
+  },
+
+  updateSettings: (settings) => {
+    console.log('🌐 API: Updating payment settings with data:', settings);
+    return defaultApi.put(paymentEndpoints.adminSettings, settings);
+  },
+
+  // ENHANCED: Additional utility methods for better integration
+  verifyPaymentWithProvider: (paymentId) => {
+    console.log(
+      '🌐 API: Verifying payment with provider for payment:',
+      paymentId
+    );
+    return defaultApi.post(`/payments/verify-provider/${paymentId}`);
+  },
+
+  // Webhook endpoints (for admin use)
+  processWebhook: (provider, webhookData) => {
+    console.log('🌐 API: Processing webhook for provider:', provider);
+    return defaultApi.post(`/payments/webhooks/${provider}`, webhookData);
+  },
 };
 
 export default paymentAPI;

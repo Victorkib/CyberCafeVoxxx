@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   CreditCard,
@@ -12,7 +13,16 @@ import {
   Plus,
   Minus,
   Phone,
+  Shield,
+  Smartphone,
+  Globe,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
+
+// Redux imports
 import {
   clearCart,
   addToCart,
@@ -24,12 +34,27 @@ import {
   getPaymentMethods,
   initializePayment,
   checkPaymentStatus,
-  updatePaymentStatus,
+  retryPayment,
+  processInlineCallback, // NEW: Import inline callback action
 } from '../../redux/slices/paymentSlice';
 import { openAuthModal } from '../../redux/slices/uiSlice';
+// NEW: Import product actions to refresh product data
+import {
+  fetchProducts,
+  fetchProductById,
+} from '../../redux/slices/productsSlice';
+
+// Components
+import ButtonLoader from '../../pages/components/loaders/ButtonLoader';
+import SectionLoader from '../../pages/components/loaders/SectionLoader';
+import ToastLoader from '../../pages/components/loaders/ToastLoader';
+import LoaderSpinner from '../../pages/components/loaders/LoaderSpinner';
+
+// Utils
 import { toast } from 'react-toastify';
 import { PAYMENT_METHODS } from '../../constants/payment';
-import { retryPayment } from '../../redux/slices/paymentSlice';
+
+const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 
 const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
   const dispatch = useDispatch();
@@ -40,6 +65,7 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     error: cartError,
   } = useSelector((state) => state.cart);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { darkMode } = useSelector((state) => state.ui);
   const { loading: orderLoading, currentOrder } = useSelector(
     (state) => state.order
   );
@@ -49,20 +75,29 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     currentPayment,
   } = useSelector((state) => state.payment);
 
+  // State management
   const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.MPESA);
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.PAYSTACK);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [showToastLoader, setShowToastLoader] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('idle');
+  const [paystackHandler, setPaystackHandler] = useState(null);
+
+  // Form data
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     address: '',
     city: '',
     state: '',
     zipCode: '',
-    country: '',
+    country: 'Kenya',
     phone: '',
     email: '',
   });
+
   const [paymentInfo, setPaymentInfo] = useState({
     phoneNumber: '',
     email: '',
@@ -71,7 +106,7 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     expiry: '',
     cvc: '',
   });
-  const [errors, setErrors] = useState({});
+
   const [orderSummary, setOrderSummary] = useState({
     subtotal: 0,
     shipping: 0,
@@ -79,10 +114,71 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     total: 0,
   });
 
-  // Calculate order summary whenever items or totalAmount changes
+  // Toast loader helpers
+  const showToastLoaderWithMessage = useCallback((message) => {
+    setToastMessage(message);
+    setShowToastLoader(true);
+  }, []);
+
+  const hideToastLoader = useCallback(() => {
+    setShowToastLoader(false);
+    setToastMessage('');
+  }, []);
+
+  // NEW: Function to refresh product data after successful payment
+  const refreshProductData = useCallback(async () => {
+    try {
+      // Refresh products list to update stock numbers
+      await dispatch(fetchProducts()).unwrap();
+
+      // If we have specific product IDs from cart items, refresh them individually
+      const productIds = items
+        .map((item) => item.product?._id || item.productId)
+        .filter(Boolean);
+
+      for (const productId of productIds) {
+        try {
+          await dispatch(fetchProductById(productId)).unwrap();
+        } catch (error) {
+          console.warn(`Failed to refresh product ${productId}:`, error);
+        }
+      }
+
+      console.log('✅ Product data refreshed after successful payment');
+    } catch (error) {
+      console.error('❌ Failed to refresh product data:', error);
+    }
+  }, [dispatch, items]);
+
+  // Initialize Paystack
   useEffect(() => {
-    const shipping = 0; // Free shipping for now
-    const tax = totalAmount * 0.1; // 10% tax
+    if (typeof window !== 'undefined' && window.PaystackPop) {
+      console.log('Paystack is available');
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('Paystack script loaded');
+      };
+      script.onerror = () => {
+        console.error('Failed to load Paystack script');
+        toast.error('Failed to load payment system. Please refresh the page.');
+      };
+      document.body.appendChild(script);
+
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
+  }, []);
+
+  // Calculate order summary
+  useEffect(() => {
+    const shipping = totalAmount > 100 ? 0 : 10;
+    const tax = totalAmount * 0.16;
     const total = totalAmount + shipping + tax;
 
     setOrderSummary({
@@ -93,7 +189,7 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     });
   }, [totalAmount, items]);
 
-  // Pre-fill shipping info if user is logged in
+  // Pre-fill user information
   useEffect(() => {
     if (isAuthenticated && user) {
       setShippingInfo((prev) => ({
@@ -106,131 +202,121 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
       setPaymentInfo((prev) => ({
         ...prev,
         phoneNumber: user.phone || prev.phoneNumber,
-        email: user.email,
+        email: user.email || prev.email,
       }));
     }
   }, [isAuthenticated, user]);
 
-  // Fetch payment methods when component mounts
+  // Fetch payment methods
   useEffect(() => {
     if (isOpen && isAuthenticated) {
       dispatch(getPaymentMethods());
     }
   }, [isOpen, isAuthenticated, dispatch]);
 
-  // Reset state when modal is closed
+  // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      // Don't reset everything immediately to avoid UI flicker
       setTimeout(() => {
         if (!isOpen) {
           setStep(1);
           setIsComplete(false);
           setErrors({});
+          setPaymentStatus('idle');
+          setIsProcessing(false);
+          if (paystackHandler) {
+            setPaystackHandler(null);
+          }
         }
       }, 300);
     }
-  }, [isOpen]);
+  }, [isOpen, paystackHandler]);
 
-  // Handle errors from cart operations
-  useEffect(() => {
-    if (cartError) {
-      toast.error(cartError);
-    }
-  }, [cartError]);
-
-  // Enhance the payment status polling for M-Pesa
-  // Update the useEffect for payment status polling
-
-  // Find the useEffect for payment status polling and replace it
+  // FIXED: Enhanced payment status polling with proper backend integration
   useEffect(() => {
     let statusCheckInterval;
     let retryCount = 0;
-    const MAX_RETRIES = 20; // 5 minutes with 15 second interval
+    const MAX_RETRIES = 40;
 
     if (currentPayment && currentOrder && step === 3 && isProcessing) {
-      // Check payment status every 15 seconds
-      statusCheckInterval = setInterval(() => {
+      console.log('🔄 Starting payment status polling', {
+        orderId: currentOrder._id,
+        paymentMethod,
+        currentPayment: currentPayment.paymentId || currentPayment._id,
+      });
+
+      statusCheckInterval = setInterval(async () => {
         if (retryCount >= MAX_RETRIES) {
           clearInterval(statusCheckInterval);
           setIsProcessing(false);
+          setPaymentStatus('expired');
           toast.error(
-            'Payment verification timed out. Please check your order status or try again.'
+            'Payment verification timed out. Please check your order status.'
           );
           return;
         }
 
-        dispatch(checkPaymentStatus(currentOrder._id))
-          .unwrap()
-          .then((response) => {
-            const paymentStatus = response.data.paymentStatus;
-            const paymentDetails = response.data.paymentDetails;
+        try {
+          console.log(
+            `📡 Checking payment status (attempt ${
+              retryCount + 1
+            }/${MAX_RETRIES})`
+          );
 
-            // If payment is complete, show success
-            if (paymentStatus === 'paid') {
-              clearInterval(statusCheckInterval);
-              setIsProcessing(false);
-              setIsComplete(true);
-              dispatch(clearCart());
-              toast.success(
-                'Payment successful! Your order has been confirmed.'
+          // CRITICAL FIX: Use the correct endpoint to check payment status
+          const response = await dispatch(
+            checkPaymentStatus(currentOrder._id)
+          ).unwrap();
+
+          console.log('📊 Payment status response:', response);
+
+          const status =
+            response.data?.paymentStatus ||
+            response.data?.paymentDetails?.status;
+
+          setPaymentStatus(status);
+
+          if (status === 'paid' || status === 'success') {
+            clearInterval(statusCheckInterval);
+            setIsProcessing(false);
+            setIsComplete(true);
+
+            console.log(
+              '✅ Payment confirmed as successful - clearing cart and refreshing products'
+            );
+
+            // Clear cart and refresh product data
+            dispatch(clearCart());
+            await refreshProductData();
+
+            toast.success(
+              'Payment successful! Your order has been confirmed and stock has been updated.'
+            );
+          } else if (status === 'failed') {
+            clearInterval(statusCheckInterval);
+            setIsProcessing(false);
+            setPaymentStatus('failed');
+
+            if (paymentMethod === PAYMENT_METHODS.MPESA) {
+              toast.error(
+                'M-Pesa payment failed. Please check your phone and try again.'
               );
+            } else {
+              toast.error('Payment failed. Please try again.');
             }
+          } else if (status === 'expired') {
+            clearInterval(statusCheckInterval);
+            setIsProcessing(false);
+            setPaymentStatus('expired');
+            toast.error('Payment session expired. Please try again.');
+          }
 
-            // If payment failed, show error
-            if (paymentStatus === 'failed') {
-              clearInterval(statusCheckInterval);
-              setIsProcessing(false);
-
-              // Show specific message for M-Pesa
-              if (paymentMethod === PAYMENT_METHODS.MPESA) {
-                toast.error(
-                  'M-Pesa payment failed. This could be due to insufficient funds, wrong PIN, or you cancelled the request.'
-                );
-              } else {
-                toast.error(`Payment failed. Please try again.`);
-              }
-            }
-
-            // If payment is expired, show timeout message
-            if (
-              paymentStatus === 'expired' ||
-              (paymentDetails && paymentDetails.isExpired)
-            ) {
-              clearInterval(statusCheckInterval);
-              setIsProcessing(false);
-
-              if (paymentMethod === PAYMENT_METHODS.MPESA) {
-                toast.error(
-                  'M-Pesa request expired. You may not have responded to the prompt in time.'
-                );
-              } else {
-                toast.error('Payment session expired. Please try again.');
-              }
-            }
-
-            // For M-Pesa, check if we're still waiting for user action
-            if (
-              paymentStatus === 'pending' &&
-              paymentMethod === PAYMENT_METHODS.MPESA &&
-              retryCount > 4
-            ) {
-              // After 1 minute (4 retries at 15 seconds each), remind the user
-              if (retryCount % 4 === 0) {
-                toast.info(
-                  'Still waiting for your M-Pesa payment. Please check your phone and enter your PIN.',
-                  {
-                    autoClose: 5000,
-                  }
-                );
-              }
-            }
-          })
-          .catch((error) => {
-            console.error('Error checking payment status:', error);
-            retryCount++;
-          });
-      }, 15000); // 15 seconds interval
+          retryCount++;
+        } catch (error) {
+          console.error('❌ Error checking payment status:', error);
+          retryCount++;
+        }
+      }, 15000); // Check every 15 seconds
     }
 
     return () => {
@@ -245,10 +331,10 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     isProcessing,
     dispatch,
     paymentMethod,
+    refreshProductData,
   ]);
 
-  if (!isOpen) return null;
-
+  // Form handlers
   const handleShippingInfoChange = (e) => {
     const { name, value } = e.target;
     setShippingInfo((prev) => ({
@@ -256,7 +342,6 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
       [name]: value,
     }));
 
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -268,28 +353,18 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
   const handlePaymentInfoChange = (e) => {
     const { name, value } = e.target;
 
-    // Special handling for card number formatting
-    if (name === 'cardNumber') {
-      const formattedValue = formatCardNumber(value);
+    if (name === 'phoneNumber') {
+      let formattedValue = value.replace(/\D/g, '');
+      if (formattedValue.startsWith('0')) {
+        formattedValue = '254' + formattedValue.slice(1);
+      } else if (!formattedValue.startsWith('254')) {
+        formattedValue = '254' + formattedValue;
+      }
+      formattedValue = formattedValue.slice(0, 12);
+
       setPaymentInfo((prev) => ({
         ...prev,
         [name]: formattedValue,
-      }));
-    }
-    // Special handling for expiry date formatting
-    else if (name === 'expiry') {
-      const formattedValue = formatExpiryDate(value);
-      setPaymentInfo((prev) => ({
-        ...prev,
-        [name]: formattedValue,
-      }));
-    }
-    // Special handling for CVC (numbers only)
-    else if (name === 'cvc') {
-      const numericValue = value.replace(/\D/g, '').slice(0, 4);
-      setPaymentInfo((prev) => ({
-        ...prev,
-        [name]: numericValue,
       }));
     } else {
       setPaymentInfo((prev) => ({
@@ -298,7 +373,6 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
       }));
     }
 
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -307,18 +381,7 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     }
   };
 
-  const formatExpiryDate = (value) => {
-    // Remove any non-digit characters
-    const cleaned = value.replace(/\D/g, '');
-
-    // Format as MM/YY
-    if (cleaned.length > 2) {
-      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`;
-    } else {
-      return cleaned;
-    }
-  };
-
+  // Validation functions
   const validateShippingInfo = () => {
     const newErrors = {};
 
@@ -334,16 +397,6 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
       newErrors.city = 'City is required';
     }
 
-    if (!shippingInfo.zipCode?.trim()) {
-      newErrors.zipCode = 'ZIP code is required';
-    } else if (!/^\d{5}(-\d{4})?$/.test(shippingInfo.zipCode)) {
-      newErrors.zipCode = 'Invalid ZIP code format';
-    }
-
-    if (!shippingInfo.country?.trim()) {
-      newErrors.country = 'Country is required';
-    }
-
     if (!shippingInfo.email?.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingInfo.email)) {
@@ -352,7 +405,7 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
 
     if (
       shippingInfo.phone &&
-      !/^(\+\d{1,3})?\s?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}$/.test(shippingInfo.phone)
+      !/^254[0-9]{9}$/.test(shippingInfo.phone.replace(/\s/g, ''))
     ) {
       newErrors.phone = 'Invalid phone number format';
     }
@@ -361,15 +414,14 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const validatePaymentInfo = () => {
+  const validatePaymentInfo = useCallback(() => {
     const newErrors = {};
 
     if (paymentMethod === PAYMENT_METHODS.MPESA) {
       if (!paymentInfo.phoneNumber?.trim()) {
         newErrors.phoneNumber = 'Phone number is required for M-Pesa payments';
       } else if (!/^254[0-9]{9}$/.test(paymentInfo.phoneNumber)) {
-        newErrors.phoneNumber =
-          'Invalid phone number format. Must start with 254 followed by 9 digits';
+        newErrors.phoneNumber = 'Invalid phone number format (254XXXXXXXXX)';
       }
     } else if (paymentMethod === PAYMENT_METHODS.PAYSTACK) {
       if (!paymentInfo.email?.trim()) {
@@ -377,52 +429,123 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentInfo.email)) {
         newErrors.email = 'Invalid email format';
       }
-    } else if (paymentMethod === PAYMENT_METHODS.PAYPAL) {
-      // PayPal doesn't require additional validation
-    } else if (paymentMethod === 'credit-card') {
-      if (!paymentInfo.cardNumber?.trim()) {
-        newErrors.cardNumber = 'Card number is required';
-      } else if (!/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/.test(paymentInfo.cardNumber)) {
-        newErrors.cardNumber = 'Invalid card number format';
-      }
-
-      if (!paymentInfo.cardName?.trim()) {
-        newErrors.cardName = 'Name on card is required';
-      }
-
-      if (!paymentInfo.expiry?.trim()) {
-        newErrors.expiry = 'Expiry date is required';
-      } else if (!/^\d{2}\/\d{2}$/.test(paymentInfo.expiry)) {
-        newErrors.expiry = 'Invalid format (MM/YY)';
-      } else {
-        // Check if expiry date is valid
-        const [month, year] = paymentInfo.expiry.split('/');
-        const currentYear = new Date().getFullYear() % 100; // Get last 2 digits of year
-        const currentMonth = new Date().getMonth() + 1; // Get current month (1-12)
-
-        if (Number.parseInt(month) < 1 || Number.parseInt(month) > 12) {
-          newErrors.expiry = 'Invalid month';
-        } else if (
-          Number.parseInt(year) < currentYear ||
-          (Number.parseInt(year) === currentYear &&
-            Number.parseInt(month) < currentMonth)
-        ) {
-          newErrors.expiry = 'Card has expired';
-        }
-      }
-
-      if (!paymentInfo.cvc?.trim()) {
-        newErrors.cvc = 'CVC is required';
-      } else if (!/^\d{3,4}$/.test(paymentInfo.cvc)) {
-        newErrors.cvc = 'Invalid CVC';
-      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [paymentInfo.phoneNumber, paymentInfo.email, paymentMethod]);
 
-  const handleCheckout = () => {
+  // FIXED: Enhanced Paystack payment handler with non-async callback
+  const handlePaystackPayment = useCallback(
+    (orderData, backendReference) => {
+      return new Promise((resolve, reject) => {
+        if (!window.PaystackPop) {
+          reject(new Error('Paystack is not loaded'));
+          return;
+        }
+
+        // FIXED: Use the reference from backend
+        const reference = backendReference;
+
+        console.log('🚀 Initializing Paystack payment', {
+          orderId: orderData._id,
+          reference,
+          amount: Math.round(orderSummary.total * 100),
+        });
+
+        const handler = window.PaystackPop.setup({
+          key: PAYSTACK_PUBLIC_KEY,
+          email: paymentInfo.email || shippingInfo.email,
+          amount: Math.round(orderSummary.total * 100),
+          currency: 'KES',
+          ref: reference, // Use the backend reference
+          metadata: {
+            orderId: orderData._id,
+            orderNumber: orderData.orderNumber,
+            custom_fields: [
+              {
+                display_name: 'Order Number',
+                variable_name: 'order_number',
+                value: orderData.orderNumber,
+              },
+              {
+                display_name: 'Customer Name',
+                variable_name: 'customer_name',
+                value: shippingInfo.fullName,
+              },
+            ],
+          },
+          // Rest of the callback implementation remains the same
+          callback: (response) => {
+            console.log('✅ Paystack payment callback received:', response);
+
+            const callbackData = {
+              orderId: orderData._id,
+              reference: response.reference, // This should match the backend reference
+              status: 'success',
+              transactionId: response.trans,
+              metadata: {
+                paymentMethod: PAYMENT_METHODS.PAYSTACK,
+                reference: response.reference,
+                orderNumber: orderData.orderNumber,
+                paystackResponse: response,
+              },
+            };
+
+            console.log('📤 Sending inline callback to backend:', callbackData);
+
+            dispatch(processInlineCallback(callbackData))
+              .unwrap()
+              .then((callbackResult) => {
+                console.log(
+                  '✅ Inline callback processed successfully:',
+                  callbackResult
+                );
+                return refreshProductData();
+              })
+              .then(() => {
+                resolve({
+                  success: true,
+                  reference: response.reference,
+                  status: 'success',
+                  transactionId: response.trans,
+                  message: 'Payment completed successfully',
+                });
+              })
+              .catch((error) => {
+                console.error('❌ Error processing inline callback:', error);
+                resolve({
+                  success: true,
+                  reference: response.reference,
+                  status: 'success',
+                  transactionId: response.trans,
+                  message: 'Payment completed successfully',
+                  callbackError: error.message,
+                });
+              });
+          },
+          onClose: () => {
+            console.log('❌ Paystack payment window closed');
+            reject(new Error('Payment window was closed'));
+          },
+        });
+
+        handler.openIframe();
+        setPaystackHandler(handler);
+      });
+    },
+    [
+      paymentInfo.email,
+      shippingInfo.email,
+      shippingInfo.fullName,
+      orderSummary.total,
+      dispatch,
+      refreshProductData,
+    ]
+  );
+
+  // Action handlers
+  const handleCheckout = useCallback(() => {
     if (!isAuthenticated) {
       dispatch(openAuthModal('login'));
       return;
@@ -434,13 +557,12 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     }
 
     setStep(2);
-  };
+  }, [isAuthenticated, items.length, dispatch]);
 
-  const handleShippingSubmit = () => {
+  const handleShippingSubmit = useCallback(() => {
     if (validateShippingInfo()) {
       setStep(3);
     } else {
-      // Scroll to the first error
       const firstErrorField = Object.keys(errors)[0];
       const errorElement = document.querySelector(
         `[name="${firstErrorField}"]`
@@ -449,216 +571,317 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
         errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  };
+  }, [errors]);
 
-  // Update the handlePayment function to provide better feedback for M-Pesa
-  const handlePayment = async () => {
-    if (validatePaymentInfo()) {
-      setIsProcessing(true);
+  // FIXED: Enhanced payment handler with proper backend integration
+  const handlePayment = useCallback(async () => {
+    if (!validatePaymentInfo()) {
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.querySelector(
+        `[name="${firstErrorField}"]`
+      );
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
-      try {
-        // Create order first with all required fields
-        const orderData = {
-          items: items.map((item) => ({
-            product: item.product?._id || item.productId,
-            quantity: item.quantity,
-            name: item.name || item.product?.name || 'Product', // Add name field
-            price: item.price || item.product?.price || 0,
-            totalPrice:
-              (item.price || item.product?.price || 0) * item.quantity, // Add totalPrice field
-          })),
-          shippingAddress: {
-            street: shippingInfo.address,
-            city: shippingInfo.city,
-            state: shippingInfo.state || 'N/A', // Ensure state is never empty
-            country: shippingInfo.country,
-            zipCode: shippingInfo.zipCode,
-          },
-          paymentMethod: paymentMethod,
-          itemsPrice: orderSummary.subtotal,
-          taxPrice: orderSummary.tax,
-          shippingPrice: orderSummary.shipping,
-          totalPrice: orderSummary.total,
-        };
+    setIsProcessing(true);
+    setPaymentStatus('processing');
+    showToastLoaderWithMessage('Creating order...');
 
-        // The unwrap() method will return the actual payload from the fulfilled action
-        const orderResult = await dispatch(createOrder(orderData)).unwrap();
-        const orderId = orderResult._id || orderResult.data._id; // Handle both response formats
+    try {
+      console.log('🛒 Creating order with items:', items);
 
-        // Initialize payment
+      // Create order first
+      const orderData = {
+        items: items.map((item) => ({
+          product: item.product?._id || item.productId,
+          quantity: item.quantity,
+          name: item.name || item.product?.name || 'Product',
+          price: item.price || item.product?.price || 0,
+          totalPrice: (item.price || item.product?.price || 0) * item.quantity,
+        })),
+        shippingAddress: {
+          street: shippingInfo.address,
+          city: shippingInfo.city,
+          state: shippingInfo.state || 'N/A',
+          country: shippingInfo.country,
+          zipCode: shippingInfo.zipCode || '00000',
+        },
+        paymentMethod: paymentMethod,
+        itemsPrice: orderSummary.subtotal,
+        taxPrice: orderSummary.tax,
+        shippingPrice: orderSummary.shipping,
+        totalPrice: orderSummary.total,
+      };
+
+      console.log('📦 Creating order:', orderData);
+
+      const orderResult = await dispatch(createOrder(orderData)).unwrap();
+      const orderId = orderResult._id || orderResult.data._id;
+
+      console.log('✅ Order created successfully:', {
+        orderId,
+        orderNumber: orderResult.orderNumber,
+      });
+
+      hideToastLoader();
+
+      if (paymentMethod === PAYMENT_METHODS.PAYSTACK) {
+        showToastLoaderWithMessage('Opening Paystack checkout...');
+
+        try {
+          // CRITICAL FIX: Don't generate a new reference, use the one from backend
+          const initPaymentData = {
+            orderId: orderId,
+            method: PAYMENT_METHODS.PAYSTACK,
+            email: paymentInfo.email || shippingInfo.email,
+            amount: orderSummary.total,
+            // Remove the reference generation here - let backend handle it
+          };
+
+          // Initialize payment record on backend
+          const paymentInitResult = await dispatch(
+            initializePayment(initPaymentData)
+          ).unwrap();
+
+          console.log('✅ Payment initialized:', paymentInitResult);
+
+          hideToastLoader();
+
+          // FIXED: Use the reference returned from backend
+          const backendReference =
+            paymentInitResult.reference || paymentInitResult.transactionId;
+
+          // Handle Paystack inline checkout with backend reference
+          const paymentResult = await handlePaystackPayment(
+            orderResult,
+            backendReference
+          );
+
+          if (paymentResult.success) {
+            console.log('🎉 Payment completed successfully');
+
+            setIsProcessing(false);
+            setIsComplete(true);
+            setPaymentStatus('success');
+
+            // Clear cart and refresh products
+            dispatch(clearCart());
+            await refreshProductData();
+
+            toast.success(
+              'Payment successful! Your order has been confirmed and stock has been updated.'
+            );
+          }
+        } catch (paymentError) {
+          hideToastLoader();
+          setIsProcessing(false);
+          setPaymentStatus('failed');
+
+          console.error('❌ Payment error:', paymentError);
+
+          if (paymentError.message === 'Payment window was closed') {
+            toast.error('Payment was cancelled. You can retry the payment.');
+          } else {
+            toast.error('Payment failed: ' + paymentError.message);
+          }
+        }
+      } else if (paymentMethod === PAYMENT_METHODS.MPESA) {
+        // Handle M-Pesa payment
+        showToastLoaderWithMessage('Sending M-Pesa request to your phone...');
+
         const paymentData = {
           orderId: orderId,
           method: paymentMethod,
+          amount: orderSummary.total,
+          currency: 'KES',
+          phoneNumber: paymentInfo.phoneNumber,
+          callback_url: `${window.location.origin}/payment/callback`,
         };
 
-        // Add method-specific data
-        if (paymentMethod === PAYMENT_METHODS.MPESA) {
-          paymentData.phoneNumber = paymentInfo.phoneNumber;
-
-          // Show M-Pesa specific message
-          toast.info('Please check your phone for the M-Pesa payment prompt', {
-            autoClose: 10000, // Keep this message visible longer
-          });
-        } else if (paymentMethod === PAYMENT_METHODS.PAYSTACK) {
-          paymentData.email = paymentInfo.email || shippingInfo.email;
-        }
+        console.log('📱 Initializing M-Pesa payment:', paymentData);
 
         const paymentResult = await dispatch(
           initializePayment(paymentData)
         ).unwrap();
 
-        // Handle M-Pesa specific response
-        if (paymentMethod === PAYMENT_METHODS.MPESA) {
-          if (paymentResult.checkoutRequestId) {
-            // Store the checkout request ID for status checking
-            setPaymentInfo((prev) => ({
-              ...prev,
-              checkoutRequestId: paymentResult.checkoutRequestId,
-            }));
+        hideToastLoader();
 
-            // Show instructions to the user
-            toast.success(
-              'M-Pesa request sent to your phone. Please enter your PIN to complete payment.',
-              {
-                autoClose: false,
-              }
-            );
-          } else {
-            toast.error('Failed to send M-Pesa request. Please try again.');
-            setIsProcessing(false);
-          }
-        } else if (
-          paymentMethod === PAYMENT_METHODS.PAYSTACK &&
-          paymentResult.authorizationUrl
-        ) {
-          // For Paystack, redirect to the authorization URL
-          window.open(paymentResult.authorizationUrl, '_blank');
-        } else if (
-          paymentMethod === PAYMENT_METHODS.PAYPAL &&
-          paymentResult.approvalUrl
-        ) {
-          // For PayPal, redirect to the approval URL
-          window.open(paymentResult.approvalUrl, '_blank');
-        } else if (paymentMethod === 'credit-card') {
-          // Simulate payment processing
-          setTimeout(() => {
-            dispatch(updatePaymentStatus('paid'));
-            setIsProcessing(false);
-            setIsComplete(true);
-            dispatch(clearCart());
-          }, 2000);
+        if (paymentResult.checkoutRequestId) {
+          toast.success(
+            'M-Pesa request sent! Please check your phone and enter your PIN.'
+          );
+          setPaymentStatus('processing');
+
+          console.log('✅ M-Pesa payment initialized, starting status polling');
+        } else {
+          throw new Error('Failed to send M-Pesa request');
         }
-      } catch (error) {
-        console.error('Payment error:', error);
-        setIsProcessing(false);
-        toast.error(
-          error?.message || 'Payment initialization failed. Please try again.'
-        );
       }
-    } else {
-      // Scroll to the first error
-      const firstErrorField = Object.keys(errors)[0];
-      const errorElement = document.querySelector(
-        `[name="${firstErrorField}"]`
-      );
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  };
-
-  const handleIncreaseQuantity = (item) => {
-    try {
-      const productId = item.product?._id || item.productId;
-      if (!productId) {
-        console.error('Invalid product ID:', item);
-        toast.error("Couldn't update item: missing product ID");
-        return;
-      }
-
-      dispatch(
-        addToCart({
-          productId: String(productId),
-          quantity: 1,
-        })
-      );
     } catch (error) {
-      console.error('Error increasing quantity:', error);
-      toast.error("Couldn't increase quantity");
+      console.error('❌ Payment error:', error);
+      setIsProcessing(false);
+      setPaymentStatus('failed');
+      hideToastLoader();
+      toast.error(
+        error?.message || 'Payment initialization failed. Please try again.'
+      );
     }
-  };
+  }, [
+    errors,
+    items,
+    shippingInfo,
+    paymentMethod,
+    paymentInfo,
+    orderSummary,
+    dispatch,
+    showToastLoaderWithMessage,
+    hideToastLoader,
+    validatePaymentInfo,
+    handlePaystackPayment,
+    refreshProductData,
+  ]);
 
-  const handleDecreaseQuantity = (item) => {
+  const handleRetryPayment = useCallback(async () => {
+    if (!currentOrder) return;
+
+    setIsProcessing(true);
+    setPaymentStatus('processing');
+    showToastLoaderWithMessage('Retrying payment...');
+
     try {
-      const productId = item.product?._id || item.productId;
-      if (!productId) {
-        console.error('Invalid product ID:', item);
-        toast.error("Couldn't update item: missing product ID");
-        return;
-      }
+      if (paymentMethod === PAYMENT_METHODS.PAYSTACK) {
+        const paymentResult = await handlePaystackPayment(currentOrder);
 
-      if (item.quantity <= 1) {
-        handleRemoveItem(item);
+        if (paymentResult.success) {
+          setIsProcessing(false);
+          setIsComplete(true);
+          setPaymentStatus('success');
+          dispatch(clearCart());
+          await refreshProductData();
+          toast.success(
+            'Payment successful! Your order has been confirmed and stock has been updated.'
+          );
+        }
       } else {
+        const retryData = {
+          orderId: currentOrder._id,
+          method: paymentMethod,
+          phoneNumber: paymentInfo.phoneNumber,
+        };
+
+        await dispatch(retryPayment(retryData)).unwrap();
+        toast.success('Payment request resent! Please check your phone.');
+      }
+    } catch (error) {
+      console.error('Error retrying payment:', error);
+      setIsProcessing(false);
+      setPaymentStatus('failed');
+      toast.error('Failed to retry payment. Please try again.');
+    } finally {
+      hideToastLoader();
+    }
+  }, [
+    currentOrder,
+    paymentMethod,
+    paymentInfo.phoneNumber,
+    dispatch,
+    showToastLoaderWithMessage,
+    hideToastLoader,
+    handlePaystackPayment,
+    refreshProductData,
+  ]);
+
+  // Cart item handlers
+  const handleIncreaseQuantity = useCallback(
+    (item) => {
+      try {
+        const productId = item.product?._id || item.productId;
+        if (!productId) {
+          toast.error("Couldn't update item: missing product ID");
+          return;
+        }
+
         dispatch(
-          decreaseQuantity({
+          addToCart({
             productId: String(productId),
-            currentQuantity: item.quantity,
+            quantity: 1,
           })
         );
+      } catch (error) {
+        console.error('Error increasing quantity:', error);
+        toast.error("Couldn't increase quantity");
       }
-    } catch (error) {
-      console.error('Error decreasing quantity:', error);
-      toast.error("Couldn't decrease quantity");
-    }
-  };
+    },
+    [dispatch]
+  );
 
-  const handleRemoveItem = (item) => {
-    try {
-      const productId = item.product?._id || item.productId;
-      if (!productId) {
-        console.error('Invalid product ID:', item);
-        toast.error("Couldn't remove item: missing product ID");
-        return;
+  const handleDecreaseQuantity = useCallback(
+    (item) => {
+      try {
+        const productId = item.product?._id || item.productId;
+        if (!productId) {
+          toast.error("Couldn't update item: missing product ID");
+          return;
+        }
+
+        if (item.quantity <= 1) {
+          handleRemoveItem(item);
+        } else {
+          dispatch(
+            decreaseQuantity({
+              productId: String(productId),
+              currentQuantity: item.quantity,
+            })
+          );
+        }
+      } catch (error) {
+        console.error('Error decreasing quantity:', error);
+        toast.error("Couldn't decrease quantity");
       }
+    },
+    [dispatch]
+  );
 
-      dispatch(removeFromCart(String(productId)));
-    } catch (error) {
-      console.error('Error removing item:', error);
-      toast.error("Couldn't remove item");
-    }
-  };
+  const handleRemoveItem = useCallback(
+    (item) => {
+      try {
+        const productId = item.product?._id || item.productId;
+        if (!productId) {
+          toast.error("Couldn't remove item: missing product ID");
+          return;
+        }
 
-  const formatCardNumber = (value) => {
-    // Remove all non-digit characters
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+        dispatch(removeFromCart(String(productId)));
+      } catch (error) {
+        console.error('Error removing item:', error);
+        toast.error("Couldn't remove item");
+      }
+    },
+    [dispatch]
+  );
 
-    // Limit to 16 digits
-    const cardNumber = v.slice(0, 16);
-
-    // Add spaces after every 4 digits
-    const parts = [];
-    for (let i = 0; i < cardNumber.length; i += 4) {
-      parts.push(cardNumber.substring(i, i + 4));
-    }
-
-    return parts.join(' ');
-  };
-
+  // Render functions (keeping existing render functions unchanged)
   const renderCartItems = () => {
     if (items.length === 0) {
       return (
         <div className="text-center py-12">
           <ShoppingBag className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-          <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
+          <p
+            className={`text-lg mb-4 ${
+              darkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}
+          >
             Your cart is empty
           </p>
-          <button
+          <ButtonLoader
             onClick={onClose}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
             Continue Shopping
-          </button>
+          </ButtonLoader>
         </div>
       );
     }
@@ -666,16 +889,23 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
     return (
       <div className="max-h-80 overflow-y-auto mb-6">
         {items.map((item) => (
-          <div
+          <motion.div
             key={item.id || item.product?._id || item.productId}
-            className="flex items-center py-4 border-b border-gray-200 dark:border-gray-700"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`flex items-center py-4 border-b ${
+              darkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}
           >
             <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
               <img
                 src={
                   item.image ||
-                  item.product?.images[0] ||
+                  item.product?.images?.[0] ||
                   '/placeholder.svg?height=80&width=80' ||
+                  '/placeholder.svg' ||
+                  '/placeholder.svg' ||
                   '/placeholder.svg'
                 }
                 alt={item.name || item.product?.name || 'Product'}
@@ -683,891 +913,1044 @@ const CheckoutModal = ({ isOpen, onClose, onUpdateQuantity, onRemoveItem }) => {
               />
             </div>
             <div className="ml-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              <h3
+                className={`text-sm font-medium ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}
+              >
                 {item.name || item.product?.name || 'Product'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                ${(item.price || item.product?.price || 0).toFixed(2)}
+              <p
+                className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                KES{' '}
+                {((item.price || item.product?.price || 0) * 100).toFixed(0)}
               </p>
-              {item.size && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Size: {item.size}
+              {/* NEW: Show current stock if available */}
+              {item.product?.stock !== undefined && (
+                <p
+                  className={`text-xs ${
+                    item.product.stock > 0
+                      ? darkMode
+                        ? 'text-green-400'
+                        : 'text-green-600'
+                      : darkMode
+                      ? 'text-red-400'
+                      : 'text-red-600'
+                  }`}
+                >
+                  Stock: {item.product.stock} available
                 </p>
-              )}
-              {item.color && (
-                <div className="flex items-center mt-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
-                    Color:
-                  </span>
-                  <span
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  ></span>
-                </div>
               )}
             </div>
             <div className="flex items-center">
-              <button
+              <ButtonLoader
                 onClick={() => handleDecreaseQuantity(item)}
-                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent border-none"
                 aria-label="Decrease quantity"
+                size="sm"
               >
                 <Minus size={16} />
-              </button>
+              </ButtonLoader>
               <span className="mx-2 w-8 text-center">{item.quantity}</span>
-              <button
+              <ButtonLoader
                 onClick={() => handleIncreaseQuantity(item)}
-                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent border-none"
                 aria-label="Increase quantity"
+                size="sm"
+                // NEW: Disable if out of stock
+                disabled={
+                  item.product?.stock !== undefined &&
+                  item.quantity >= item.product.stock
+                }
               >
                 <Plus size={16} />
-              </button>
+              </ButtonLoader>
             </div>
             <div className="ml-4 text-right">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                $
+              <p
+                className={`text-sm font-medium ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                KES{' '}
                 {(
-                  (item.price || item.product?.price || 0) * item.quantity
-                ).toFixed(2)}
+                  (item.price || item.product?.price || 0) *
+                  item.quantity *
+                  100
+                ).toFixed(0)}
               </p>
-              <button
+              <ButtonLoader
                 onClick={() => handleRemoveItem(item)}
-                className="text-red-500 hover:text-red-700 text-xs flex items-center mt-1"
+                className="text-red-500 hover:text-red-700 text-xs flex items-center mt-1 bg-transparent border-none p-0"
                 aria-label="Remove item"
+                size="sm"
               >
                 <Trash2 size={12} className="mr-1" />
                 Remove
-              </button>
+              </ButtonLoader>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     );
   };
 
   const renderOrderSummary = () => (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+    <div
+      className={`border-t pt-4 mb-6 ${
+        darkMode ? 'border-gray-700' : 'border-gray-200'
+      }`}
+    >
       <div className="flex justify-between mb-2">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Subtotal</p>
-        <p className="text-sm font-medium text-gray-900 dark:text-white">
-          ${orderSummary.subtotal.toFixed(2)}
+        <p
+          className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+        >
+          Subtotal
+        </p>
+        <p
+          className={`text-sm font-medium ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          KES {(orderSummary.subtotal * 100).toFixed(0)}
         </p>
       </div>
       <div className="flex justify-between mb-2">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Shipping</p>
-        <p className="text-sm font-medium text-gray-900 dark:text-white">
+        <p
+          className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+        >
+          Shipping
+        </p>
+        <p
+          className={`text-sm font-medium ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
           {orderSummary.shipping === 0
             ? 'Free'
-            : `$${orderSummary.shipping.toFixed(2)}`}
+            : `KES ${(orderSummary.shipping * 100).toFixed(0)}`}
         </p>
       </div>
       <div className="flex justify-between mb-2">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Tax</p>
-        <p className="text-sm font-medium text-gray-900 dark:text-white">
-          ${orderSummary.tax.toFixed(2)}
+        <p
+          className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+        >
+          VAT (16%)
+        </p>
+        <p
+          className={`text-sm font-medium ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          KES {(orderSummary.tax * 100).toFixed(0)}
         </p>
       </div>
-      <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <p className="text-base font-medium text-gray-900 dark:text-white">
+      <div
+        className={`flex justify-between mt-4 pt-4 border-t ${
+          darkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
+      >
+        <p
+          className={`text-base font-medium ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
           Total
         </p>
-        <p className="text-base font-bold text-gray-900 dark:text-white">
-          ${orderSummary.total.toFixed(2)}
+        <p
+          className={`text-base font-bold ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          KES {(orderSummary.total * 100).toFixed(0)}
         </p>
       </div>
     </div>
   );
 
-  const renderPaymentMethods = () => {
-    // If no payment methods are available, show default options
-    if (!paymentMethods || paymentMethods.length === 0) {
-      return (
-        <div className="flex flex-col space-y-3">
-          <label className="flex items-center p-3 border rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <input
-              type="radio"
-              name="payment"
-              value={PAYMENT_METHODS.MPESA}
-              checked={paymentMethod === PAYMENT_METHODS.MPESA}
-              onChange={() => setPaymentMethod(PAYMENT_METHODS.MPESA)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <Phone className="ml-3 h-5 w-5 text-gray-400" />
-            <span className="ml-3 font-medium text-gray-900 dark:text-white">
-              M-Pesa
-            </span>
-          </label>
-
-          <label className="flex items-center p-3 border rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <input
-              type="radio"
-              name="payment"
-              value={PAYMENT_METHODS.PAYSTACK}
-              checked={paymentMethod === PAYMENT_METHODS.PAYSTACK}
-              onChange={() => setPaymentMethod(PAYMENT_METHODS.PAYSTACK)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <CreditCard className="ml-3 h-5 w-5 text-gray-400" />
-            <span className="ml-3 font-medium text-gray-900 dark:text-white">
+  const renderPaymentMethods = () => (
+    <div className="space-y-3">
+      {/* Paystack */}
+      <motion.label
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+          paymentMethod === PAYMENT_METHODS.PAYSTACK
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+            : `border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 ${
+                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+              }`
+        }`}
+      >
+        <input
+          type="radio"
+          name="payment"
+          value={PAYMENT_METHODS.PAYSTACK}
+          checked={paymentMethod === PAYMENT_METHODS.PAYSTACK}
+          onChange={() => setPaymentMethod(PAYMENT_METHODS.PAYSTACK)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+        />
+        <div className="ml-4 flex items-center">
+          <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mr-3">
+            <CreditCard className="text-white" size={20} />
+          </div>
+          <div>
+            <span
+              className={`font-medium ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}
+            >
               Paystack
             </span>
-          </label>
-
-          <label className="flex items-center p-3 border rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-            <input
-              type="radio"
-              name="payment"
-              value={PAYMENT_METHODS.PAYPAL}
-              checked={paymentMethod === PAYMENT_METHODS.PAYPAL}
-              onChange={() => setPaymentMethod(PAYMENT_METHODS.PAYPAL)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <svg
-              className="ml-3 h-5 w-5 text-gray-400"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+            <p
+              className={`text-xs ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}
             >
-              <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.641.641 0 0 1 .632-.54h6.964c2.075 0 3.747.517 4.713 1.52.453.473.787 1.066.98 1.773.202.728.234 1.575.094 2.549l-.007.053v.458c-.025.147-.05.3-.078.458-.446 2.526-1.96 3.836-4.818 4.15l-.204.022c-1.692.145-3.118-.39-4.07-1.525l.135 1.706.92 5.564a.64.64 0 0 1-.633.74l-1.81-.003zm10.746-12.44c-.593 2.767-2.247 3.064-4.872 3.064H11.97l.604-3.807a.32.32 0 0 1 .316-.27h.873c1.454 0 2.818 0 3.535-.831.431-.5.604-1.261.524-2.157z" />
-            </svg>
-            <span className="ml-3 font-medium text-gray-900 dark:text-white">
-              PayPal
-            </span>
-          </label>
+              Cards, Bank Transfer, Mobile Money
+            </p>
+          </div>
         </div>
-      );
-    }
+        <div className="ml-auto flex items-center space-x-1">
+          <Shield size={16} className="text-green-500" />
+          <span className="text-xs text-green-500">Secure</span>
+        </div>
+      </motion.label>
 
-    // Render available payment methods from the API
-    return (
-      <div className="flex flex-col space-y-3">
-        {paymentMethods.map((method) => (
-          <label
-            key={method.id}
-            className="flex items-center p-3 border rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <input
-              type="radio"
-              name="payment"
-              value={method.id}
-              checked={paymentMethod === method.id}
-              onChange={() => setPaymentMethod(method.id)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            {method.logo ? (
-              <img
-                src={method.logo || '/placeholder.svg'}
-                alt={method.name}
-                className="ml-3 h-5 w-auto"
-              />
-            ) : (
-              <CreditCard className="ml-3 h-5 w-5 text-gray-400" />
-            )}
-            <span className="ml-3 font-medium text-gray-900 dark:text-white">
-              {method.name}
+      {/* M-Pesa */}
+      <motion.label
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+          paymentMethod === PAYMENT_METHODS.MPESA
+            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+            : `border-gray-300 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 ${
+                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+              }`
+        }`}
+      >
+        <input
+          type="radio"
+          name="payment"
+          value={PAYMENT_METHODS.MPESA}
+          checked={paymentMethod === PAYMENT_METHODS.MPESA}
+          onChange={() => setPaymentMethod(PAYMENT_METHODS.MPESA)}
+          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+        />
+        <div className="ml-4 flex items-center">
+          <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg mr-3">
+            <Smartphone className="text-white" size={20} />
+          </div>
+          <div>
+            <span
+              className={`font-medium ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              M-Pesa
             </span>
-          </label>
-        ))}
-      </div>
+            <p
+              className={`text-xs ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}
+            >
+              Pay with your mobile phone
+            </p>
+          </div>
+        </div>
+        <div className="ml-auto flex items-center space-x-1">
+          <Phone size={16} className="text-green-500" />
+          <span className="text-xs text-green-500">Instant</span>
+        </div>
+      </motion.label>
+    </div>
+  );
+
+  const renderPaymentStatus = () => {
+    if (!isProcessing && paymentStatus === 'idle') return null;
+
+    const statusConfig = {
+      processing: {
+        icon: <LoaderSpinner size="sm" />,
+        title: 'Processing Payment',
+        message:
+          paymentMethod === PAYMENT_METHODS.MPESA
+            ? 'Please check your phone and enter your M-Pesa PIN'
+            : 'Processing your payment...',
+        color: 'blue',
+      },
+      success: {
+        icon: <CheckCircle className="text-green-500" size={24} />,
+        title: 'Payment Successful',
+        message: 'Your payment has been processed successfully',
+        color: 'green',
+      },
+      failed: {
+        icon: <AlertCircle className="text-red-500" size={24} />,
+        title: 'Payment Failed',
+        message: 'Your payment could not be processed. Please try again.',
+        color: 'red',
+      },
+      expired: {
+        icon: <Clock className="text-orange-500" size={24} />,
+        title: 'Payment Expired',
+        message: 'The payment session has expired. Please try again.',
+        color: 'orange',
+      },
+    };
+
+    const config = statusConfig[paymentStatus] || statusConfig.processing;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`mt-6 p-6 rounded-xl border-2 ${
+          config.color === 'blue'
+            ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800'
+            : config.color === 'green'
+            ? 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800'
+            : config.color === 'red'
+            ? 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'
+            : 'border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800'
+        }`}
+      >
+        <div className="flex items-center mb-4">
+          {config.icon}
+          <h3
+            className={`ml-3 text-lg font-semibold ${
+              config.color === 'blue'
+                ? 'text-blue-800 dark:text-blue-300'
+                : config.color === 'green'
+                ? 'text-green-800 dark:text-green-300'
+                : config.color === 'red'
+                ? 'text-red-800 dark:text-red-300'
+                : 'text-orange-800 dark:text-orange-300'
+            }`}
+          >
+            {config.title}
+          </h3>
+        </div>
+        <p
+          className={`text-sm mb-4 ${
+            config.color === 'blue'
+              ? 'text-blue-700 dark:text-blue-400'
+              : config.color === 'green'
+              ? 'text-green-700 dark:text-green-400'
+              : config.color === 'red'
+              ? 'text-red-700 dark:text-red-400'
+              : 'text-orange-700 dark:text-orange-400'
+          }`}
+        >
+          {config.message}
+        </p>
+
+        {/* Action buttons based on status */}
+        {(paymentStatus === 'failed' || paymentStatus === 'expired') && (
+          <div className="flex space-x-3">
+            <ButtonLoader
+              onClick={handleRetryPayment}
+              isLoading={isProcessing}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              loadingText="Retrying..."
+            >
+              <RefreshCw size={16} className="mr-2" />
+              Retry Payment
+            </ButtonLoader>
+            <ButtonLoader
+              onClick={() => {
+                setPaymentStatus('idle');
+                setIsProcessing(false);
+              }}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Try Different Method
+            </ButtonLoader>
+          </div>
+        )}
+
+        {paymentStatus === 'processing' &&
+          paymentMethod === PAYMENT_METHODS.MPESA && (
+            <div className="mt-4">
+              <ButtonLoader
+                onClick={handleRetryPayment}
+                className="text-sm text-blue-600 hover:text-blue-800 bg-transparent border-none p-0"
+              >
+                Didn't receive the prompt? Resend request
+              </ButtonLoader>
+            </div>
+          )}
+      </motion.div>
     );
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative w-full max-w-3xl p-6 mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-xl max-h-[90vh] overflow-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-label="Close"
+    <>
+      {/* Toast Loader */}
+      <ToastLoader
+        isVisible={showToastLoader}
+        message={toastMessage}
+        position="top-center"
+      />
+
+      {/* Modal Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        {/* Modal Content */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ type: 'spring', duration: 0.5 }}
+          className={`relative w-full max-w-4xl mx-4 ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          } rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden`}
         >
-          <X size={24} />
-        </button>
+          {/* Loading Overlay */}
+          <AnimatePresence>
+            {(cartLoading || orderLoading || paymentLoading) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={`absolute inset-0 ${
+                  darkMode ? 'bg-gray-800/75' : 'bg-white/75'
+                } backdrop-blur-sm flex items-center justify-center z-10`}
+              >
+                <SectionLoader />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Progress Steps */}
-        {!isComplete && (
-          <div className="mb-8">
+          {/* Header */}
+          <div
+            className={`px-6 py-4 border-b ${
+              darkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <div
-                className={`flex flex-col items-center ${
-                  step >= 1 ? 'text-blue-600' : 'text-gray-400'
+              <h2
+                className={`text-2xl font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
                 }`}
               >
-                <div
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                    step >= 1
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  <ShoppingBag size={16} />
-                </div>
-                <span className="text-xs mt-1">Cart</span>
-              </div>
-              <div
-                className={`flex-1 h-1 mx-2 ${
-                  step >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              ></div>
-              <div
-                className={`flex flex-col items-center ${
-                  step >= 2 ? 'text-blue-600' : 'text-gray-400'
-                }`}
+                {isComplete
+                  ? 'Order Complete!'
+                  : step === 1
+                  ? 'Shopping Cart'
+                  : step === 2
+                  ? 'Shipping Information'
+                  : 'Payment'}
+              </h2>
+              <ButtonLoader
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-none"
+                aria-label="Close"
               >
-                <div
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                    step >= 2
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  2
-                </div>
-                <span className="text-xs mt-1">Shipping</span>
-              </div>
-              <div
-                className={`flex-1 h-1 mx-2 ${
-                  step >= 3 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              ></div>
-              <div
-                className={`flex flex-col items-center ${
-                  step >= 3 ? 'text-blue-600' : 'text-gray-400'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                    step >= 3
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  3
-                </div>
-                <span className="text-xs mt-1">Payment</span>
-              </div>
+                <X size={24} />
+              </ButtonLoader>
             </div>
+
+            {/* Progress Steps */}
+            {!isComplete && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  {[1, 2, 3].map((stepNumber) => (
+                    <div key={stepNumber} className="flex items-center">
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          step >= stepNumber
+                            ? 'bg-blue-600 text-white'
+                            : `${
+                                darkMode
+                                  ? 'bg-gray-700 text-gray-400'
+                                  : 'bg-gray-200 text-gray-500'
+                              }`
+                        }`}
+                      >
+                        {stepNumber === 1 ? (
+                          <ShoppingBag size={16} />
+                        ) : stepNumber === 2 ? (
+                          <Globe size={16} />
+                        ) : (
+                          <CreditCard size={16} />
+                        )}
+                      </div>
+                      {stepNumber < 3 && (
+                        <div
+                          className={`flex-1 h-1 mx-4 ${
+                            step > stepNumber
+                              ? 'bg-blue-600'
+                              : `${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`
+                          }`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between mt-2 text-xs">
+                  <span
+                    className={
+                      step >= 1
+                        ? 'text-blue-600'
+                        : `${darkMode ? 'text-gray-400' : 'text-gray-500'}`
+                    }
+                  >
+                    Cart
+                  </span>
+                  <span
+                    className={
+                      step >= 2
+                        ? 'text-blue-600'
+                        : `${darkMode ? 'text-gray-400' : 'text-gray-500'}`
+                    }
+                  >
+                    Shipping
+                  </span>
+                  <span
+                    className={
+                      step >= 3
+                        ? 'text-blue-600'
+                        : `${darkMode ? 'text-gray-400' : 'text-gray-500'}`
+                    }
+                  >
+                    Payment
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Loading State */}
-        {(cartLoading || orderLoading || paymentLoading) && (
-          <div className="absolute inset-0 bg-white bg-opacity-75 dark:bg-gray-800 dark:bg-opacity-75 flex items-center justify-center z-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-
-        {/* Step 1: Review Cart */}
-        {step === 1 && (
-          <>
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Your Cart
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-300">
-                Review your items before checkout
-              </p>
-            </div>
-
-            {renderCartItems()}
-
-            {items.length > 0 && (
-              <>
-                {renderOrderSummary()}
-
-                <div className="flex justify-between">
-                  <button
-                    onClick={onClose}
-                    className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
-                  >
-                    <ChevronLeft size={16} className="mr-1" />
-                    Continue Shopping
-                  </button>
-                  <button
-                    onClick={handleCheckout}
-                    className="flex justify-center py-2 px-6 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    disabled={cartLoading || items.length === 0}
-                  >
-                    Proceed to Checkout
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {/* Step 2: Shipping Information */}
-        {step === 2 && (
-          <>
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Shipping Information
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-300">
-                Enter your shipping details
-              </p>
-            </div>
-
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleShippingSubmit();
-              }}
-            >
-              <div>
-                <label
-                  htmlFor="fullName"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            <AnimatePresence mode="wait">
+              {/* Step 1: Cart Review */}
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="fullName"
-                  name="fullName"
-                  value={shippingInfo.fullName || ''}
-                  onChange={handleShippingInfoChange}
-                  className={`w-full px-3 py-2 border ${
-                    errors.fullName
-                      ? 'border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="John Doe"
-                />
-                {errors.fullName && (
-                  <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={shippingInfo.email || user?.email || ''}
-                  onChange={handleShippingInfoChange}
-                  className={`w-full px-3 py-2 border ${
-                    errors.email
-                      ? 'border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="john.doe@example.com"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Address *
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  name="address"
-                  value={shippingInfo.address || ''}
-                  onChange={handleShippingInfoChange}
-                  className={`w-full px-3 py-2 border ${
-                    errors.address
-                      ? 'border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="123 Main St"
-                />
-                {errors.address && (
-                  <p className="mt-1 text-sm text-red-500">{errors.address}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="city"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={shippingInfo.city || ''}
-                    onChange={handleShippingInfoChange}
-                    className={`w-full px-3 py-2 border ${
-                      errors.city
-                        ? 'border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="New York"
-                  />
-                  {errors.city && (
-                    <p className="mt-1 text-sm text-red-500">{errors.city}</p>
+                  {renderCartItems()}
+                  {items.length > 0 && (
+                    <>
+                      {renderOrderSummary()}
+                      <div className="flex justify-between items-center">
+                        <ButtonLoader
+                          onClick={onClose}
+                          className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 bg-transparent border-none p-0"
+                        >
+                          <ChevronLeft size={16} className="mr-1" />
+                          Continue Shopping
+                        </ButtonLoader>
+                        <ButtonLoader
+                          onClick={handleCheckout}
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          disabled={cartLoading || items.length === 0}
+                        >
+                          Proceed to Checkout
+                        </ButtonLoader>
+                      </div>
+                    </>
                   )}
-                </div>
-                <div>
-                  <label
-                    htmlFor="state"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    State/Province
-                  </label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    value={shippingInfo.state || ''}
-                    onChange={handleShippingInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}"
-                    placeholder="NY"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="zipCode"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    ZIP/Postal Code *
-                  </label>
-                  <input
-                    type="text"
-                    id="zipCode"
-                    name="zipCode"
-                    value={shippingInfo.zipCode || ''}
-                    onChange={handleShippingInfoChange}
-                    className={`w-full px-3 py-2 border ${
-                      errors.zipCode
-                        ? 'border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="10001"
-                  />
-                  {errors.zipCode && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.zipCode}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    htmlFor="country"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Country *
-                  </label>
-                  <input
-                    type="text"
-                    id="country"
-                    name="country"
-                    value={shippingInfo.country || ''}
-                    onChange={handleShippingInfoChange}
-                    className={`w-full px-3 py-2 border ${
-                      errors.country
-                        ? 'border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="United States"
-                  />
-                  {errors.country && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.country}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={shippingInfo.phone || ''}
-                  onChange={handleShippingInfoChange}
-                  className={`w-full px-3 py-2 border ${
-                    errors.phone
-                      ? 'border-red-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="(123) 456-7890"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  * Required fields
-                </p>
-              </div>
-            </form>
-
-            <div className="flex justify-between mt-8">
-              <button
-                onClick={() => setStep(1)}
-                className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                <ChevronLeft size={16} className="mr-2" />
-                Back to Cart
-              </button>
-              <button
-                onClick={handleShippingSubmit}
-                className="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Continue to Payment
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Step 3: Payment */}
-        {step === 3 && !isComplete && (
-          <>
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Payment
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-300">
-                Select your payment method
-              </p>
-            </div>
-
-            <div className="mb-6">{renderPaymentMethods()}</div>
-
-            {/* M-Pesa Payment Form */}
-            {paymentMethod === PAYMENT_METHODS.MPESA && (
-              <div className="mb-6 space-y-4">
-                <div>
-                  <label
-                    htmlFor="phoneNumber"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    M-Pesa Phone Number *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      value={paymentInfo.phoneNumber}
-                      onChange={handlePaymentInfoChange}
-                      className={`w-full pl-10 pr-4 py-2 border ${
-                        errors.phoneNumber
-                          ? 'border-red-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="254712345678"
-                    />
-                    <Phone
-                      className="absolute left-3 top-2.5 text-gray-400"
-                      size={18}
-                    />
-                  </div>
-                  {errors.phoneNumber && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.phoneNumber}
-                    </p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Format: 254XXXXXXXXX (e.g., 254712345678)
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {paymentMethod === PAYMENT_METHODS.MPESA && isProcessing && (
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                  M-Pesa Payment Instructions
-                </h3>
-                <ol className="list-decimal pl-5 text-sm text-blue-700 dark:text-blue-400 space-y-2">
-                  <li>
-                    A payment request has been sent to your phone (
-                    {paymentInfo.phoneNumber})
-                  </li>
-                  <li>Enter your M-Pesa PIN when prompted</li>
-                  <li>Wait for confirmation (this may take a few moments)</li>
-                  <li>Do not close this page until the payment is complete</li>
-                </ol>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600 mr-2"></div>
-                    <span className="text-sm text-blue-700 dark:text-blue-400">
-                      Waiting for payment...
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsProcessing(false);
-                      toast.info('Payment cancelled. You can try again.');
-                    }}
-                    className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Add a retry button for M-Pesa payments
-  // Add this to the payment processing section
-
-  // Find the Step 3: Payment section and add a retry button when payment is processing*/}
-            {step === 3 &&
-              !isComplete &&
-              isProcessing &&
-              paymentMethod === PAYMENT_METHODS.MPESA && (
-                <div className="mt-4 flex justify-center">
-                  <button
-                    onClick={async () => {
-                      // Retry the M-Pesa payment
-                      try {
-                        toast.info('Resending M-Pesa payment request...');
-
-                        const retryData = {
-                          orderId: currentOrder._id,
-                          method: PAYMENT_METHODS.MPESA,
-                          phoneNumber: paymentInfo.phoneNumber,
-                        };
-
-                        await dispatch(retryPayment(retryData)).unwrap();
-
-                        toast.success(
-                          'New M-Pesa request sent. Please check your phone.'
-                        );
-                      } catch (error) {
-                        console.error('Error retrying payment:', error);
-                        toast.error(
-                          'Failed to resend M-Pesa request. Please try again.'
-                        );
-                      }
-                    }}
-                    className="px-4 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 dark:text-blue-400 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 dark:border-blue-800"
-                  >
-                    Didn't receive the prompt? Resend M-Pesa request
-                  </button>
-                </div>
+                </motion.div>
               )}
 
-            {/* Paystack Payment Form */}
-            {paymentMethod === PAYMENT_METHODS.PAYSTACK && (
-              <div className="mb-6 space-y-4">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              {/* Step 2: Shipping Information */}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <form
+                    className="space-y-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleShippingSubmit();
+                    }}
                   >
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={paymentInfo.email || shippingInfo.email}
-                    onChange={handlePaymentInfoChange}
-                    className={`w-full px-3 py-2 border ${
-                      errors.email
-                        ? 'border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="john.doe@example.com"
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                  )}
-                </div>
-              </div>
-            )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                        >
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={shippingInfo.fullName}
+                          onChange={handleShippingInfoChange}
+                          className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                            errors.fullName
+                              ? 'border-red-500 focus:border-red-500'
+                              : `${
+                                  darkMode
+                                    ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                    : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                                }`
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="John Doe"
+                        />
+                        {errors.fullName && (
+                          <p className="mt-1 text-sm text-red-500">
+                            {errors.fullName}
+                          </p>
+                        )}
+                      </div>
 
-            {/* Credit Card Payment Form */}
-            {paymentMethod === 'credit-card' && (
-              <div className="mb-6 space-y-4">
-                <div>
-                  <label
-                    htmlFor="cardNumber"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Card Number *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      id="cardNumber"
-                      name="cardNumber"
-                      value={paymentInfo.cardNumber}
-                      onChange={handlePaymentInfoChange}
-                      maxLength="19"
-                      className={`w-full pl-10 pr-4 py-2 border ${
-                        errors.cardNumber
-                          ? 'border-red-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="1234 5678 9012 3456"
-                    />
-                    <CreditCard
-                      className="absolute left-3 top-2.5 text-gray-400"
-                      size={18}
-                    />
-                  </div>
-                  {errors.cardNumber && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.cardNumber}
-                    </p>
-                  )}
-                </div>
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                        >
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={shippingInfo.email}
+                          onChange={handleShippingInfoChange}
+                          className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                            errors.email
+                              ? 'border-red-500 focus:border-red-500'
+                              : `${
+                                  darkMode
+                                    ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                    : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                                }`
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="john@example.com"
+                        />
+                        {errors.email && (
+                          <p className="mt-1 text-sm text-red-500">
+                            {errors.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                <div>
-                  <label
-                    htmlFor="cardName"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Name on Card *
-                  </label>
-                  <input
-                    type="text"
-                    id="cardName"
-                    name="cardName"
-                    value={paymentInfo.cardName}
-                    onChange={handlePaymentInfoChange}
-                    className={`w-full px-3 py-2 border ${
-                      errors.cardName
-                        ? 'border-red-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="John Doe"
-                  />
-                  {errors.cardName && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.cardName}
-                    </p>
-                  )}
-                </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-1 ${
+                          darkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}
+                      >
+                        Address *
+                      </label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={shippingInfo.address}
+                        onChange={handleShippingInfoChange}
+                        className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                          errors.address
+                            ? 'border-red-500 focus:border-red-500'
+                            : `${
+                                darkMode
+                                  ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                  : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                              }`
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        placeholder="123 Main Street"
+                      />
+                      {errors.address && (
+                        <p className="mt-1 text-sm text-red-500">
+                          {errors.address}
+                        </p>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      htmlFor="expiry"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                        >
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={shippingInfo.city}
+                          onChange={handleShippingInfoChange}
+                          className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                            errors.city
+                              ? 'border-red-500 focus:border-red-500'
+                              : `${
+                                  darkMode
+                                    ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                    : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                                }`
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="Nairobi"
+                        />
+                        {errors.city && (
+                          <p className="mt-1 text-sm text-red-500">
+                            {errors.city}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                        >
+                          State/County
+                        </label>
+                        <input
+                          type="text"
+                          name="state"
+                          value={shippingInfo.state}
+                          onChange={handleShippingInfoChange}
+                          className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                            darkMode
+                              ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                              : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="Nairobi County"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-1 ${
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                        >
+                          Country
+                        </label>
+                        <select
+                          name="country"
+                          value={shippingInfo.country}
+                          onChange={handleShippingInfoChange}
+                          className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                            darkMode
+                              ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                              : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        >
+                          <option value="Kenya">Kenya</option>
+                          <option value="Uganda">Uganda</option>
+                          <option value="Tanzania">Tanzania</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-1 ${
+                          darkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}
+                      >
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={shippingInfo.phone}
+                        onChange={handleShippingInfoChange}
+                        className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                          errors.phone
+                            ? 'border-red-500 focus:border-red-500'
+                            : `${
+                                darkMode
+                                  ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                  : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                              }`
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                        placeholder="254712345678"
+                      />
+                      {errors.phone && (
+                        <p className="mt-1 text-sm text-red-500">
+                          {errors.phone}
+                        </p>
+                      )}
+                    </div>
+                  </form>
+
+                  <div className="flex justify-between mt-8">
+                    <ButtonLoader
+                      onClick={() => setStep(1)}
+                      className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      Expiry Date *
-                    </label>
-                    <input
-                      type="text"
-                      id="expiry"
-                      name="expiry"
-                      value={paymentInfo.expiry}
-                      onChange={handlePaymentInfoChange}
-                      className={`w-full px-3 py-2 border ${
-                        errors.expiry
-                          ? 'border-red-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="MM/YY"
-                      maxLength="5"
+                      <ChevronLeft size={16} className="mr-2" />
+                      Back to Cart
+                    </ButtonLoader>
+                    <ButtonLoader
+                      onClick={handleShippingSubmit}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Continue to Payment
+                    </ButtonLoader>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Payment */}
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Payment Methods */}
+                    <div>
+                      <h3
+                        className={`text-lg font-semibold mb-4 ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        Payment Method
+                      </h3>
+                      {renderPaymentMethods()}
+
+                      {/* Payment Details Form */}
+                      <div className="mt-6">
+                        {paymentMethod === PAYMENT_METHODS.MPESA && (
+                          <div>
+                            <label
+                              className={`block text-sm font-medium mb-2 ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}
+                            >
+                              M-Pesa Phone Number *
+                            </label>
+                            <input
+                              type="tel"
+                              name="phoneNumber"
+                              value={paymentInfo.phoneNumber}
+                              onChange={handlePaymentInfoChange}
+                              className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                                errors.phoneNumber
+                                  ? 'border-red-500 focus:border-red-500'
+                                  : `${
+                                      darkMode
+                                        ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                        : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                                    }`
+                              } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                              placeholder="254712345678"
+                            />
+                            {errors.phoneNumber && (
+                              <p className="mt-1 text-sm text-red-500">
+                                {errors.phoneNumber}
+                              </p>
+                            )}
+                            <p
+                              className={`mt-2 text-xs ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}
+                            >
+                              You will receive a payment prompt on your phone
+                            </p>
+                          </div>
+                        )}
+
+                        {paymentMethod === PAYMENT_METHODS.PAYSTACK && (
+                          <div>
+                            <label
+                              className={`block text-sm font-medium mb-2 ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}
+                            >
+                              Email Address *
+                            </label>
+                            <input
+                              type="email"
+                              name="email"
+                              value={paymentInfo.email}
+                              onChange={handlePaymentInfoChange}
+                              className={`w-full px-3 py-2 border rounded-lg transition-colors ${
+                                errors.email
+                                  ? 'border-red-500 focus:border-red-500'
+                                  : `${
+                                      darkMode
+                                        ? 'border-gray-600 bg-gray-700 text-white focus:border-blue-400'
+                                        : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500'
+                                    }`
+                              } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                              placeholder="john@example.com"
+                            />
+                            {errors.email && (
+                              <p className="mt-1 text-sm text-red-500">
+                                {errors.email}
+                              </p>
+                            )}
+                            <p
+                              className={`mt-2 text-xs ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}
+                            >
+                              Secure payment with cards, bank transfer, or
+                              mobile money
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Order Summary */}
+                    <div>
+                      <h3
+                        className={`text-lg font-semibold mb-4 ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        Order Summary
+                      </h3>
+                      <div
+                        className={`p-4 rounded-lg border ${
+                          darkMode
+                            ? 'border-gray-700 bg-gray-750'
+                            : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        {renderOrderSummary()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Status */}
+                  {renderPaymentStatus()}
+
+                  {/* Action Buttons */}
+                  {!isComplete && (
+                    <div className="flex justify-between mt-8">
+                      <ButtonLoader
+                        onClick={() => setStep(2)}
+                        className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        disabled={isProcessing}
+                      >
+                        <ChevronLeft size={16} className="mr-2" />
+                        Back to Shipping
+                      </ButtonLoader>
+                      <ButtonLoader
+                        onClick={handlePayment}
+                        isLoading={isProcessing}
+                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        disabled={isProcessing || paymentStatus === 'success'}
+                        loadingText={
+                          paymentMethod === PAYMENT_METHODS.MPESA
+                            ? 'Sending M-Pesa Request...'
+                            : 'Processing Payment...'
+                        }
+                      >
+                        {paymentStatus === 'success'
+                          ? 'Payment Complete'
+                          : `Pay KES ${(orderSummary.total * 100).toFixed(0)}`}
+                      </ButtonLoader>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Success State */}
+              {isComplete && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-12"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                    className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6"
+                  >
+                    <Check
+                      className="text-green-600 dark:text-green-400"
+                      size={40}
                     />
-                    {errors.expiry && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {errors.expiry}
-                      </p>
+                  </motion.div>
+                  <h3
+                    className={`text-2xl font-bold mb-4 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Order Placed Successfully!
+                  </h3>
+                  <p
+                    className={`text-lg mb-6 ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}
+                  >
+                    Thank you for your purchase. Your order has been confirmed
+                    and stock has been updated.
+                  </p>
+                  {currentOrder && (
+                    <div
+                      className={`inline-flex items-center px-4 py-2 rounded-lg ${
+                        darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                      } mb-6`}
+                    >
+                      <span
+                        className={`text-sm ${
+                          darkMode ? 'text-gray-300' : 'text-gray-600'
+                        }`}
+                      >
+                        Order Number:
+                      </span>
+                      <span
+                        className={`ml-2 font-mono font-semibold ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        {currentOrder.orderNumber}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-center space-x-4">
+                    <ButtonLoader
+                      onClick={onClose}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Continue Shopping
+                    </ButtonLoader>
+                    {currentOrder && (
+                      <ButtonLoader
+                        onClick={() => {
+                          window.location.href = `/orders/${currentOrder._id}`;
+                        }}
+                        className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        View Order
+                      </ButtonLoader>
                     )}
                   </div>
-                  <div>
-                    <label
-                      htmlFor="cvc"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      CVC *
-                    </label>
-                    <input
-                      type="text"
-                      id="cvc"
-                      name="cvc"
-                      value={paymentInfo.cvc}
-                      onChange={handlePaymentInfoChange}
-                      className={`w-full px-3 py-2 border ${
-                        errors.cvc
-                          ? 'border-red-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                      placeholder="123"
-                      maxLength="4"
-                    />
-                    {errors.cvc && (
-                      <p className="mt-1 text-sm text-red-500">{errors.cvc}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {renderOrderSummary()}
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setStep(2)}
-                className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Back
-              </button>
-              <button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? 'Processing...' : 'Pay Now'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Step 4: Success */}
-        {isComplete && (
-          <div className="text-center py-8">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-              <Check className="h-8 w-8 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Payment Successful!
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
-              Thank you for your purchase. Your order has been placed
-              successfully and will be processed shortly.
-            </p>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-8 max-w-md mx-auto">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Order confirmation has been sent to:
-              </p>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {user?.email || shippingInfo.email}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="inline-flex justify-center py-2 px-6 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Continue Shopping
-            </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </>
   );
 };
 

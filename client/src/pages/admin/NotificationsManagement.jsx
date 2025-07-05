@@ -14,7 +14,7 @@ import {
   User,
   Mail,
   BarChart2,
-  Filter
+  Filter,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageHeader from '../../components/common/PageHeader';
@@ -40,27 +40,29 @@ import {
   createAdminNotification,
   deleteAdminNotification,
   deleteAllAdminNotifications,
-  fetchNotificationStats
+  fetchNotificationStats,
 } from '../../redux/slices/adminNotificationSlice';
+import { Link } from 'react-router-dom';
 
 const NotificationsManagement = () => {
   const dispatch = useDispatch();
   const { notifications, stats, pagination, loading, error } = useSelector(
-    (state) => state.adminNotifications || {
-      notifications: [],
-      stats: {
-        totalCount: 0,
-        typeStats: []
-      },
-      pagination: {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0
-      },
-      loading: false,
-      error: null
-    }
+    (state) =>
+      state.adminNotifications || {
+        notifications: [],
+        stats: {
+          totalCount: 0,
+          typeStats: [],
+        },
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
+        loading: false,
+        error: null,
+      }
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -68,7 +70,7 @@ const NotificationsManagement = () => {
     type: '',
     priority: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
   });
   const [newNotification, setNewNotification] = useState({
     title: '',
@@ -76,7 +78,7 @@ const NotificationsManagement = () => {
     type: 'system',
     priority: 'medium',
     link: '',
-    expiresAt: ''
+    expiresAt: '',
   });
 
   useEffect(() => {
@@ -84,11 +86,13 @@ const NotificationsManagement = () => {
   }, [filters]);
 
   const fetchData = () => {
-    dispatch(fetchAdminNotifications({
-      page: pagination.page,
-      limit: pagination.limit,
-      ...filters
-    }));
+    dispatch(
+      fetchAdminNotifications({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters,
+      })
+    );
     dispatch(fetchNotificationStats());
   };
 
@@ -102,7 +106,7 @@ const NotificationsManagement = () => {
         type: 'system',
         priority: 'medium',
         link: '',
-        expiresAt: ''
+        expiresAt: '',
       });
       fetchData();
     } catch (error) {
@@ -140,7 +144,7 @@ const NotificationsManagement = () => {
       type: '',
       priority: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
     });
     setIsFilterDialogOpen(false);
     fetchData();
@@ -171,10 +175,14 @@ const NotificationsManagement = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -184,7 +192,7 @@ const NotificationsManagement = () => {
         title="Notifications Management"
         breadcrumbs={[
           { name: 'Dashboard', path: '/admin' },
-          { name: 'Notifications', path: '/admin/notifications' }
+          { name: 'Notifications', path: '/admin/notifications' },
         ]}
       />
 
@@ -199,23 +207,26 @@ const NotificationsManagement = () => {
             </div>
           </div>
         </div>
-        {Array.isArray(stats?.typeStats) && stats.typeStats.map((stat) => (
-          <div key={stat._id} className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              {getNotificationIcon(stat._id)}
-              <div className="ml-2">
-                <p className="text-sm text-gray-500">{stat._id}</p>
-                <p className="text-2xl font-semibold">{stat.count}</p>
+        {Array.isArray(stats?.typeStats) &&
+          stats.typeStats.map((stat) => (
+            <div key={stat._id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center">
+                {getNotificationIcon(stat._id)}
+                <div className="ml-2">
+                  <p className="text-sm text-gray-500">{stat._id}</p>
+                  <p className="text-2xl font-semibold">{stat.count}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Notifications
+            </h2>
             <div className="flex space-x-2">
               <Button
                 variant="outline"
@@ -231,10 +242,15 @@ const NotificationsManagement = () => {
                 onClick={fetchData}
                 disabled={loading}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </Button>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+              >
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
@@ -252,10 +268,12 @@ const NotificationsManagement = () => {
                       </label>
                       <Input
                         value={newNotification.title}
-                        onChange={(e) => setNewNotification({
-                          ...newNotification,
-                          title: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setNewNotification({
+                            ...newNotification,
+                            title: e.target.value,
+                          })
+                        }
                         placeholder="Notification title"
                       />
                     </div>
@@ -265,10 +283,12 @@ const NotificationsManagement = () => {
                       </label>
                       <Textarea
                         value={newNotification.message}
-                        onChange={(e) => setNewNotification({
-                          ...newNotification,
-                          message: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setNewNotification({
+                            ...newNotification,
+                            message: e.target.value,
+                          })
+                        }
                         placeholder="Notification message"
                         rows={4}
                       />
@@ -279,10 +299,12 @@ const NotificationsManagement = () => {
                       </label>
                       <Select
                         value={newNotification.type}
-                        onValueChange={(value) => setNewNotification({
-                          ...newNotification,
-                          type: value
-                        })}
+                        onValueChange={(value) =>
+                          setNewNotification({
+                            ...newNotification,
+                            type: value,
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -305,10 +327,12 @@ const NotificationsManagement = () => {
                       </label>
                       <Select
                         value={newNotification.priority}
-                        onValueChange={(value) => setNewNotification({
-                          ...newNotification,
-                          priority: value
-                        })}
+                        onValueChange={(value) =>
+                          setNewNotification({
+                            ...newNotification,
+                            priority: value,
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
@@ -326,10 +350,12 @@ const NotificationsManagement = () => {
                       </label>
                       <Input
                         value={newNotification.link}
-                        onChange={(e) => setNewNotification({
-                          ...newNotification,
-                          link: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setNewNotification({
+                            ...newNotification,
+                            link: e.target.value,
+                          })
+                        }
                         placeholder="https://example.com"
                       />
                     </div>
@@ -340,10 +366,12 @@ const NotificationsManagement = () => {
                       <Input
                         type="datetime-local"
                         value={newNotification.expiresAt}
-                        onChange={(e) => setNewNotification({
-                          ...newNotification,
-                          expiresAt: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setNewNotification({
+                            ...newNotification,
+                            expiresAt: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="flex justify-end space-x-2 pt-4">
@@ -353,7 +381,10 @@ const NotificationsManagement = () => {
                       >
                         Cancel
                       </Button>
-                      <Button onClick={handleCreateNotification} disabled={loading}>
+                      <Button
+                        onClick={handleCreateNotification}
+                        disabled={loading}
+                      >
                         Create
                       </Button>
                     </div>
@@ -386,10 +417,12 @@ const NotificationsManagement = () => {
                 </label>
                 <Select
                   value={filters.type}
-                  onValueChange={(value) => setFilters({
-                    ...filters,
-                    type: value
-                  })}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      type: value,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All types" />
@@ -413,10 +446,12 @@ const NotificationsManagement = () => {
                 </label>
                 <Select
                   value={filters.priority}
-                  onValueChange={(value) => setFilters({
-                    ...filters,
-                    priority: value
-                  })}
+                  onValueChange={(value) =>
+                    setFilters({
+                      ...filters,
+                      priority: value,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All priorities" />
@@ -436,10 +471,12 @@ const NotificationsManagement = () => {
                 <Input
                   type="date"
                   value={filters.startDate}
-                  onChange={(e) => setFilters({
-                    ...filters,
-                    startDate: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      startDate: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div>
@@ -449,32 +486,25 @@ const NotificationsManagement = () => {
                 <Input
                   type="date"
                   value={filters.endDate}
-                  onChange={(e) => setFilters({
-                    ...filters,
-                    endDate: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      endDate: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleClearFilters}
-                >
+                <Button variant="outline" onClick={handleClearFilters}>
                   Clear Filters
                 </Button>
-                <Button onClick={handleApplyFilters}>
-                  Apply Filters
-                </Button>
+                <Button onClick={handleApplyFilters}>Apply Filters</Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {error && (
-          <div className="p-4 bg-red-50 text-red-700">
-            {error}
-          </div>
-        )}
+        {error && <div className="p-4 bg-red-50 text-red-700">{error}</div>}
 
         {loading ? (
           <div className="p-8 text-center">
@@ -489,10 +519,7 @@ const NotificationsManagement = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {notifications.map((notification) => (
-              <div
-                key={notification._id}
-                className="p-4 hover:bg-gray-50"
-              >
+              <div key={notification._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mr-4">
                     {getNotificationIcon(notification.type)}
@@ -503,19 +530,23 @@ const NotificationsManagement = () => {
                         {notification.title}
                       </p>
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          notification.priority === 'high'
-                            ? 'bg-red-100 text-red-800'
-                            : notification.priority === 'medium'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            notification.priority === 'high'
+                              ? 'bg-red-100 text-red-800'
+                              : notification.priority === 'medium'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
                           {notification.priority}
                         </span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteNotification(notification._id)}
+                          onClick={() =>
+                            handleDeleteNotification(notification._id)
+                          }
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -526,21 +557,32 @@ const NotificationsManagement = () => {
                     </p>
                     <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                       <span>Type: {notification.type}</span>
-                      <span>Created: {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                      <span>
+                        Created:{' '}
+                        {formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </span>
                       {notification.expiresAt && (
-                        <span>Expires: {formatDistanceToNow(new Date(notification.expiresAt), { addSuffix: true })}</span>
+                        <span>
+                          Expires:{' '}
+                          {formatDistanceToNow(
+                            new Date(notification.expiresAt),
+                            { addSuffix: true }
+                          )}
+                        </span>
                       )}
                       <span>Read by: {notification.readCount || 0} users</span>
                     </div>
                     {notification.link && (
-                      <a
-                        href={notification.link}
+                      <Link
+                        to={notification.link}
                         className="mt-2 text-sm text-blue-600 hover:text-blue-800 block"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         View link
-                      </a>
+                      </Link>
                     )}
                   </div>
                 </div>
@@ -560,7 +602,9 @@ const NotificationsManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setFilters({ ...filters, page: pagination.page - 1 })}
+                  onClick={() =>
+                    setFilters({ ...filters, page: pagination.page - 1 })
+                  }
                   disabled={pagination.page === 1}
                 >
                   Previous
@@ -568,7 +612,9 @@ const NotificationsManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setFilters({ ...filters, page: pagination.page + 1 })}
+                  onClick={() =>
+                    setFilters({ ...filters, page: pagination.page + 1 })
+                  }
                   disabled={pagination.page === pagination.pages}
                 >
                   Next
@@ -582,4 +628,4 @@ const NotificationsManagement = () => {
   );
 };
 
-export default NotificationsManagement; 
+export default NotificationsManagement;

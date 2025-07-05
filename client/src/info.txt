@@ -1,0 +1,551 @@
+The Products: come from the backend in this format:"
+ {
+    "products": [
+        {
+            "_id": "680d28b8b6441eea52153870",
+            "name": "Chess TItans",
+            "description": "Chess Titans is a classic 3D computer chess game that offers beautifully rendered graphics, intuitive gameplay, and adjustable difficulty levels. Designed for both beginners and experienced players, it provides a realistic and immersive chess experience, making it a timeless favorite among strategy game lovers",
+            "price": 500,
+            "salePrice": 499,
+            "images": [
+                "https://res.cloudinary.com/victorkib/image/upload/v1745692881/cybercafe/products/levvxhtmttnnyqxgufkt.jpg",
+                "https://res.cloudinary.com/victorkib/image/upload/v1745692905/cybercafe/products/eolcynxovkq9yyzyjrwv.jpg"
+            ],
+            "category": "680d2640b6441eea52153738",
+            "stock": 20,
+            "featured": false,
+            "isNewProduct": true,
+            "onSale": true,
+            "rating": 0,
+            "numReviews": 0,
+            "specifications": {
+                "Category": "Board Game / Strategy",
+                "Modes": "Single Player, Two Player (local)"
+            },
+            "tags": [
+                "Chess Titans, Chess, Strategy Game"
+            ],
+            "status": "active",
+            "sku": "CHE-680-1150",
+            "reviews": [],
+            "createdAt": "2025-04-26T18:40:56.629Z",
+            "updatedAt": "2025-04-26T18:40:56.629Z",
+            "__v": 0,
+            "discountPercentage": 0,
+            "id": "680d28b8b6441eea52153870"
+        },
+        {
+            "_id": "680d23b3b6441eea52153560",
+            "name": "Samsung",
+            "description": "Samsung is a leading global technology company known for innovative smartphones, electronics, and home appliances, offering a wide range of high-quality products trusted by millions worldwide.",
+            "price": 400,
+            "salePrice": 3850,
+            "images": [
+                "https://res.cloudinary.com/victorkib/image/upload/v1745691580/cybercafe/products/rzrbqmxz3vg1z67wgwzn.jpg",
+                "https://res.cloudinary.com/victorkib/image/upload/v1745691608/cybercafe/products/fa7ffehdokybz0lux152.jpg"
+            ],
+            "category": "68054f0132d0a79debec5e17",
+            "stock": 20,
+            "featured": true,
+            "isNewProduct": true,
+            "onSale": true,
+            "rating": 0,
+            "numReviews": 0,
+            "specifications": {
+                "Brand": "Samsung",
+                "Popular Products": "Galaxy Series (S24, Fold, Flip)"
+            },
+            "tags": [
+                "Samsung, Galaxy, Smartphone, Electronics"
+            ],
+            "status": "active",
+            "sku": "SAM-680-9346",
+            "reviews": [],
+            "createdAt": "2025-04-26T18:19:31.449Z",
+            "updatedAt": "2025-04-26T18:19:31.449Z",
+            "__v": 0,
+            "discountPercentage": -862,
+            "id": "680d23b3b6441eea52153560"
+        },
+        {
+            "_id": "680542a232d0a79debec5b5c",
+            "name": "MacBook Pro",
+            "description": "Unleash professional-grade performance with the Apple MacBook Pro, designed for creators, developers, and power users. With its cutting-edge Apple silicon chip, stunning Retina display, and all-day battery life, the MacBook Pro delivers both speed and style. Whether you're editing 4K video, designing in 3D, or multitasking across heavy apps, the MacBook Pro handles it all with ease. Sleek, portable, and reliable — it's a workstation that moves with you",
+            "price": 400,
+            "salePrice": 399,
+            "images": [
+                "https://res.cloudinary.com/victorkib/image/upload/v1745175193/cybercafe/products/xyypzuckvjyvfl6wubta.jpg",
+                "https://res.cloudinary.com/victorkib/image/upload/v1745175224/cybercafe/products/qpeqco25ei6rn2xqrnne.jpg"
+            ],
+            "category": "68050455effda7cce4d3f319",
+            "stock": 10,
+            "featured": true,
+            "isNewProduct": true,
+            "onSale": true,
+            "rating": 0,
+            "numReviews": 0,
+            "specifications": {
+                "Brand": "Apple",
+                "Model": "MacBook Pro 14\" (2023)"
+            },
+            "tags": [
+                "macbook, apple, laptop"
+            ],
+            "status": "active",
+            "sku": "MAC-680-0036",
+            "reviews": [],
+            "createdAt": "2025-04-20T18:53:22.520Z",
+            "updatedAt": "2025-04-20T18:53:22.520Z",
+            "__v": 0,
+            "discountPercentage": 0,
+            "id": "680542a232d0a79debec5b5c"
+        },
+        {
+            "_id": "6805203f32d0a79debec5751",
+            "name": "Sony speaker",
+            "description": "Experience rich, immersive audio with the Sony Portable Bluetooth Speaker—built for both casual listeners and true music lovers. With deep bass, crisp highs, and Sony’s signature sound quality, this speaker transforms any space into a mini concert. Compact yet powerful, it’s perfect for parties, road trips, or chilling at home. Featuring Bluetooth connectivity, a long-lasting battery, and a stylish, water-resistant design, it’s your go-to companion for music on the go",
+            "price": 300,
+            "salePrice": 280,
+            "images": [
+                "https://res.cloudinary.com/victorkib/image/upload/v1745166418/cybercafe/products/lnn4jebwcy77w3q0vvtm.jpg",
+                "https://res.cloudinary.com/victorkib/image/upload/v1745166441/cybercafe/products/ecdpebz9qrsm1luf1vk2.jpg"
+            ],
+            "category": "68050455effda7cce4d3f319",
+            "stock": 12,
+            "featured": false,
+            "isNewProduct": true,
+            "onSale": true,
+            "rating": 0,
+            "numReviews": 0,
+            "specifications": {
+                "Brand": "Sony",
+                "Model": "SRS-XB13"
+            },
+            "tags": [
+                "audio, bluetooth, portable, bass"
+            ],
+            "status": "active",
+            "sku": "SON-680-5690",
+            "reviews": [],
+            "createdAt": "2025-04-20T16:26:39.243Z",
+            "updatedAt": "2025-05-16T10:07:21.966Z",
+            "__v": 0,
+            "discountPercentage": 7,
+            "id": "6805203f32d0a79debec5751"
+        }
+    ],
+    "currentPage": 1,
+    "totalPages": 1,
+    "totalProducts": 4
+}
+"
+
+The featured data come from the backend in this format:"
+[
+    {
+        "_id": "680d23b3b6441eea52153560",
+        "name": "Samsung",
+        "description": "Samsung is a leading global technology company known for innovative smartphones, electronics, and home appliances, offering a wide range of high-quality products trusted by millions worldwide.",
+        "price": 400,
+        "salePrice": 3850,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691580/cybercafe/products/rzrbqmxz3vg1z67wgwzn.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691608/cybercafe/products/fa7ffehdokybz0lux152.jpg"
+        ],
+        "category": "68054f0132d0a79debec5e17",
+        "stock": 20,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Samsung",
+            "Popular Products": "Galaxy Series (S24, Fold, Flip)"
+        },
+        "tags": [
+            "Samsung, Galaxy, Smartphone, Electronics"
+        ],
+        "status": "active",
+        "sku": "SAM-680-9346",
+        "reviews": [],
+        "createdAt": "2025-04-26T18:19:31.449Z",
+        "updatedAt": "2025-04-26T18:19:31.449Z",
+        "__v": 0,
+        "discountPercentage": -862,
+        "id": "680d23b3b6441eea52153560"
+    },
+    {
+        "_id": "680542a232d0a79debec5b5c",
+        "name": "MacBook Pro",
+        "description": "Unleash professional-grade performance with the Apple MacBook Pro, designed for creators, developers, and power users. With its cutting-edge Apple silicon chip, stunning Retina display, and all-day battery life, the MacBook Pro delivers both speed and style. Whether you're editing 4K video, designing in 3D, or multitasking across heavy apps, the MacBook Pro handles it all with ease. Sleek, portable, and reliable — it's a workstation that moves with you",
+        "price": 400,
+        "salePrice": 399,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175193/cybercafe/products/xyypzuckvjyvfl6wubta.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175224/cybercafe/products/qpeqco25ei6rn2xqrnne.jpg"
+        ],
+        "category": "68050455effda7cce4d3f319",
+        "stock": 10,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Apple",
+            "Model": "MacBook Pro 14\" (2023)"
+        },
+        "tags": [
+            "macbook, apple, laptop"
+        ],
+        "status": "active",
+        "sku": "MAC-680-0036",
+        "reviews": [],
+        "createdAt": "2025-04-20T18:53:22.520Z",
+        "updatedAt": "2025-04-20T18:53:22.520Z",
+        "__v": 0,
+        "discountPercentage": 0,
+        "id": "680542a232d0a79debec5b5c"
+    }
+]
+"
+
+The new-arrivals data comes looking like this:"
+[
+    {
+        "_id": "680d28b8b6441eea52153870",
+        "name": "Chess TItans",
+        "description": "Chess Titans is a classic 3D computer chess game that offers beautifully rendered graphics, intuitive gameplay, and adjustable difficulty levels. Designed for both beginners and experienced players, it provides a realistic and immersive chess experience, making it a timeless favorite among strategy game lovers",
+        "price": 500,
+        "salePrice": 499,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745692881/cybercafe/products/levvxhtmttnnyqxgufkt.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745692905/cybercafe/products/eolcynxovkq9yyzyjrwv.jpg"
+        ],
+        "category": "680d2640b6441eea52153738",
+        "stock": 20,
+        "featured": false,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Category": "Board Game / Strategy",
+            "Modes": "Single Player, Two Player (local)"
+        },
+        "tags": [
+            "Chess Titans, Chess, Strategy Game"
+        ],
+        "status": "active",
+        "sku": "CHE-680-1150",
+        "reviews": [],
+        "createdAt": "2025-04-26T18:40:56.629Z",
+        "updatedAt": "2025-04-26T18:40:56.629Z",
+        "__v": 0,
+        "discountPercentage": 0,
+        "id": "680d28b8b6441eea52153870"
+    },
+    {
+        "_id": "680d23b3b6441eea52153560",
+        "name": "Samsung",
+        "description": "Samsung is a leading global technology company known for innovative smartphones, electronics, and home appliances, offering a wide range of high-quality products trusted by millions worldwide.",
+        "price": 400,
+        "salePrice": 3850,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691580/cybercafe/products/rzrbqmxz3vg1z67wgwzn.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691608/cybercafe/products/fa7ffehdokybz0lux152.jpg"
+        ],
+        "category": "68054f0132d0a79debec5e17",
+        "stock": 20,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Samsung",
+            "Popular Products": "Galaxy Series (S24, Fold, Flip)"
+        },
+        "tags": [
+            "Samsung, Galaxy, Smartphone, Electronics"
+        ],
+        "status": "active",
+        "sku": "SAM-680-9346",
+        "reviews": [],
+        "createdAt": "2025-04-26T18:19:31.449Z",
+        "updatedAt": "2025-04-26T18:19:31.449Z",
+        "__v": 0,
+        "discountPercentage": -862,
+        "id": "680d23b3b6441eea52153560"
+    },
+    {
+        "_id": "680542a232d0a79debec5b5c",
+        "name": "MacBook Pro",
+        "description": "Unleash professional-grade performance with the Apple MacBook Pro, designed for creators, developers, and power users. With its cutting-edge Apple silicon chip, stunning Retina display, and all-day battery life, the MacBook Pro delivers both speed and style. Whether you're editing 4K video, designing in 3D, or multitasking across heavy apps, the MacBook Pro handles it all with ease. Sleek, portable, and reliable — it's a workstation that moves with you",
+        "price": 400,
+        "salePrice": 399,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175193/cybercafe/products/xyypzuckvjyvfl6wubta.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175224/cybercafe/products/qpeqco25ei6rn2xqrnne.jpg"
+        ],
+        "category": "68050455effda7cce4d3f319",
+        "stock": 10,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Apple",
+            "Model": "MacBook Pro 14\" (2023)"
+        },
+        "tags": [
+            "macbook, apple, laptop"
+        ],
+        "status": "active",
+        "sku": "MAC-680-0036",
+        "reviews": [],
+        "createdAt": "2025-04-20T18:53:22.520Z",
+        "updatedAt": "2025-04-20T18:53:22.520Z",
+        "__v": 0,
+        "discountPercentage": 0,
+        "id": "680542a232d0a79debec5b5c"
+    },
+    {
+        "_id": "6805203f32d0a79debec5751",
+        "name": "Sony speaker",
+        "description": "Experience rich, immersive audio with the Sony Portable Bluetooth Speaker—built for both casual listeners and true music lovers. With deep bass, crisp highs, and Sony’s signature sound quality, this speaker transforms any space into a mini concert. Compact yet powerful, it’s perfect for parties, road trips, or chilling at home. Featuring Bluetooth connectivity, a long-lasting battery, and a stylish, water-resistant design, it’s your go-to companion for music on the go",
+        "price": 300,
+        "salePrice": 280,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745166418/cybercafe/products/lnn4jebwcy77w3q0vvtm.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745166441/cybercafe/products/ecdpebz9qrsm1luf1vk2.jpg"
+        ],
+        "category": "68050455effda7cce4d3f319",
+        "stock": 12,
+        "featured": false,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Sony",
+            "Model": "SRS-XB13"
+        },
+        "tags": [
+            "audio, bluetooth, portable, bass"
+        ],
+        "status": "active",
+        "sku": "SON-680-5690",
+        "reviews": [],
+        "createdAt": "2025-04-20T16:26:39.243Z",
+        "updatedAt": "2025-05-16T10:07:21.966Z",
+        "__v": 0,
+        "discountPercentage": 7,
+        "id": "6805203f32d0a79debec5751"
+    }
+]
+"
+
+The sale looks like this: "
+[
+    {
+        "_id": "680d28b8b6441eea52153870",
+        "name": "Chess TItans",
+        "description": "Chess Titans is a classic 3D computer chess game that offers beautifully rendered graphics, intuitive gameplay, and adjustable difficulty levels. Designed for both beginners and experienced players, it provides a realistic and immersive chess experience, making it a timeless favorite among strategy game lovers",
+        "price": 500,
+        "salePrice": 499,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745692881/cybercafe/products/levvxhtmttnnyqxgufkt.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745692905/cybercafe/products/eolcynxovkq9yyzyjrwv.jpg"
+        ],
+        "category": "680d2640b6441eea52153738",
+        "stock": 20,
+        "featured": false,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Category": "Board Game / Strategy",
+            "Modes": "Single Player, Two Player (local)"
+        },
+        "tags": [
+            "Chess Titans, Chess, Strategy Game"
+        ],
+        "status": "active",
+        "sku": "CHE-680-1150",
+        "reviews": [],
+        "createdAt": "2025-04-26T18:40:56.629Z",
+        "updatedAt": "2025-04-26T18:40:56.629Z",
+        "__v": 0,
+        "discountPercentage": 0,
+        "id": "680d28b8b6441eea52153870"
+    },
+    {
+        "_id": "680d23b3b6441eea52153560",
+        "name": "Samsung",
+        "description": "Samsung is a leading global technology company known for innovative smartphones, electronics, and home appliances, offering a wide range of high-quality products trusted by millions worldwide.",
+        "price": 400,
+        "salePrice": 3850,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691580/cybercafe/products/rzrbqmxz3vg1z67wgwzn.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745691608/cybercafe/products/fa7ffehdokybz0lux152.jpg"
+        ],
+        "category": "68054f0132d0a79debec5e17",
+        "stock": 20,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Samsung",
+            "Popular Products": "Galaxy Series (S24, Fold, Flip)"
+        },
+        "tags": [
+            "Samsung, Galaxy, Smartphone, Electronics"
+        ],
+        "status": "active",
+        "sku": "SAM-680-9346",
+        "reviews": [],
+        "createdAt": "2025-04-26T18:19:31.449Z",
+        "updatedAt": "2025-04-26T18:19:31.449Z",
+        "__v": 0,
+        "discountPercentage": -862,
+        "id": "680d23b3b6441eea52153560"
+    },
+    {
+        "_id": "680542a232d0a79debec5b5c",
+        "name": "MacBook Pro",
+        "description": "Unleash professional-grade performance with the Apple MacBook Pro, designed for creators, developers, and power users. With its cutting-edge Apple silicon chip, stunning Retina display, and all-day battery life, the MacBook Pro delivers both speed and style. Whether you're editing 4K video, designing in 3D, or multitasking across heavy apps, the MacBook Pro handles it all with ease. Sleek, portable, and reliable — it's a workstation that moves with you",
+        "price": 400,
+        "salePrice": 399,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175193/cybercafe/products/xyypzuckvjyvfl6wubta.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745175224/cybercafe/products/qpeqco25ei6rn2xqrnne.jpg"
+        ],
+        "category": "68050455effda7cce4d3f319",
+        "stock": 10,
+        "featured": true,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Apple",
+            "Model": "MacBook Pro 14\" (2023)"
+        },
+        "tags": [
+            "macbook, apple, laptop"
+        ],
+        "status": "active",
+        "sku": "MAC-680-0036",
+        "reviews": [],
+        "createdAt": "2025-04-20T18:53:22.520Z",
+        "updatedAt": "2025-04-20T18:53:22.520Z",
+        "__v": 0,
+        "discountPercentage": 0,
+        "id": "680542a232d0a79debec5b5c"
+    },
+    {
+        "_id": "6805203f32d0a79debec5751",
+        "name": "Sony speaker",
+        "description": "Experience rich, immersive audio with the Sony Portable Bluetooth Speaker—built for both casual listeners and true music lovers. With deep bass, crisp highs, and Sony’s signature sound quality, this speaker transforms any space into a mini concert. Compact yet powerful, it’s perfect for parties, road trips, or chilling at home. Featuring Bluetooth connectivity, a long-lasting battery, and a stylish, water-resistant design, it’s your go-to companion for music on the go",
+        "price": 300,
+        "salePrice": 280,
+        "images": [
+            "https://res.cloudinary.com/victorkib/image/upload/v1745166418/cybercafe/products/lnn4jebwcy77w3q0vvtm.jpg",
+            "https://res.cloudinary.com/victorkib/image/upload/v1745166441/cybercafe/products/ecdpebz9qrsm1luf1vk2.jpg"
+        ],
+        "category": "68050455effda7cce4d3f319",
+        "stock": 12,
+        "featured": false,
+        "isNewProduct": true,
+        "onSale": true,
+        "rating": 0,
+        "numReviews": 0,
+        "specifications": {
+            "Brand": "Sony",
+            "Model": "SRS-XB13"
+        },
+        "tags": [
+            "audio, bluetooth, portable, bass"
+        ],
+        "status": "active",
+        "sku": "SON-680-5690",
+        "reviews": [],
+        "createdAt": "2025-04-20T16:26:39.243Z",
+        "updatedAt": "2025-05-16T10:07:21.966Z",
+        "__v": 0,
+        "discountPercentage": 7,
+        "id": "6805203f32d0a79debec5751"
+    }
+]
+"
+
+The categories comes like this:"
+[
+    {
+        "_id": "68050455effda7cce4d3f319",
+        "name": "Electronics",
+        "description": "Discover the latest in cutting-edge technology with our wide range of electronic goods. From powerful laptops and sleek smartphones to essential accessories like headphones, keyboards, and chargers, we bring you top-quality devices designed to enhance your daily life. Whether you're upgrading your home setup, shopping for work essentials, or looking for the perfect gift, our electronics collection combines performance, innovation, and great value—all in one place.",
+        "image": "https://res.cloudinary.com/victorkib/image/upload/v1745159341/cybercafe/categories/xa5pfccb1vmnp88ekxxc.jpg",
+        "featured": false,
+        "parent": null,
+        "order": 10,
+        "status": "active",
+        "createdAt": "2025-04-20T14:27:33.182Z",
+        "updatedAt": "2025-04-20T14:27:33.182Z",
+        "slug": "electronics",
+        "__v": 0,
+        "id": "68050455effda7cce4d3f319"
+    },
+    {
+        "_id": "68054f0132d0a79debec5e17",
+        "name": "Phones && Tablets",
+        "description": "Stay connected, productive, and entertained with the latest in mobile technology. Our Phones & Tablets collection features top brands, powerful performance, and sleek designs to match every lifestyle. Whether you're looking for a high-end smartphone, a budget-friendly tablet, or a device for gaming, browsing, or working on the go — we've got you covered. Explore cutting-edge features like 5G connectivity, high-resolution displays, long battery life, and advanced cameras all in one place",
+        "image": "https://res.cloudinary.com/victorkib/image/upload/v1745178467/cybercafe/categories/r9jxlqdr4nz14wm1r6s7.jpg",
+        "featured": false,
+        "parent": "68050455effda7cce4d3f319",
+        "order": 5,
+        "status": "active",
+        "createdAt": "2025-04-20T19:46:09.921Z",
+        "updatedAt": "2025-04-20T20:20:02.476Z",
+        "slug": "phones-tablets",
+        "__v": 0,
+        "id": "68054f0132d0a79debec5e17"
+    },
+    {
+        "_id": "68066c84e6f71411755144e8",
+        "name": "Laptops",
+        "description": "Laptops are portable personal computers designed for mobility and convenience, combining the functionality of a desktop computer with the flexibility to work, study, create, and play from anywhere. They come in a variety of sizes, styles, and performance levels to suit everyday tasks, gaming, professional workloads, and creative projects",
+        "image": "https://res.cloudinary.com/victorkib/image/upload/v1745251560/cybercafe/categories/vk7zchvuoroqw1nfjpb9.jpg",
+        "featured": true,
+        "parent": null,
+        "order": 4,
+        "status": "active",
+        "createdAt": "2025-04-21T16:04:20.248Z",
+        "updatedAt": "2025-04-26T18:36:02.565Z",
+        "slug": "laptops",
+        "__v": 0,
+        "id": "68066c84e6f71411755144e8"
+    },
+    {
+        "_id": "680d2640b6441eea52153738",
+        "name": "Board Games",
+        "description": "Board games are tabletop games that bring people together for strategic, competitive, or cooperative play. They range from classic titles to modern favorites, offering fun, critical thinking, and social interaction for players of all ages.",
+        "image": "https://res.cloudinary.com/victorkib/image/upload/v1745692322/cybercafe/categories/bcx1rifhechmthijcxpm.jpg",
+        "featured": false,
+        "parent": null,
+        "order": 10,
+        "status": "active",
+        "createdAt": "2025-04-26T18:30:24.011Z",
+        "updatedAt": "2025-04-26T18:30:24.011Z",
+        "slug": "board-games",
+        "__v": 0,
+        "id": "680d2640b6441eea52153738"
+    }
+]
+"

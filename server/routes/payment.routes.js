@@ -3,6 +3,8 @@ import {
   getPaymentMethods,
   initializePayment,
   processPaymentCallback,
+  processInlineCallback, // NEW
+  verifyInlinePayment, // NEW
   processRefund,
   getPaymentAnalytics,
   retryPayment,
@@ -18,6 +20,8 @@ import {
   validatePaymentInit,
   validatePaymentCallback,
   validateRefund,
+  validateInlineCallback, // NEW
+  validateInlineVerification, // NEW
 } from '../middleware/paymentValidation.js';
 import {
   handlePaymentError,
@@ -35,6 +39,11 @@ router.use(authMiddleware);
 // Payment initialization and processing
 router.post('/initialize', validatePaymentInit, initializePayment);
 router.post('/callback', validatePaymentCallback, processPaymentCallback);
+
+// NEW: Inline checkout routes
+router.post('/inline-callback', validateInlineCallback, processInlineCallback);
+router.post('/verify-inline', validateInlineVerification, verifyInlinePayment);
+
 router.post('/retry', retryPayment);
 router.get('/status/:orderId', checkPaymentStatus);
 router.get('/history', getPaymentHistory);

@@ -11,7 +11,8 @@ import {
 import { createSecurityNotification } from '../utils/notificationHelper.js';
 
 // Validation constants
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const REFRESH_TOKEN_EXPIRE = '7d'; // 7 days
@@ -32,12 +33,14 @@ export const register = asyncHandler(async (req, res) => {
   // Validate password strength
   if (!PASSWORD_REGEX.test(password)) {
     res.status(400);
-    throw new Error('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    throw new Error(
+      'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    );
   }
 
   // Check rate limiting (max 10 registrations per 24 hours)
   const recentRegistrations = await User.countDocuments({
-    createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
   });
   if (recentRegistrations >= 10) {
     res.status(429);
@@ -63,7 +66,7 @@ export const register = asyncHandler(async (req, res) => {
     role: 'user', // Force role to be user for public registration
     emailVerificationToken: verificationToken,
     emailVerificationExpire: verificationExpire,
-    isEmailVerified: false
+    isEmailVerified: false,
   });
 
   if (user) {
@@ -77,8 +80,9 @@ export const register = asyncHandler(async (req, res) => {
       );
 
       res.status(201).json({
-        message: 'Registration successful. Please check your email to verify your account.',
-        email: user.email
+        message:
+          'Registration successful. Please check your email to verify your account.',
+        email: user.email,
       });
     } catch (error) {
       console.error('Failed to send verification email:', error);
@@ -101,7 +105,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({
     emailVerificationToken: verificationToken,
-    emailVerificationExpire: { $gt: Date.now() }
+    emailVerificationExpire: { $gt: Date.now() },
   });
 
   if (!user) {
@@ -129,7 +133,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   await createSecurityNotification({
     userId: user._id,
     type: 'email_verification',
-    details: 'Your email has been successfully verified'
+    details: 'Your email has been successfully verified',
   });
 
   res.json({
@@ -138,9 +142,9 @@ export const verifyEmail = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
     },
-    token: verificationJwtToken
+    token: verificationJwtToken,
   });
 });
 
@@ -150,25 +154,29 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   console.log(req.body);
-  
+
   // Find user by email and explicitly select the password field
   const user = await User.findOne({ email }).select('+password');
-  
+
   // Check if user exists
   if (!user) {
     res.status(401);
     throw new Error('Invalid email or password');
   }
-  
+
   // Check if password is correct
   if (await user.matchPassword(password)) {
     // Check if account is locked
     if (user.isLocked && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / (1000 * 60));
+      const minutesLeft = Math.ceil(
+        (user.lockedUntil - new Date()) / (1000 * 60)
+      );
       res.status(401);
-      throw new Error(`Account is locked. Please try again in ${minutesLeft} minutes.`);
+      throw new Error(
+        `Account is locked. Please try again in ${minutesLeft} minutes.`
+      );
     }
-    
+
     // Reset failed login attempts if account was locked but lock period has expired
     if (user.isLocked && user.lockedUntil <= new Date()) {
       user.isLocked = false;
@@ -176,39 +184,39 @@ export const login = asyncHandler(async (req, res) => {
       user.lockReason = null;
       user.failedLoginAttempts = 0;
     }
-    
+
     // Generate access token
     const accessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
-    
+
     // Generate refresh token
     const refreshToken = jwt.sign(
       { id: user._id },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
     );
-    
+
     // Set refresh token in HTTP-only cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    
+
     // Add session
     const clientIP = req.ip;
     const userAgent = req.get('user-agent');
     await user.addSession(accessToken, { userAgent }, clientIP, refreshToken);
-    
+
     // Update user's last login time
     user.lastLogin = new Date();
     user.failedLoginAttempts = 0;
     await user.save();
-    
+
     // Return user data and token
     res.json({
       token: accessToken,
@@ -218,21 +226,25 @@ export const login = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
       },
-      message: 'Login successful'
+      message: 'Login successful',
     });
   } else {
     // Increment failed login attempts
     await user.incrementFailedLoginAttempts();
-    
+
     // Check if account is now locked
     if (user.isLocked) {
-      const minutesLeft = Math.ceil((user.lockedUntil - new Date()) / (1000 * 60));
+      const minutesLeft = Math.ceil(
+        (user.lockedUntil - new Date()) / (1000 * 60)
+      );
       res.status(401);
-      throw new Error(`Too many failed login attempts. Account is locked for ${minutesLeft} minutes.`);
+      throw new Error(
+        `Too many failed login attempts. Account is locked for ${minutesLeft} minutes.`
+      );
     }
-    
+
     res.status(401);
     throw new Error('Invalid email or password');
   }
@@ -286,7 +298,7 @@ export const updatePassword = asyncHandler(async (req, res) => {
     await createSecurityNotification({
       userId: req.user._id,
       type: 'password_change',
-      details: 'Your password was successfully updated'
+      details: 'Your password was successfully updated',
     });
 
     res.json({ message: 'Password updated successfully' });
@@ -348,14 +360,13 @@ export const resetPassword = asyncHandler(async (req, res) => {
   // Validate password strength
   if (!PASSWORD_REGEX.test(password)) {
     res.status(400);
-    throw new Error('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    throw new Error(
+      'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    );
   }
 
   // Hash the token from the request
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
   // Find user by hashed token
   const user = await User.findOne({
@@ -411,9 +422,9 @@ export const getActiveSessions = asyncHandler(async (req, res) => {
 export const revokeSession = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const user = await User.findById(req.user._id);
-  
+
   await user.removeSession(token);
-  
+
   res.json({ message: 'Session revoked successfully' });
 });
 
@@ -468,7 +479,7 @@ export const unlockAccount = asyncHandler(async (req, res) => {
 // @access  Private
 export const refreshToken = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
-  
+
   if (!user) {
     res.status(404);
     throw new Error('User not found');
@@ -484,8 +495,8 @@ export const refreshToken = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      isEmailVerified: user.isEmailVerified
-    }
+      isEmailVerified: user.isEmailVerified,
+    },
   });
 });
 
@@ -495,21 +506,21 @@ export const refreshToken = asyncHandler(async (req, res) => {
 // SOLUTION: Updated refreshAccessToken function
 export const refreshAccessToken = asyncHandler(async (req, res) => {
   console.log('Refresh token endpoint called');
-  
+
   // Get refresh token from cookies
   const refreshToken = req.cookies.refreshToken;
-  
+
   if (!refreshToken) {
     console.log('No refresh token provided');
     res.status(401);
     throw new Error('No refresh token provided');
   }
-  
+
   try {
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     console.log('Refresh token verified for user:', decoded.id);
-    
+
     // Get user
     const user = await User.findById(decoded.id);
     if (!user) {
@@ -517,23 +528,23 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       res.status(401);
       throw new Error('User not found');
     }
-    
+
     // Generate new access token
     const accessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '15m' }
     );
-    
+
     // Add new session or update existing one
     const clientIP = req.ip;
     const userAgent = req.get('user-agent');
-    
+
     // Check if there's an existing session with this refresh token
     const existingSessionIndex = user.activeSessions.findIndex(
-      session => session.refreshToken === refreshToken
+      (session) => session.refreshToken === refreshToken
     );
-    
+
     if (existingSessionIndex >= 0) {
       // Update existing session
       user.activeSessions[existingSessionIndex].token = accessToken;
@@ -542,14 +553,14 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       // Add new session
       await user.addSession(accessToken, { userAgent }, clientIP, refreshToken);
     }
-    
+
     await user.save();
-    
+
     console.log('New access token generated successfully');
-    
+
     res.json({
       token: accessToken,
-      expiresIn: 900 // 15 minutes in seconds
+      expiresIn: 900, // 15 minutes in seconds
     });
   } catch (error) {
     console.error('Refresh token error:', error.message);
@@ -562,37 +573,51 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private
 export const logout = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.cookies;
-  const accessToken = req.headers.authorization?.split(' ')[1];
+  try {
+    const { refreshToken } = req.cookies;
+    const accessToken = req.headers.authorization?.split(' ')[1];
 
-  if (accessToken) {
-    const user = await User.findOne({ 'activeSessions.token': accessToken });
-    if (user) {
-      await user.removeSession(accessToken);
-    }
-  }
-
-  // Clear refresh token cookie
-  res.cookie('refreshToken', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    expires: new Date(0)
-  });
-
-  // Increment token version to invalidate all refresh tokens if user found
-  if (refreshToken) {
-    try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-      const user = await User.findById(decoded.id);
+    // Remove the access token session if it exists
+    if (accessToken) {
+      const user = await User.findOne({ 'activeSessions.token': accessToken });
       if (user) {
-        user.tokenVersion = (user.tokenVersion || 0) + 1;
-        await user.save();
+        await user.removeSession(accessToken);
       }
-    } catch (error) {
-      // Ignore token verification errors during logout
     }
-  }
 
-  res.json({ message: 'Logged out successfully' });
+    // Clear refresh token cookie
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      expires: new Date(0),
+    });
+
+    // If refresh token exists, increment token version to invalidate future sessions
+    if (refreshToken) {
+      try {
+        const decoded = jwt.verify(
+          refreshToken,
+          process.env.JWT_REFRESH_SECRET
+        );
+        const user = await User.findById(decoded.id);
+        if (user) {
+          user.tokenVersion = (user.tokenVersion || 0) + 1;
+          await user.save();
+        }
+      } catch (error) {
+        console.warn(
+          'Refresh token invalid during logout, ignoring:',
+          error.message
+        );
+        // Intentionally ignoring invalid token during logout
+      }
+    }
+
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error.message);
+    res.status(500);
+    throw new Error('Logout failed. Please try again.');
+  }
 });

@@ -1,57 +1,67 @@
-"use client"
+'use client';
 
-import { useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom"
-import { useDispatch, useSelector } from "react-redux"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
+import { useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Pages
-import LandingPage from "./pages/LandingPage"
-import ServicesPage from "./pages/ServicesPage"
-import CyberCafeLandingPage from "./pages/CyberCafeLandingPage"
-import ProductDetailsPage from "./pages/ProductDetailsPage"
-import ShoppingCartPage from "./pages/ShoppingCartPage"
-import CheckoutPage from "./pages/CheckoutPage"
-import OrderConfirmationPage from "./pages/OrderConfirmationPage"
-import AdminLayout from "./pages/admin/admin-layout"
-import NotFound from "./pages/NotFound"
-import VerifyEmail from "./pages/VerifyEmail"
-import ResendVerification from "./pages/ResendVerification"
-import NotificationsPage from "./pages/NotificationsPage"
+import LandingPage from './pages/LandingPage';
+import ServicesPage from './pages/ServicesPage';
+import CyberCafeLandingPage from './pages/CyberCafeLandingPage';
+import ProductDetailsPage from './pages/ProductDetailsPage';
+import ShoppingCartPage from './pages/ShoppingCartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import AdminLayout from './pages/admin/admin-layout';
+import NotFound from './pages/NotFound';
+import VerifyEmail from './pages/VerifyEmail';
+import ResendVerification from './pages/ResendVerification';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Components
-import ProtectedRoute from "./components/auth/ProtectedRoute"
-import AuthModals from "./components/auth/AuthModals"
-import AdminInvitationAccept from "./components/auth/AdminInvitationAccept"
-import MainLayout from "./components/layout/MainLayout"
-import ResetPassword from "./components/auth/ResetPassword"
-import ForgotPassword from "./components/auth/ForgotPassword"
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AuthModals from './components/auth/AuthModals';
+import AdminInvitationAccept from './components/auth/AdminInvitationAccept';
+import MainLayout from './components/layout/MainLayout';
+import ResetPassword from './components/auth/ResetPassword';
+import ForgotPassword from './components/auth/ForgotPassword';
+// ADD THIS: Payment callback component
+import PaymentCallback from './components/payment/PaymentCallback';
 
 // Contexts
-import { NotificationProvider } from "./contexts/NotificationContext"
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Redux actions
-import { checkAuthState } from "./redux/slices/authSlice"
-import { useSessionTimeout } from "./hooks/useSessionTimeout"
-import ErrorBoundary from "./pages/common/ErrorBoundary"
+import { checkAuthState } from './redux/slices/authSlice';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
+import ErrorBoundary from './pages/common/ErrorBoundary';
+import AccountDashboard from './pages/AccountDashboard';
 
 // Error boundary wrapper for routes
 const RouteErrorBoundary = ({ children }) => {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleNavigateHome = () => {
-    navigate("/")
-  }
+    navigate('/');
+  };
 
   const handleNavigateBack = () => {
-    navigate(-1)
-  }
+    navigate(-1);
+  };
 
   const handleContactSupport = () => {
-    window.open("/support", "_blank")
-  }
+    window.open('/support', '_blank');
+  };
 
   return (
     <ErrorBoundary
@@ -60,34 +70,34 @@ const RouteErrorBoundary = ({ children }) => {
       onSupport={handleContactSupport}
       onError={(error, errorInfo) => {
         // You could log to a service like Sentry here
-        console.error(`Error in route ${location.pathname}:`, error)
+        console.error(`Error in route ${location.pathname}:`, error);
       }}
     >
       {children}
     </ErrorBoundary>
-  )
-}
+  );
+};
 
 function App() {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   // Use separate selectors to avoid creating a new object on each render
-  const isAuthModalOpen = useSelector((state) => state.ui.isAuthModalOpen)
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
+  const isAuthModalOpen = useSelector((state) => state.ui.isAuthModalOpen);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   // Initialize session timeout
-  useSessionTimeout()
+  useSessionTimeout();
 
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
-    dispatch(checkAuthState())
-  }, [dispatch])
+    dispatch(checkAuthState());
+  }, [dispatch]);
 
   return (
     <ErrorBoundary
-      showDetails={process.env.NODE_ENV !== "production"}
+      showDetails={process.env.NODE_ENV !== 'production'}
       onError={(error, errorInfo) => {
         // Global error logging
-        console.error("Global app error:", error)
+        console.error('Global app error:', error);
       }}
     >
       <NotificationProvider>
@@ -172,6 +182,27 @@ function App() {
               }
             />
             <Route
+              path="/account"
+              element={
+                <RouteErrorBoundary>
+                  <AccountDashboard />
+                </RouteErrorBoundary>
+              }
+            />
+
+            {/* ADD THIS: Payment callback route */}
+            <Route
+              path="/payment/callback"
+              element={
+                <RouteErrorBoundary>
+                  <MainLayout>
+                    <PaymentCallback />
+                  </MainLayout>
+                </RouteErrorBoundary>
+              }
+            />
+
+            <Route
               path="/services"
               element={
                 <RouteErrorBoundary>
@@ -247,7 +278,7 @@ function App() {
               path="/admin/*"
               element={
                 <RouteErrorBoundary>
-                  <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
                     <AdminLayout />
                   </ProtectedRoute>
                 </RouteErrorBoundary>
@@ -270,7 +301,7 @@ function App() {
         </Router>
       </NotificationProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
-export default App
+export default App;
