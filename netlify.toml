@@ -1,7 +1,6 @@
 [build]
-  base = "client"
-  publish = "client/dist"
-  command = "npm run build"
+  publish = "client/dist"            # ✅ No need for base if publish is full path
+  command = "cd client && npm install && npm run build"  # ✅ Ensure it's run from client
 
 [dev]
   command = "npm run dev"
@@ -21,7 +20,7 @@
   status = 200
   force = true
 
-# Optional: fallback for SPA routing
+# ✅ Fallback for SPA routes
 [[redirects]]
   from = "/*"
   to = "/index.html"
