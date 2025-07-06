@@ -294,7 +294,9 @@ const OrdersTab = ({
 
                     {order.status === 'pending' && (
                       <ButtonLoader
-                        onClick={() => handleCancelOrder(order._id)}
+                        onClick={() =>
+                          handleCancelOrder(order._id, order.orderNumber)
+                        }
                         className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <XCircle size={16} />

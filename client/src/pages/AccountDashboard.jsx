@@ -21,6 +21,7 @@ import {
   Shield,
   Award,
   HelpCircle,
+  Trash2,
 } from 'lucide-react';
 
 // Redux imports
@@ -41,8 +42,12 @@ import PlaceholderTab from './components/account/PlaceholderTab';
 import OrderDetailsModal from './components/account/modals/OrderDetailsModal';
 import ButtonLoader from './components/loaders/ButtonLoader';
 
+// Hooks
+import { useConfirmation } from '../hooks/useConfirmation';
+
 // Utils
 import { toast } from 'react-toastify';
+import ConfirmationModal from './components/account/modals/ConfirmationModal';
 
 const AccountDashboard = () => {
   const dispatch = useDispatch();
@@ -53,6 +58,15 @@ const AccountDashboard = () => {
     loading: ordersLoading,
     currentOrder,
   } = useSelector((state) => state.order);
+
+  // Confirmation modal hook
+  const {
+    confirmationState,
+    isLoading: confirmationLoading,
+    showConfirmation,
+    hideConfirmation,
+    handleConfirm,
+  } = useConfirmation();
 
   // State management
   const [activeTab, setActiveTab] = useState('overview');
@@ -211,36 +225,66 @@ const AccountDashboard = () => {
 
   // Handle order details view
   const handleViewOrder = async (orderId) => {
+    console.log('Viewing order:', orderId);
     try {
-      await dispatch(fetchOrderById(orderId)).unwrap();
       setShowOrderDetails(true);
+      const result = await dispatch(fetchOrderById(orderId)).unwrap();
+      console.log('Order fetched successfully:', result);
     } catch (error) {
+      console.error('Failed to fetch order:', error);
+      setShowOrderDetails(false);
       toast.error('Failed to fetch order details');
     }
   };
 
-  // Handle order cancellation
-  const handleCancelOrder = async (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      try {
-        await dispatch(cancelOrder(orderId)).unwrap();
-        toast.success('Order cancelled successfully');
-        dispatch(fetchMyOrders({ page: 1, limit: 10, ...orderFilters }));
-      } catch (error) {
-        toast.error('Failed to cancel order');
-      }
-    }
+  // Handle order cancellation with confirmation modal
+  const handleCancelOrder = async (orderId, orderNumber) => {
+    const order = orders.find((o) => o._id === orderId);
+
+    showConfirmation({
+      title: 'Cancel Order',
+      message: `Are you sure you want to cancel order #${orderNumber}?`,
+      details: [
+        'This action cannot be undone',
+        'Any payment made will be refunded within 3-5 business days',
+        'You will receive a confirmation email once the cancellation is processed',
+      ],
+      confirmText: 'Yes, Cancel Order',
+      cancelText: 'Keep Order',
+      type: 'danger',
+      icon: Trash2,
+      onConfirm: async () => {
+        try {
+          await dispatch(cancelOrder(orderId)).unwrap();
+          toast.success('Order cancelled successfully');
+          dispatch(fetchMyOrders({ page: 1, limit: 10, ...orderFilters }));
+        } catch (error) {
+          toast.error('Failed to cancel order');
+          throw error; // Re-throw to keep modal open on error
+        }
+      },
+    });
   };
 
-  // Handle profile update
+  // Handle profile update with confirmation
   const handleProfileUpdate = async () => {
-    try {
-      // TODO: Implement profile update API call
-      setIsEditing(false);
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
-    }
+    showConfirmation({
+      title: 'Update Profile',
+      message: 'Are you sure you want to save these changes to your profile?',
+      confirmText: 'Save Changes',
+      cancelText: 'Cancel',
+      type: 'info',
+      onConfirm: async () => {
+        try {
+          // TODO: Implement profile update API call
+          setIsEditing(false);
+          toast.success('Profile updated successfully');
+        } catch (error) {
+          toast.error('Failed to update profile');
+          throw error;
+        }
+      },
+    });
   };
 
   // Get current tab info
@@ -417,6 +461,21 @@ const AccountDashboard = () => {
         setShowOrderDetails={setShowOrderDetails}
         currentOrder={currentOrder}
         orderStatusConfig={orderStatusConfig}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationState.isOpen}
+        onClose={hideConfirmation}
+        onConfirm={handleConfirm}
+        title={confirmationState.title}
+        message={confirmationState.message}
+        confirmText={confirmationState.confirmText}
+        cancelText={confirmationState.cancelText}
+        type={confirmationState.type}
+        isLoading={confirmationLoading}
+        icon={confirmationState.icon}
+        details={confirmationState.details}
       />
     </div>
   );

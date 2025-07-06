@@ -20,7 +20,29 @@ const OrderDetailsModal = ({
 }) => {
   const { darkMode } = useSelector((state) => state.ui);
 
-  if (!showOrderDetails || !currentOrder) return null;
+  // Debug logging
+  console.log('Modal props:', { showOrderDetails, currentOrder });
+
+  if (!showOrderDetails) return null;
+
+  if (!currentOrder) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className={`max-w-md w-full p-6 rounded-xl ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          }`}
+        >
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className={darkMode ? 'text-white' : 'text-gray-900'}>
+              Loading order details...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const statusConfig =
     orderStatusConfig[currentOrder.status] || orderStatusConfig.pending;
@@ -103,16 +125,19 @@ const OrderDetailsModal = ({
                   key={index}
                   className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700"
                 >
-                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                    {item.image ? (
+                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center overflow-hidden">
+                    {item.product?.images?.[0] ? (
                       <img
-                        src={item.image || '/placeholder.svg'}
+                        src={item.product.images[0] || '/placeholder.svg'}
                         alt={item.name}
                         className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
                       />
-                    ) : (
-                      <Package size={24} className="text-gray-400" />
-                    )}
+                    ) : null}
+                    <Package size={24} className="text-gray-400" />
                   </div>
                   <div className="flex-1">
                     <h4
@@ -136,7 +161,9 @@ const OrderDetailsModal = ({
                         darkMode ? 'text-white' : 'text-gray-900'
                       }`}
                     >
-                      {formatCurrency(item.price * item.quantity)}
+                      {formatCurrency(
+                        item.totalPrice || item.price * item.quantity
+                      )}
                     </p>
                     <p
                       className={`text-sm ${
@@ -171,7 +198,9 @@ const OrderDetailsModal = ({
                 </span>
                 <span className={darkMode ? 'text-white' : 'text-gray-900'}>
                   {formatCurrency(
-                    currentOrder.subtotal || currentOrder.totalAmount
+                    currentOrder.totalAmount -
+                      (currentOrder.taxAmount || 0) -
+                      (currentOrder.shippingAmount || 0)
                   )}
                 </span>
               </div>
@@ -180,7 +209,7 @@ const OrderDetailsModal = ({
                   Shipping
                 </span>
                 <span className={darkMode ? 'text-white' : 'text-gray-900'}>
-                  {formatCurrency(currentOrder.shippingCost || 0)}
+                  {formatCurrency(currentOrder.shippingAmount || 0)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -188,7 +217,7 @@ const OrderDetailsModal = ({
                   Tax
                 </span>
                 <span className={darkMode ? 'text-white' : 'text-gray-900'}>
-                  {formatCurrency(currentOrder.tax || 0)}
+                  {formatCurrency(currentOrder.taxAmount || 0)}
                 </span>
               </div>
               <div
@@ -245,10 +274,14 @@ const OrderDetailsModal = ({
                 >
                   {currentOrder.shippingAddress ? (
                     <>
-                      <p>{currentOrder.shippingAddress.address}</p>
+                      <p>{currentOrder.shippingAddress.street}</p>
                       <p>
                         {currentOrder.shippingAddress.city},{' '}
-                        {currentOrder.shippingAddress.country}
+                        {currentOrder.shippingAddress.state}
+                      </p>
+                      <p>
+                        {currentOrder.shippingAddress.country}{' '}
+                        {currentOrder.shippingAddress.zipCode}
                       </p>
                     </>
                   ) : (
@@ -270,12 +303,8 @@ const OrderDetailsModal = ({
                     darkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}
                 >
-                  <p>
-                    {currentOrder.customerInfo?.email || 'No email provided'}
-                  </p>
-                  <p>
-                    {currentOrder.customerInfo?.phone || 'No phone provided'}
-                  </p>
+                  <p>{currentOrder.user?.name || 'N/A'}</p>
+                  <p>{currentOrder.user?.email || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -322,27 +351,29 @@ const OrderDetailsModal = ({
                 </p>
                 <p
                   className={`font-medium ${
-                    darkMode ? 'text-white' : 'text-gray-900'
+                    currentOrder.paymentStatus === 'paid'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-yellow-600 dark:text-yellow-400'
                   }`}
                 >
-                  {currentOrder.paymentStatus || 'Pending'}
+                  {currentOrder.paymentStatus?.toUpperCase() || 'Pending'}
                 </p>
               </div>
-              {currentOrder.paymentReference && (
+              {currentOrder.paymentDetails?.transactionId && (
                 <div className="md:col-span-2">
                   <p
                     className={`text-sm ${
                       darkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}
                   >
-                    Payment Reference
+                    Transaction ID
                   </p>
                   <p
                     className={`font-mono text-sm ${
                       darkMode ? 'text-white' : 'text-gray-900'
                     }`}
                   >
-                    {currentOrder.paymentReference}
+                    {currentOrder.paymentDetails.transactionId}
                   </p>
                 </div>
               )}
@@ -383,9 +414,30 @@ const OrderDetailsModal = ({
                   </p>
                 </div>
               </div>
-              {currentOrder.status !== 'pending' && (
+              {currentOrder.paymentDetails?.timestamp && (
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div>
+                    <p
+                      className={`text-sm font-medium ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
+                      Payment Confirmed
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}
+                    >
+                      {formatDate(currentOrder.paymentDetails.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {currentOrder.status !== 'pending' && (
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                   <div>
                     <p
                       className={`text-sm font-medium ${

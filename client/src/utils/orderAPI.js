@@ -19,14 +19,24 @@ export const orderAPI = {
   getMyOrders: (params = {}) => apiRequest.get('/orders/myorders', { params }),
 
   // Get a specific order by ID
+  // Update the getOrderById function in orderAPI.js
+
+  // Get a specific order by ID
   getOrderById: (orderId) => {
-    return apiRequest.get(`/orders/${orderId}`).then((response) => {
-      // Ensure we're returning the data in the expected format
-      return {
-        success: response.data.success,
-        data: response.data.data,
-      };
-    });
+    return apiRequest
+      .get(`/orders/${orderId}`)
+      .then((response) => {
+        console.log('API Response:', response.data);
+        // Ensure we're returning the data in the expected format
+        return {
+          success: response.data.success,
+          data: response.data.data,
+        };
+      })
+      .catch((error) => {
+        console.error('API Error:', error);
+        throw error;
+      });
   },
 
   // Cancel an order

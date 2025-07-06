@@ -167,11 +167,15 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrderById.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentOrder = action.payload.data;
+        // Handle both direct data and nested data structures
+        const orderData = action.payload.data || action.payload;
+        console.log('Order data received in slice:', orderData);
+        state.currentOrder = orderData;
       })
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || 'Failed to fetch order';
+        state.currentOrder = null; // Clear current order on error
       })
 
       // Cancel Order
