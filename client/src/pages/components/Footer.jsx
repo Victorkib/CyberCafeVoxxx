@@ -58,7 +58,8 @@ const Footer = ({ darkMode }) => {
                 <Twitter size={20} />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/voxcyber"
+                target="_blank"
                 className={`p-2 rounded-full ${
                   darkMode
                     ? 'bg-gray-700 hover:bg-blue-600 text-white'
