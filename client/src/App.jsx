@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css"
 import LandingPage from "./pages/LandingPage"
 import ServicesPage from "./pages/ServicesPage"
 import CyberCafeLandingPage from "./pages/CyberCafeLandingPage"
+import WebsitesPage from "./pages/WebsitesPage"
 import ProductDetailsPage from "./pages/ProductDetailsPage"
 import ShoppingCartPage from "./pages/ShoppingCartPage"
 import CheckoutPage from "./pages/CheckoutPage"
@@ -186,7 +187,7 @@ function App() {
               element={
                 <RouteErrorBoundary>
                   <MainLayout>
-                    <LandingPage />
+                    <WebsitesPage />
                   </MainLayout>
                 </RouteErrorBoundary>
               }
