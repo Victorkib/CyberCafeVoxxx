@@ -68,11 +68,21 @@ cartSchema.methods.addItem = async function (productId, quantity) {
     throw new Error('Product is out of stock');
   }
 
+  // Check if there's enough stock for the requested quantity
+  if (product.stock < quantity) {
+    throw new Error(`Only ${product.stock} items available in stock`);
+  }
+
   const existingItem = this.items.find(
     (item) => item.product.toString() === productId
   );
 
   if (existingItem) {
+    // Check if there's enough stock for the updated quantity
+    if (product.stock < (existingItem.quantity + quantity)) {
+      throw new Error(`Cannot add ${quantity} more items. Only ${product.stock} items available in stock`);
+    }
+    
     existingItem.quantity += quantity;
     existingItem.totalPrice = existingItem.quantity * existingItem.price;
   } else {
@@ -89,9 +99,15 @@ cartSchema.methods.addItem = async function (productId, quantity) {
 
 // Method to remove item from cart
 cartSchema.methods.removeItem = function (productId) {
-  this.items = this.items.filter(
-    (item) => item.product.toString() !== productId
+  const itemIndex = this.items.findIndex(
+    (item) => item.product.toString() === productId
   );
+  
+  if (itemIndex === -1) {
+    throw new Error('Item not found in cart');
+  }
+  
+  this.items.splice(itemIndex, 1);
   return this.save();
 };
 
@@ -108,14 +124,21 @@ cartSchema.methods.updateItemQuantity = async function (productId, quantity) {
     throw new Error('Product is out of stock');
   }
 
-  const item = this.items.find(
+  // Check if there's enough stock for the requested quantity
+  if (product.stock < quantity) {
+    throw new Error(`Only ${product.stock} items available in stock`);
+  }
+
+  const itemIndex = this.items.findIndex(
     (item) => item.product.toString() === productId
   );
 
-  if (item) {
-    item.quantity = quantity;
-    item.totalPrice = item.quantity * item.price;
+  if (itemIndex === -1) {
+    throw new Error('Item not found in cart');
   }
+
+  this.items[itemIndex].quantity = quantity;
+  this.items[itemIndex].totalPrice = quantity * this.items[itemIndex].price;
 
   return this.save();
 };
@@ -127,4 +150,20 @@ cartSchema.methods.clear = function () {
   return this.save();
 };
 
-export default mongoose.model('Cart', cartSchema); 
+// Method to check if cart has items
+cartSchema.methods.hasItems = function() {
+  return this.items.length > 0;
+};
+
+// Method to get item count
+cartSchema.methods.getItemCount = function() {
+  return this.items.reduce((total, item) => total + item.quantity, 0);
+};
+
+// Method to mark cart as converted (after checkout)
+cartSchema.methods.markAsConverted = function() {
+  this.status = 'converted';
+  return this.save();
+};
+
+export default mongoose.model('Cart', cartSchema);

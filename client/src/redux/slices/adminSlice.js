@@ -12,7 +12,9 @@ export const fetchDashboardStats = createAsyncThunk(
       const response = await adminApi.getDashboardStats();
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard statistics');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch dashboard statistics'
+      );
     }
   }
 );
@@ -24,7 +26,9 @@ export const fetchSalesAnalytics = createAsyncThunk(
       const response = await adminApi.getSalesAnalytics(startDate, endDate);
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch sales analytics');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch sales analytics'
+      );
     }
   }
 );
@@ -36,7 +40,9 @@ export const fetchInventoryStats = createAsyncThunk(
       const response = await adminApi.getInventoryStats();
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch inventory statistics');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch inventory statistics'
+      );
     }
   }
 );
@@ -48,7 +54,9 @@ export const fetchCustomerStats = createAsyncThunk(
       const response = await adminApi.getCustomerStats();
       return response.data || response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch customer statistics');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch customer statistics'
+      );
     }
   }
 );
@@ -61,11 +69,12 @@ export const fetchProducts = createAsyncThunk(
       const response = await adminApi.getAllProducts(page, limit, sort, filter);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch products');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch products'
+      );
     }
   }
 );
-
 
 export const fetchProductById = createAsyncThunk(
   'admin/fetchProductById',
@@ -74,7 +83,9 @@ export const fetchProductById = createAsyncThunk(
       const response = await adminApi.getProductById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch product');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch product'
+      );
     }
   }
 );
@@ -88,7 +99,9 @@ export const createProduct = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create product');
-      return rejectWithValue(error.response?.data?.message || 'Failed to create product');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create product'
+      );
     }
   }
 );
@@ -102,7 +115,9 @@ export const updateProduct = createAsyncThunk(
       return response.data || response;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update product');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update product');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update product'
+      );
     }
   }
 );
@@ -116,7 +131,9 @@ export const deleteProduct = createAsyncThunk(
       return id;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete product');
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete product');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete product'
+      );
     }
   }
 );
@@ -129,8 +146,12 @@ export const updateProductStock = createAsyncThunk(
       toast.success('Product stock updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update product stock');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update product stock');
+      toast.error(
+        error.response?.data?.message || 'Failed to update product stock'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update product stock'
+      );
     }
   }
 );
@@ -143,8 +164,12 @@ export const updateProductStatus = createAsyncThunk(
       toast.success('Product status updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update product status');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update product status');
+      toast.error(
+        error.response?.data?.message || 'Failed to update product status'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update product status'
+      );
     }
   }
 );
@@ -157,7 +182,9 @@ export const fetchOrders = createAsyncThunk(
       const response = await adminApi.getAllOrders(page, limit, status);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch orders'
+      );
     }
   }
 );
@@ -169,7 +196,9 @@ export const fetchOrderById = createAsyncThunk(
       const response = await adminApi.getOrderById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch order');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch order'
+      );
     }
   }
 );
@@ -182,8 +211,12 @@ export const updateOrderStatus = createAsyncThunk(
       toast.success('Order status updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update order status');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update order status');
+      toast.error(
+        error.response?.data?.message || 'Failed to update order status'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update order status'
+      );
     }
   }
 );
@@ -192,12 +225,20 @@ export const updateOrderTracking = createAsyncThunk(
   'admin/updateOrderTracking',
   async ({ id, trackingNumber, trackingCompany }, { rejectWithValue }) => {
     try {
-      const response = await adminApi.updateOrderTracking(id, trackingNumber, trackingCompany);
+      const response = await adminApi.updateOrderTracking(
+        id,
+        trackingNumber,
+        trackingCompany
+      );
       toast.success('Order tracking updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update order tracking');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update order tracking');
+      toast.error(
+        error.response?.data?.message || 'Failed to update order tracking'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update order tracking'
+      );
     }
   }
 );
@@ -211,7 +252,9 @@ export const cancelOrder = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
-      return rejectWithValue(error.response?.data?.message || 'Failed to cancel order');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to cancel order'
+      );
     }
   }
 );
@@ -225,7 +268,9 @@ export const refundOrder = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to refund order');
-      return rejectWithValue(error.response?.data?.message || 'Failed to refund order');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to refund order'
+      );
     }
   }
 );
@@ -238,7 +283,9 @@ export const fetchCustomers = createAsyncThunk(
       const response = await adminApi.getAllCustomers(page, limit);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch customers');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch customers'
+      );
     }
   }
 );
@@ -250,7 +297,9 @@ export const fetchCustomerById = createAsyncThunk(
       const response = await adminApi.getCustomerById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch customer');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch customer'
+      );
     }
   }
 );
@@ -263,8 +312,12 @@ export const updateCustomerStatus = createAsyncThunk(
       toast.success('Customer status updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update customer status');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update customer status');
+      toast.error(
+        error.response?.data?.message || 'Failed to update customer status'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update customer status'
+      );
     }
   }
 );
@@ -278,7 +331,9 @@ export const blockCustomer = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to block customer');
-      return rejectWithValue(error.response?.data?.message || 'Failed to block customer');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to block customer'
+      );
     }
   }
 );
@@ -291,8 +346,12 @@ export const unblockCustomer = createAsyncThunk(
       toast.success('Customer unblocked successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to unblock customer');
-      return rejectWithValue(error.response?.data?.message || 'Failed to unblock customer');
+      toast.error(
+        error.response?.data?.message || 'Failed to unblock customer'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to unblock customer'
+      );
     }
   }
 );
@@ -300,12 +359,14 @@ export const unblockCustomer = createAsyncThunk(
 // User Management
 export const fetchUsers = createAsyncThunk(
   'admin/fetchUsers',
-  async ({ page, limit }, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await adminApi.getAllUsers(page, limit);
-      return response.data;
+      const response = await adminApi.getAllUsers();
+      return response.data; // Make sure this matches your API response format
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch users'
+      );
     }
   }
 );
@@ -317,7 +378,9 @@ export const fetchUserById = createAsyncThunk(
       const response = await adminApi.getUserById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch user');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch user'
+      );
     }
   }
 );
@@ -331,7 +394,9 @@ export const createUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create user');
-      return rejectWithValue(error.response?.data?.message || 'Failed to create user');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create user'
+      );
     }
   }
 );
@@ -345,7 +410,9 @@ export const updateUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update user');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update user');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update user'
+      );
     }
   }
 );
@@ -359,7 +426,9 @@ export const deleteUser = createAsyncThunk(
       return id;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete user');
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete user');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete user'
+      );
     }
   }
 );
@@ -372,8 +441,12 @@ export const updateUserRole = createAsyncThunk(
       toast.success('User role updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update user role');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update user role');
+      toast.error(
+        error.response?.data?.message || 'Failed to update user role'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update user role'
+      );
     }
   }
 );
@@ -386,76 +459,114 @@ export const updateUserStatus = createAsyncThunk(
       toast.success('User status updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update user status');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update user status');
+      toast.error(
+        error.response?.data?.message || 'Failed to update user status'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update user status'
+      );
     }
   }
 );
 
 // Admin Invitation Management
-export const inviteAdmin = createAsyncThunk("admin/inviteAdmin", async (inviteData, { rejectWithValue }) => {
-  try {
-    const response = await adminApi.inviteAdmin(inviteData)
-    toast.success("Admin invitation sent successfully")
-    return response.data
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to send invitation")
-    return rejectWithValue(error.response?.data?.message || "Failed to send invitation")
+export const inviteAdmin = createAsyncThunk(
+  'admin/inviteAdmin',
+  async (inviteData, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.inviteAdmin(inviteData);
+      toast.success('Admin invitation sent successfully');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send invitation');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to send invitation'
+      );
+    }
   }
-})
+);
 
-export const fetchAdminInvitations = createAsyncThunk("admin/fetchAdminInvitations", async (_, { rejectWithValue }) => {
-  try {
-    const response = await adminApi.fetchAdminInvitations()
-    return response.data
-  } catch (error) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch invitations")
+export const fetchAdminInvitations = createAsyncThunk(
+  'admin/fetchAdminInvitations',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.fetchAdminInvitations();
+      return response.data; // Make sure this matches your API response format
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch invitations'
+      );
+    }
   }
-})
+);
 
-export const resendInvitation = createAsyncThunk("admin/resendInvitation", async (id, { rejectWithValue }) => {
-  try {
-    const response = await adminApi.resendInvitation(id)
-    toast.success("Invitation resent successfully")
-    return response.data
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to resend invitation")
-    return rejectWithValue(error.response?.data?.message || "Failed to resend invitation")
+export const resendInvitation = createAsyncThunk(
+  'admin/resendInvitation',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.resendInvitation(id);
+      toast.success('Invitation resent successfully');
+      return response.data;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to resend invitation'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to resend invitation'
+      );
+    }
   }
-})
+);
 
-export const cancelInvitation = createAsyncThunk("admin/cancelInvitation", async (id, { rejectWithValue }) => {
-  try {
-    await adminApi.cancelInvitation(id)
-    toast.success("Invitation cancelled successfully")
-    return id
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to cancel invitation")
-    return rejectWithValue(error.response?.data?.message || "Failed to cancel invitation")
+export const cancelInvitation = createAsyncThunk(
+  'admin/cancelInvitation',
+  async (id, { rejectWithValue }) => {
+    try {
+      await adminApi.cancelInvitation(id);
+      toast.success('Invitation cancelled successfully');
+      return id;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to cancel invitation'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to cancel invitation'
+      );
+    }
   }
-})
+);
 
-export const lockAccount = createAsyncThunk("admin/lockAccount", async (lockData, { rejectWithValue }) => {
-  try {
-    const response = await adminApi.lockAccount(lockData)
-    toast.success("Account locked successfully")
-    return response.data
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to lock account")
-    return rejectWithValue(error.response?.data?.message || "Failed to lock account")
+export const lockAccount = createAsyncThunk(
+  'admin/lockAccount',
+  async (lockData, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.lockAccount(lockData);
+      toast.success('Account locked successfully');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to lock account');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to lock account'
+      );
+    }
   }
-})
+);
 
-export const unlockAccount = createAsyncThunk("admin/unlockAccount", async (unlockData, { rejectWithValue }) => {
-  try {
-    const response = await adminApi.unlockAccount(unlockData)
-    toast.success("Account unlocked successfully")
-    return response.data
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to unlock account")
-    return rejectWithValue(error.response?.data?.message || "Failed to unlock account")
+export const unlockAccount = createAsyncThunk(
+  'admin/unlockAccount',
+  async (unlockData, { rejectWithValue }) => {
+    try {
+      const response = await adminApi.unlockAccount(unlockData);
+      toast.success('Account unlocked successfully');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to unlock account');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to unlock account'
+      );
+    }
   }
-})
+);
 
 // Category Management
 export const fetchCategories = createAsyncThunk(
@@ -465,7 +576,9 @@ export const fetchCategories = createAsyncThunk(
       const response = await adminApi.getAllCategories();
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch categories');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch categories'
+      );
     }
   }
 );
@@ -477,7 +590,9 @@ export const fetchCategoryById = createAsyncThunk(
       const response = await adminApi.getCategoryById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch category');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch category'
+      );
     }
   }
 );
@@ -491,7 +606,9 @@ export const createCategory = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create category');
-      return rejectWithValue(error.response?.data?.message || 'Failed to create category');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to create category'
+      );
     }
   }
 );
@@ -505,7 +622,9 @@ export const updateCategory = createAsyncThunk(
       return response.data || response;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update category');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update category');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update category'
+      );
     }
   }
 );
@@ -519,7 +638,9 @@ export const deleteCategory = createAsyncThunk(
       return id;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete category');
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete category');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete category'
+      );
     }
   }
 );
@@ -532,7 +653,9 @@ export const fetchSettings = createAsyncThunk(
       const response = await adminApi.getSettings();
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch settings');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch settings'
+      );
     }
   }
 );
@@ -545,8 +668,12 @@ export const updateGeneralSettings = createAsyncThunk(
       toast.success('General settings updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update general settings');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update general settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to update general settings'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update general settings'
+      );
     }
   }
 );
@@ -559,8 +686,12 @@ export const updatePaymentSettings = createAsyncThunk(
       toast.success('Payment settings updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update payment settings');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update payment settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to update payment settings'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update payment settings'
+      );
     }
   }
 );
@@ -573,8 +704,12 @@ export const updateShippingSettings = createAsyncThunk(
       toast.success('Shipping settings updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update shipping settings');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update shipping settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to update shipping settings'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update shipping settings'
+      );
     }
   }
 );
@@ -587,8 +722,12 @@ export const updateEmailSettings = createAsyncThunk(
       toast.success('Email settings updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update email settings');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update email settings');
+      toast.error(
+        error.response?.data?.message || 'Failed to update email settings'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update email settings'
+      );
     }
   }
 );
@@ -601,7 +740,9 @@ export const fetchSalesReport = createAsyncThunk(
       const response = await adminApi.getSalesReport(startDate, endDate);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch sales report');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch sales report'
+      );
     }
   }
 );
@@ -613,7 +754,9 @@ export const fetchInventoryReport = createAsyncThunk(
       const response = await adminApi.getInventoryReport();
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch inventory report');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch inventory report'
+      );
     }
   }
 );
@@ -625,7 +768,9 @@ export const fetchCustomerReport = createAsyncThunk(
       const response = await adminApi.getCustomerReport(startDate, endDate);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch customer report');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch customer report'
+      );
     }
   }
 );
@@ -637,7 +782,9 @@ export const fetchOrderReport = createAsyncThunk(
       const response = await adminApi.getOrderReport(startDate, endDate);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch order report');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch order report'
+      );
     }
   }
 );
@@ -649,7 +796,9 @@ export const exportReport = createAsyncThunk(
       const response = await adminApi.exportReport(type, startDate, endDate);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to export report');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to export report'
+      );
     }
   }
 );
@@ -666,10 +815,12 @@ export const verifyAdminInvitation = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.error('adminSlice: Error in verifyAdminInvitation:', error);
-      return rejectWithValue(error.response?.data || {
-        message: 'Invalid or expired invitation',
-        type: error.response?.status === 400 ? 'EXPIRED' : 'ERROR'
-      });
+      return rejectWithValue(
+        error.response?.data || {
+          message: 'Invalid or expired invitation',
+          type: error.response?.status === 400 ? 'EXPIRED' : 'ERROR',
+        }
+      );
     }
   }
 );
@@ -681,10 +832,12 @@ export const acceptAdminInvitation = createAsyncThunk(
       const response = await adminApi.acceptInvitation({ token, password });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || {
-        message: 'Failed to accept invitation',
-        type: 'ERROR'
-      });
+      return rejectWithValue(
+        error.response?.data || {
+          message: 'Failed to accept invitation',
+          type: 'ERROR',
+        }
+      );
     }
   }
 );
@@ -697,7 +850,9 @@ export const cleanupExpiredInvitations = createAsyncThunk(
       const response = await apiRequest.post('/admin/cleanup-invitations');
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to cleanup invitations');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to cleanup invitations'
+      );
     }
   }
 );
@@ -712,7 +867,9 @@ export const bulkDeleteProducts = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete products');
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete products');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete products'
+      );
     }
   }
 );
@@ -721,12 +878,20 @@ export const bulkUpdateProductStatus = createAsyncThunk(
   'admin/bulkUpdateProductStatus',
   async ({ ids, status, ...otherUpdates }, { rejectWithValue }) => {
     try {
-      const response = await adminApi.bulkUpdateProductStatus({ ids, status, ...otherUpdates });
+      const response = await adminApi.bulkUpdateProductStatus({
+        ids,
+        status,
+        ...otherUpdates,
+      });
       toast.success(`${ids.length} products updated successfully`);
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update product statuses');
-      return rejectWithValue(error.response?.data?.message || 'Failed to update product statuses');
+      toast.error(
+        error.response?.data?.message || 'Failed to update product statuses'
+      );
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update product statuses'
+      );
     }
   }
 );
@@ -737,43 +902,43 @@ const initialState = {
   salesAnalytics: null,
   inventoryStats: null,
   customerStats: null,
-  
+
   // Products
   products: [],
   totalProducts: 0,
   currentProduct: null,
   currentPage: 1,
   totalPages: 1,
-  
+
   // Orders
   orders: [],
   totalOrders: 0,
   currentOrder: null,
-  
+
   // Customers
   customers: [],
   totalCustomers: 0,
   currentCustomer: null,
-  
+
   // Users
   users: [],
   totalUsers: 0,
   currentUser: null,
   invitations: [],
-  
+
   // Categories
   categories: [],
   currentCategory: null,
-  
+
   // Settings
   settings: null,
-  
+
   // Reports
   salesReport: null,
   inventoryReport: null,
   customerReport: null,
   orderReport: null,
-  
+
   // UI State
   loading: false,
   error: null,
@@ -825,7 +990,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Sales Analytics
       .addCase(fetchSalesAnalytics.pending, (state) => {
         state.loading = true;
@@ -839,7 +1004,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Inventory Stats
       .addCase(fetchInventoryStats.pending, (state) => {
         state.loading = true;
@@ -853,7 +1018,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Customer Stats
       .addCase(fetchCustomerStats.pending, (state) => {
         state.loading = true;
@@ -867,24 +1032,24 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Products
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-    .addCase(fetchProducts.fulfilled, (state, action) => {
+      .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
         state.products = action.payload.products;
         state.totalProducts = action.payload.totalProducts;
         state.currentPage = action.payload.currentPage;
         state.totalPages = action.payload.totalPages;
-    })
+      })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchProductById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -897,30 +1062,40 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(createProduct.fulfilled, (state, action) => {
         state.products.unshift(action.payload);
         state.totalProducts += 1;
       })
-      
+
       .addCase(updateProduct.fulfilled, (state, action) => {
-        const index = state.products.findIndex(product => product._id === action.payload._id);
+        const index = state.products.findIndex(
+          (product) => product._id === action.payload._id
+        );
         if (index !== -1) {
           state.products[index] = action.payload;
         }
-        if (state.currentProduct && state.currentProduct._id === action.payload._id) {
+        if (
+          state.currentProduct &&
+          state.currentProduct._id === action.payload._id
+        ) {
           state.currentProduct = action.payload;
         }
       })
-      
+
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.products = state.products.filter(product => product._id !== action.payload);
+        state.products = state.products.filter(
+          (product) => product._id !== action.payload
+        );
         state.totalProducts -= 1;
-        if (state.currentProduct && state.currentProduct._id === action.payload) {
+        if (
+          state.currentProduct &&
+          state.currentProduct._id === action.payload
+        ) {
           state.currentProduct = null;
         }
       })
-      
+
       // Orders
       .addCase(fetchOrders.pending, (state) => {
         state.loading = true;
@@ -929,13 +1104,14 @@ const adminSlice = createSlice({
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
         state.orders = action.payload.orders;
-        state.totalOrders = action.payload.totalPages * action.payload.currentPage;
+        state.totalOrders =
+          action.payload.totalPages * action.payload.currentPage;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchOrderById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -948,47 +1124,67 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        const index = state.orders.findIndex(order => order._id === action.payload._id);
+        const index = state.orders.findIndex(
+          (order) => order._id === action.payload._id
+        );
         if (index !== -1) {
           state.orders[index] = action.payload;
         }
-        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload._id
+        ) {
           state.currentOrder = action.payload;
         }
       })
-      
+
       .addCase(updateOrderTracking.fulfilled, (state, action) => {
-        const index = state.orders.findIndex(order => order._id === action.payload._id);
+        const index = state.orders.findIndex(
+          (order) => order._id === action.payload._id
+        );
         if (index !== -1) {
           state.orders[index] = action.payload;
         }
-        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload._id
+        ) {
           state.currentOrder = action.payload;
         }
       })
-      
+
       .addCase(cancelOrder.fulfilled, (state, action) => {
-        const index = state.orders.findIndex(order => order._id === action.payload._id);
+        const index = state.orders.findIndex(
+          (order) => order._id === action.payload._id
+        );
         if (index !== -1) {
           state.orders[index] = action.payload;
         }
-        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload._id
+        ) {
           state.currentOrder = action.payload;
         }
       })
-      
+
       .addCase(refundOrder.fulfilled, (state, action) => {
-        const index = state.orders.findIndex(order => order._id === action.payload._id);
+        const index = state.orders.findIndex(
+          (order) => order._id === action.payload._id
+        );
         if (index !== -1) {
           state.orders[index] = action.payload;
         }
-        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+        if (
+          state.currentOrder &&
+          state.currentOrder._id === action.payload._id
+        ) {
           state.currentOrder = action.payload;
         }
       })
-      
+
       // Customers
       .addCase(fetchCustomers.pending, (state) => {
         state.loading = true;
@@ -997,13 +1193,14 @@ const adminSlice = createSlice({
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.loading = false;
         state.customers = action.payload.customers;
-        state.totalCustomers = action.payload.totalPages * action.payload.currentPage;
+        state.totalCustomers =
+          action.payload.totalPages * action.payload.currentPage;
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchCustomerById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1016,37 +1213,52 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(updateCustomerStatus.fulfilled, (state, action) => {
-        const index = state.customers.findIndex(customer => customer._id === action.payload._id);
+        const index = state.customers.findIndex(
+          (customer) => customer._id === action.payload._id
+        );
         if (index !== -1) {
           state.customers[index] = action.payload;
         }
-        if (state.currentCustomer && state.currentCustomer._id === action.payload._id) {
+        if (
+          state.currentCustomer &&
+          state.currentCustomer._id === action.payload._id
+        ) {
           state.currentCustomer = action.payload;
         }
       })
-      
+
       .addCase(blockCustomer.fulfilled, (state, action) => {
-        const index = state.customers.findIndex(customer => customer._id === action.payload._id);
+        const index = state.customers.findIndex(
+          (customer) => customer._id === action.payload._id
+        );
         if (index !== -1) {
           state.customers[index] = action.payload;
         }
-        if (state.currentCustomer && state.currentCustomer._id === action.payload._id) {
+        if (
+          state.currentCustomer &&
+          state.currentCustomer._id === action.payload._id
+        ) {
           state.currentCustomer = action.payload;
         }
       })
-      
+
       .addCase(unblockCustomer.fulfilled, (state, action) => {
-        const index = state.customers.findIndex(customer => customer._id === action.payload._id);
+        const index = state.customers.findIndex(
+          (customer) => customer._id === action.payload._id
+        );
         if (index !== -1) {
           state.customers[index] = action.payload;
         }
-        if (state.currentCustomer && state.currentCustomer._id === action.payload._id) {
+        if (
+          state.currentCustomer &&
+          state.currentCustomer._id === action.payload._id
+        ) {
           state.currentCustomer = action.payload;
         }
       })
-      
+
       // Users
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
@@ -1055,13 +1267,14 @@ const adminSlice = createSlice({
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
         state.users = action.payload.users;
-        state.totalUsers = action.payload.totalPages * action.payload.currentPage;
+        state.totalUsers =
+          action.payload.totalPages * action.payload.currentPage;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchUserById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1074,14 +1287,16 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(createUser.fulfilled, (state, action) => {
         state.users.unshift(action.payload);
         state.totalUsers += 1;
       })
-      
+
       .addCase(updateUser.fulfilled, (state, action) => {
-        const index = state.users.findIndex(user => user._id === action.payload._id);
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -1089,17 +1304,19 @@ const adminSlice = createSlice({
           state.currentUser = action.payload;
         }
       })
-      
+
       .addCase(deleteUser.fulfilled, (state, action) => {
-        state.users = state.users.filter(user => user._id !== action.payload);
+        state.users = state.users.filter((user) => user._id !== action.payload);
         state.totalUsers -= 1;
         if (state.currentUser && state.currentUser._id === action.payload) {
           state.currentUser = null;
         }
       })
-      
+
       .addCase(updateUserRole.fulfilled, (state, action) => {
-        const index = state.users.findIndex(user => user._id === action.payload._id);
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -1107,9 +1324,11 @@ const adminSlice = createSlice({
           state.currentUser = action.payload;
         }
       })
-      
+
       .addCase(updateUserStatus.fulfilled, (state, action) => {
-        const index = state.users.findIndex(user => user._id === action.payload._id);
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -1119,50 +1338,58 @@ const adminSlice = createSlice({
       })
 
       //users admin
-        .addCase(fetchAdminInvitations.pending, (state) => {
-        state.loading = true
-        state.error = null
+      .addCase(fetchAdminInvitations.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(fetchAdminInvitations.fulfilled, (state, action) => {
-        state.loading = false
-        state.invitations = action.payload
+        state.loading = false;
+        state.invitations = action.payload;
       })
       .addCase(fetchAdminInvitations.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+        state.loading = false;
+        state.error = action.payload;
       })
 
       .addCase(inviteAdmin.fulfilled, (state, action) => {
         if (action.payload) {
-          state.invitations.unshift(action.payload)
+          state.invitations.unshift(action.payload);
         }
       })
 
       .addCase(resendInvitation.fulfilled, (state, action) => {
-        const index = state.invitations.findIndex((invitation) => invitation._id === action.payload._id)
+        const index = state.invitations.findIndex(
+          (invitation) => invitation._id === action.payload._id
+        );
         if (index !== -1) {
-          state.invitations[index] = action.payload
+          state.invitations[index] = action.payload;
         }
       })
 
       .addCase(cancelInvitation.fulfilled, (state, action) => {
-        state.invitations = state.invitations.filter((invitation) => invitation._id !== action.payload)
+        state.invitations = state.invitations.filter(
+          (invitation) => invitation._id !== action.payload
+        );
       })
 
       .addCase(lockAccount.fulfilled, (state, action) => {
-        const index = state.users.findIndex((user) => user._id === action.payload._id)
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
-          state.users[index] = action.payload
+          state.users[index] = action.payload;
         }
       })
 
       .addCase(unlockAccount.fulfilled, (state, action) => {
-        const index = state.users.findIndex((user) => user._id === action.payload._id)
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
-          state.users[index] = action.payload
+          state.users[index] = action.payload;
         }
       })
-      
+
       // Categories
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
@@ -1176,7 +1403,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchCategoryById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1189,28 +1416,38 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(createCategory.fulfilled, (state, action) => {
         state.categories.push(action.payload);
       })
-      
+
       .addCase(updateCategory.fulfilled, (state, action) => {
-        const index = state.categories.findIndex(category => category._id === action.payload._id);
+        const index = state.categories.findIndex(
+          (category) => category._id === action.payload._id
+        );
         if (index !== -1) {
           state.categories[index] = action.payload;
         }
-        if (state.currentCategory && state.currentCategory._id === action.payload._id) {
+        if (
+          state.currentCategory &&
+          state.currentCategory._id === action.payload._id
+        ) {
           state.currentCategory = action.payload;
         }
       })
-      
+
       .addCase(deleteCategory.fulfilled, (state, action) => {
-        state.categories = state.categories.filter(category => category._id !== action.payload);
-        if (state.currentCategory && state.currentCategory._id === action.payload) {
+        state.categories = state.categories.filter(
+          (category) => category._id !== action.payload
+        );
+        if (
+          state.currentCategory &&
+          state.currentCategory._id === action.payload
+        ) {
           state.currentCategory = null;
         }
       })
-      
+
       // Settings
       .addCase(fetchSettings.pending, (state) => {
         state.loading = true;
@@ -1224,23 +1461,23 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(updateGeneralSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
       })
-      
+
       .addCase(updatePaymentSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
       })
-      
+
       .addCase(updateShippingSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
       })
-      
+
       .addCase(updateEmailSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
       })
-      
+
       // Reports
       .addCase(fetchSalesReport.pending, (state) => {
         state.loading = true;
@@ -1254,7 +1491,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchInventoryReport.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1267,7 +1504,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchCustomerReport.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1280,7 +1517,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       .addCase(fetchOrderReport.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -1293,7 +1530,7 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Accept Invitation
       .addCase(acceptAdminInvitation.pending, (state) => {
         state.loading = true;
@@ -1339,7 +1576,7 @@ const adminSlice = createSlice({
         state.error = action.payload;
         state.success = false;
       });
-  }
+  },
 });
 
 export const {
@@ -1349,7 +1586,7 @@ export const {
   clearCurrentCustomer,
   clearCurrentUser,
   clearCurrentCategory,
-  clearAdminState
+  clearAdminState,
 } = adminSlice.actions;
 
-export default adminSlice.reducer; 
+export default adminSlice.reducer;

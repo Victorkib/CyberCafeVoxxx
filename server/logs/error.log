@@ -1,0 +1,681 @@
+2025-05-09 15:40:14:4014 [31merror[39m: [31mError creating order[39m
+2025-05-09 15:58:38:5838 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending email[39m
+2025-05-09 15:58:39:5839 [31merror[39m: [31mError sending order confirmation email to triple3limited@gmail.com[39m
+2025-05-09 16:19:46:1946 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:47:53:4753 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:48:52:4852 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-09 16:52:33:5233 [31merror[39m: [31mEmail service connection failed[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:19:3219 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:20:3220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 14:32:21:3221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mError initializing payment for order 68209e1e198617bfb3f15ef4[39m
+2025-05-11 15:54:59:5459 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa STK Push API error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mM-Pesa payment initialization error:[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mError initializing payment for order 6820a4cd9e7e4c02993ccea5[39m
+2025-05-11 16:23:30:2330 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:42:13:4213 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:28:4828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:29:4829 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Error:[39m
+2025-05-11 19:48:30:4830 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:53:3253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Error:[39m
+2025-05-12 09:32:54:3254 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:25:3325 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:25:3325 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:25:3325 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:25:3325 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 07:33:27:3327 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:31:04:314 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:31:04:314 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:31:05:315 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:33:36:3336 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:33:36:3336 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:33:46:3346 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:33:46:3346 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:33:46:3346 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:33:46:3346 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 14:33:50:3350 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 14:33:50:3350 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-14 16:44:32:4432 [31merror[39m: [31mPayment Error:[39m
+2025-05-14 16:44:32:4432 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:40:05:405 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:40:06:406 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:45:58:4558 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:45:59:4559 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:45:59:4559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:47:46:4746 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Error:[39m
+2025-05-15 13:49:20:4920 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 07:57:18:5718 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 07:57:18:5718 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:05:05 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:35:035 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:00:36:036 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:06:16 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:36:136 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:36:136 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:36:136 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:36:136 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:37:137 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:01:38:138 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:08:28 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:08:28 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:10:210 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:38:238 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:38:238 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:40:240 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:40:240 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:02:41:241 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:08:38 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:08:38 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:11:311 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:38:338 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:38:338 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:03:42:342 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:04:08:48 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:04:08:48 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:04:12:412 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:04:12:412 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:19:1419 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:19:1419 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:19:1419 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:19:1419 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:20:1420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:14:40:1440 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:15:10:1510 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:15:10:1510 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 08:15:30:1530 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 08:15:30:1530 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Error:[39m
+2025-05-16 11:36:29:3629 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:06:45:645 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:06:45:645 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:25:825 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:25:825 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:28:828 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:28:828 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:36:836 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:36:836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:36:836 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:36:836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:37:837 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:37:837 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-17 10:08:37:837 [31merror[39m: [31mPayment Error:[39m
+2025-05-17 10:08:37:837 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 09:32:15:3215 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 11:58:58:5858 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 17:10:03:103 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 17:10:03:103 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Error:[39m
+2025-05-22 20:58:36:5836 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Error:[39m
+2025-05-29 23:53:33:5333 [31merror[39m: [31mPayment Provider Error:[39m
+2025-05-30 01:21:47:2147 [31merror[39m: [31mPayment Error:[39m
+2025-05-30 01:21:47:2147 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 22:58:01:581 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 22:58:01:581 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 22:58:07:587 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 23:07:57:757 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 23:07:57:757 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 23:08:12:812 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 23:08:12:812 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-17 23:10:39:1039 [31merror[39m: [31mPayment Error:[39m
+2025-06-17 23:10:39:1039 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:06:56:656 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:09:46:946 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:09:46:946 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 21:12:04:124 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 21:12:04:124 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 22:13:05:135 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 22:13:05:135 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 22:22:52:2252 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 22:22:52:2252 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Error:[39m
+2025-06-20 22:22:53:2253 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 18:13:01:131 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 18:13:01:131 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 18:13:02:132 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 18:13:03:133 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 18:13:03:133 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 18:13:03:133 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 18:13:03:133 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 18:13:03:133 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:03:503 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:03:503 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:03:503 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:03:503 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:04:504 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:04:504 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:04:504 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:04:504 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:05:505 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:05:505 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 20:50:06:506 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 20:50:06:506 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:31:19:3119 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:31:19:3119 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:50:3550 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:50:3550 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:50:3550 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:50:3550 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:52:3552 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:52:3552 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:52:3552 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:52:3552 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:54:3554 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:54:3554 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:54:3554 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:54:3554 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:57:3557 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:57:3557 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:57:3557 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:57:3557 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:59:3559 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:59:3559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:35:59:3559 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:35:59:3559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:36:01:361 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:36:01:361 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-21 21:36:01:361 [31merror[39m: [31mPayment Error:[39m
+2025-06-21 21:36:01:361 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:18:26:1826 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:18:26:1826 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:19:43:1943 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:19:44:1944 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:19:46:1946 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:19:46:1946 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:19:47:1947 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:19:47:1947 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:19:48:1948 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:19:48:1948 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:56:4156 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:57:4157 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:57:4157 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:57:4157 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:57:4157 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:58:4158 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:58:4158 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:41:58:4158 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:41:58:4158 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:42:00:420 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:42:00:420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:42:00:420 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:42:00:420 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:42:01:421 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:42:01:421 [31merror[39m: [31mPayment Provider Error:[39m
+2025-06-22 14:42:01:421 [31merror[39m: [31mPayment Error:[39m
+2025-06-22 14:42:01:421 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 21:04:16:416 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 21:04:16:416 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 21:04:16:416 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 21:04:16:416 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 21:04:17:417 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 21:04:17:417 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 21:04:18:418 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 21:04:18:418 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:30:4930 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:30:4930 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:30:4930 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:30:4930 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:31:4931 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:31:4931 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:31:4931 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:31:4931 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:57:4957 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:57:4957 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:57:4957 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:57:4957 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:58:4958 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:58:4958 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:49:58:4958 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:49:58:4958 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:51:38:5138 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:51:38:5138 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:51:39:5139 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:55:26:5526 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:57:54:5754 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:57:54:5754 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:57:54:5754 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:57:55:5755 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:57:56:5756 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:57:56:5756 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 22:57:56:5756 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 22:57:56:5756 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:12:21:1221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:20:11:2011 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:20:11:2011 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:20:31:2031 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:20:31:2031 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:20:32:2032 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:20:32:2032 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:20:32:2032 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:20:32:2032 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:20:33:2033 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:20:33:2033 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:36:12:3612 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:36:13:3613 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:36:13:3613 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:38:16:3816 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:38:16:3816 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:38:17:3817 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:39:14:3914 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Error:[39m
+2025-07-03 23:55:47:5547 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 00:42:38:4238 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 00:42:38:4238 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 00:42:38:4238 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 00:42:38:4238 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 00:42:39:4239 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 00:42:39:4239 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 00:42:39:4239 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 00:42:39:4239 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:35:58:3558 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:35:58:3558 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:35:59:3559 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 11:37:16:3716 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 13:21:01:211 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 13:21:01:211 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:45:16:4516 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:45:17:4517 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:46:25:4625 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:46:25:4625 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:46:26:4626 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 15:51:16:5116 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:21:59:2159 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:00:220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:00:220 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:00:220 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:01:221 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:02:222 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:02:222 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:02:222 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:02:222 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:04:224 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:04:224 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:04:224 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:04:224 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:05:225 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:05:225 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 17:22:05:225 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 17:22:05:225 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:12:2112 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:12:2112 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:15:2115 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:15:2115 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:17:2117 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:17:2117 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:18:2118 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:18:2118 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:20:2120 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:20:2120 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:21:2121 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:21:2121 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 21:21:26:2126 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 21:21:26:2126 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 22:15:06:156 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 22:15:06:156 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 22:15:07:157 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 22:15:07:157 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 22:25:25:2525 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 22:25:25:2525 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-04 22:25:25:2525 [31merror[39m: [31mPayment Error:[39m
+2025-07-04 22:25:25:2525 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:10:5110 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:10:5110 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:11:5111 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:11:5111 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:12:5112 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:12:5112 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:12:5112 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:12:5112 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:13:5113 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:13:5113 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:13:5113 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:13:5113 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:17:5117 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:18:5118 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 08:51:19:5119 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 08:51:19:5119 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:05:205 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:05:205 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:07:207 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:07:207 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:08:208 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:09:209 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:09:209 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:10:2010 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:10:2010 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:20:10:2010 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:20:10:2010 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:45:09:459 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:45:09:459 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:45:09:459 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:45:09:459 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:58:52:5852 [31merror[39m: [31mError processing inline payment callback for order 68690556c8ebec7126a8b059[39m
+2025-07-05 13:58:52:5852 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:58:52:5852 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 13:58:52:5852 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 13:58:52:5852 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:17:54:1754 [31merror[39m: [31mError processing inline payment callback for order 686909c96dcd40314a984d0c[39m
+2025-07-05 14:17:54:1754 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:17:54:1754 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:17:54:1754 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:17:54:1754 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:30:28:3028 [31merror[39m: [31mError processing inline payment callback for order 68690cb7c82e6b069421c4e4[39m
+2025-07-05 14:30:28:3028 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:30:28:3028 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:30:28:3028 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:30:28:3028 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:25:5025 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:25:5025 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:26:5026 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:26:5026 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:28:5028 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:28:5028 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:28:5028 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:28:5028 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:33:5033 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:33:5033 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 14:50:35:5035 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 14:50:35:5035 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mPayment record not found after all search attempts[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mError processing inline payment callback for order 686918b00e6d6a57891413b7[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 15:21:25:2125 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 15:43:23:4323 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 15:43:23:4323 [31merror[39m: [31mPayment Provider Error:[39m
+2025-07-05 15:43:23:4323 [31merror[39m: [31mPayment Error:[39m
+2025-07-05 15:43:23:4323 [31merror[39m: [31mPayment Provider Error:[39m

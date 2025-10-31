@@ -15,24 +15,27 @@ export const refreshToken = createAsyncThunk(
     try {
       console.log('Refreshing token...');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh-token`,
+        `${
+          import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+        }/auth/refresh-access-token`,
         {},
-        { withCredentials: true }
+        { withCredentials: true } // Critical! Sends cookies with the request
       );
-      
+
       const { token } = response.data;
-      
+
       if (token) {
         console.log('Token refreshed successfully');
         localStorage.setItem('token', token);
-        localStorage.setItem('sessionStart', new Date().toISOString());
         return { token };
       } else {
         throw new Error('No token received');
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to refresh token');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to refresh token'
+      );
     }
   }
 );
@@ -73,17 +76,18 @@ export const verifyEmail = createAsyncThunk(
   async (token, { rejectWithValue }) => {
     try {
       const response = await apiRequest.post('/auth/verify-email', {
-        verificationToken: token
+        verificationToken: token,
       });
       const { user, token: authToken } = response;
-      
+
       // Store token and user data
       localStorage.setItem('token', authToken);
-      
+
       toast.success('Email verified successfully! Welcome to VoxCyber!');
       return user;
     } catch (error) {
-      const message = error.response?.data?.message || 'Email verification failed';
+      const message =
+        error.response?.data?.message || 'Email verification failed';
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -94,11 +98,14 @@ export const resendVerification = createAsyncThunk(
   'auth/resendVerification',
   async (email, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.post('/auth/resendVerification', { email });
+      const response = await apiRequest.post('/auth/resendVerification', {
+        email,
+      });
       toast.success('Verification email sent successfully');
       return response;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to resend verification email';
+      const message =
+        error.response?.data?.message || 'Failed to resend verification email';
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -109,14 +116,15 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
+      const response = await apiRequest.post('/auth/logout');
+
       // Clear token from localStorage
       localStorage.removeItem('token');
-      
-      // Show success message
-      toast.success('Logged out successfully');
-      
-      return null;
+
+      return response.data;
     } catch (error) {
+      const message = error?.response?.data?.message || 'Logout failed';
+      toast.error(message);
       return rejectWithValue('Logout failed');
     }
   }
@@ -129,7 +137,9 @@ export const getCurrentUser = createAsyncThunk(
       const response = await apiRequest.get('/auth/me');
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to get user data');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to get user data'
+      );
     }
   }
 );
@@ -138,11 +148,16 @@ export const updatePassword = createAsyncThunk(
   'auth/updatePassword',
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.put('/auth/update-password', { currentPassword, newPassword });
+      const response = await apiRequest.put('/auth/update-password', {
+        currentPassword,
+        newPassword,
+      });
       toast.success(response.message || 'Password updated successfully');
       return true;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update password');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update password'
+      );
     }
   }
 );
@@ -151,13 +166,19 @@ export const forgotPassword = createAsyncThunk(
   'auth/forgotPassword',
   async (email, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.post('/auth/forgot-password', { email });
+      const response = await apiRequest.post('/auth/forgot-password', {
+        email,
+      });
       if (response.message) {
         toast.success(response.message);
       }
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to send reset email');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to send reset email'
+      );
     }
   }
 );
@@ -171,20 +192,30 @@ export const resetPassword = createAsyncThunk(
       if (!token) {
         return rejectWithValue('Invalid or missing reset token');
       }
-      
+
       // Validate password
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password)) {
-        return rejectWithValue('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+        return rejectWithValue(
+          'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+        );
       }
-      
-      const response = await apiRequest.post('/auth/reset-password', { token, password });
+
+      const response = await apiRequest.post('/auth/reset-password', {
+        token,
+        password,
+      });
       if (response.message) {
         toast.success(response.message);
       }
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to reset password');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to reset password'
+      );
     }
   }
 );
@@ -197,10 +228,15 @@ export const checkAuthState = createAsyncThunk(
       if (!token) {
         throw new Error('No token found');
       }
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true
-      });
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+        }/auth/me`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
       // Only store the necessary data from the response
       const { user } = response.data;
       localStorage.setItem('token', token);
@@ -209,7 +245,9 @@ export const checkAuthState = createAsyncThunk(
     } catch (error) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      return rejectWithValue(error.response?.data?.message || 'Authentication failed');
+      return rejectWithValue(
+        error.response?.data?.message || 'Authentication failed'
+      );
     }
   }
 );
@@ -227,7 +265,7 @@ export const createSession = createAsyncThunk(
         platform: navigator.platform,
       },
     };
-    
+
     const response = await apiRequest.post('/auth/sessions', sessionData);
     return response;
   }
@@ -238,10 +276,14 @@ export const checkPasswordExpiry = createAsyncThunk(
   async (_, { getState }) => {
     const { user } = getState().auth;
     if (!user) return null;
-    
-    const passwordLastChanged = new Date(user.passwordLastChanged || user.createdAt);
-    const daysUntilExpiry = PASSWORD_EXPIRY_DAYS - Math.floor((new Date() - passwordLastChanged) / (1000 * 60 * 60 * 24));
-    
+
+    const passwordLastChanged = new Date(
+      user.passwordLastChanged || user.createdAt
+    );
+    const daysUntilExpiry =
+      PASSWORD_EXPIRY_DAYS -
+      Math.floor((new Date() - passwordLastChanged) / (1000 * 60 * 60 * 24));
+
     return { daysUntilExpiry };
   }
 );
@@ -250,10 +292,15 @@ export const validatePasswordHistory = createAsyncThunk(
   'auth/validatePasswordHistory',
   async (newPassword, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.post('/auth/validate-password-history', { newPassword });
+      const response = await apiRequest.post(
+        '/auth/validate-password-history',
+        { newPassword }
+      );
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Password validation failed');
+      return rejectWithValue(
+        error.response?.data?.message || 'Password validation failed'
+      );
     }
   }
 );
@@ -305,7 +352,9 @@ const authSlice = createSlice({
       state.loginAttempts += 1;
       if (state.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
         state.isLocked = true;
-        state.lockExpiresAt = new Date(Date.now() + LOCK_DURATION_MINUTES * 60 * 1000).toISOString();
+        state.lockExpiresAt = new Date(
+          Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
+        ).toISOString();
       }
     },
     addSecurityAlert: (state, action) => {
@@ -318,7 +367,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-     // SOLUTION: Add cases for refreshToken
+      // SOLUTION: Add cases for refreshToken
       .addCase(refreshToken.pending, (state) => {
         state.loading = true;
       })

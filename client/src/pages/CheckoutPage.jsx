@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 import { createOrder } from '../redux/slices/orderSlice';
 import { clearCart } from '../redux/slices/cartSlice';
-import { getPaymentMethods, initializePayment, checkPaymentStatus } from '../redux/slices/paymentSlice';
+import {
+  getPaymentMethods,
+  initializePayment,
+  checkPaymentStatus,
+} from '../redux/slices/paymentSlice';
 import { toast } from 'react-hot-toast';
 import formatCurrency from '../utils/formatCurrency';
 
@@ -20,7 +24,14 @@ export default function CheckoutPage() {
   const dispatch = useDispatch();
   const { items, total } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
-  const { methods, loading: paymentLoading, error: paymentError } = useSelector((state) => state.payment);
+  const {
+    methods,
+    loading: paymentLoading,
+    error: paymentError,
+  } = useSelector((state) => state.payment);
+
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentStatusInterval, setPaymentStatusInterval] = useState(null);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -33,7 +44,7 @@ export default function CheckoutPage() {
       city: '',
       state: '',
       zipCode: '',
-      country: 'United States',
+      country: 'Kenya', // Changed from 'United States' to 'Kenya' for M-Pesa compatibility
     },
     payment: {
       method: '',
@@ -44,6 +55,15 @@ export default function CheckoutPage() {
   useEffect(() => {
     dispatch(getPaymentMethods());
   }, [dispatch]);
+
+  // IMPROVEMENT 2: Cleanup interval on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (paymentStatusInterval) {
+        clearInterval(paymentStatusInterval);
+      }
+    };
+  }, [paymentStatusInterval]);
 
   const handleInputChange = (section, field, value) => {
     setFormData((prev) => ({
@@ -69,6 +89,7 @@ export default function CheckoutPage() {
     );
   };
 
+  // IMPROVEMENT 3: Enhanced phone number validation for M-Pesa
   const validatePayment = () => {
     const { payment } = formData;
     if (!payment.method) {
@@ -77,6 +98,16 @@ export default function CheckoutPage() {
     }
     if (payment.method === 'mpesa' && !payment.phoneNumber) {
       toast.error('Please enter your phone number for M-Pesa payment');
+      return false;
+    }
+    // IMPROVEMENT 4: Proper M-Pesa phone number format validation
+    if (
+      payment.method === 'mpesa' &&
+      !/^254[0-9]{9}$/.test(payment.phoneNumber)
+    ) {
+      toast.error(
+        'Invalid M-Pesa phone number format. Must start with 254 followed by 9 digits'
+      );
       return false;
     }
     return true;
@@ -98,6 +129,10 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async () => {
+    if (isProcessingPayment) return; // Prevent double submission
+
+    setIsProcessingPayment(true);
+
     try {
       // Create order first
       const orderData = {
@@ -115,43 +150,43 @@ export default function CheckoutPage() {
 
       const orderResult = await dispatch(createOrder(orderData)).unwrap();
 
-      // Initialize payment
-      const paymentResult = await dispatch(initializePayment({
-        method: formData.payment.method,
+      // IMPROVEMENT 6: Consistent payment data structure
+      const paymentData = {
         orderId: orderResult._id,
-        phoneNumber: formData.payment.phoneNumber,
-      })).unwrap();
+        method: formData.payment.method,
+        email: formData.shipping.email,
+      };
 
-      // Handle different payment methods
+      // Add phone number for M-Pesa
+      if (formData.payment.method === 'mpesa') {
+        paymentData.phoneNumber = formData.payment.phoneNumber;
+      }
+
+      const paymentResult = await dispatch(
+        initializePayment(paymentData)
+      ).unwrap();
+
+      // IMPROVEMENT 7: Better handling of different payment methods
       switch (formData.payment.method) {
         case 'mpesa':
-          // M-Pesa payment is initiated via STK Push
           toast.success('Please check your phone for the M-Pesa prompt');
-          // Start polling for payment status
           startPaymentStatusCheck(orderResult._id);
           break;
 
         case 'paystack':
-          // Redirect to Paystack payment page
-          window.location.href = paymentResult.data.authorization_url;
+          // IMPROVEMENT 8: Better error handling for missing URLs
+          if (paymentResult.authorizationUrl) {
+            window.location.href = paymentResult.authorizationUrl;
+          } else {
+            throw new Error('Payment authorization URL not received');
+          }
           break;
 
         case 'paypal':
-          // Handle PayPal payment
-          if (window.paypal) {
-            window.paypal.Buttons({
-              createOrder: () => paymentResult.data.id,
-              onApprove: async (data) => {
-                try {
-                  await dispatch(checkPaymentStatus(orderResult._id)).unwrap();
-                  dispatch(clearCart());
-                  toast.success('Payment successful!');
-                  navigate('/order-confirmation');
-                } catch (error) {
-                  toast.error('Failed to verify payment');
-                }
-              },
-            }).render('#paypal-button-container');
+          if (paymentResult.approvalUrl) {
+            window.location.href = paymentResult.approvalUrl;
+          } else {
+            throw new Error('PayPal approval URL not received');
           }
           break;
 
@@ -160,38 +195,63 @@ export default function CheckoutPage() {
           return;
       }
     } catch (error) {
+      console.error('Payment error:', error);
       toast.error(error.message || 'Failed to process payment');
+      setIsProcessingPayment(false);
     }
   };
 
   // Add payment status polling
   const startPaymentStatusCheck = (orderId) => {
+    let attempts = 0;
+    const maxAttempts = 24; // 2 minutes with 5-second intervals
+
     const checkStatus = async () => {
       try {
+        attempts++;
         const result = await dispatch(checkPaymentStatus(orderId)).unwrap();
-        if (result.status === 'paid') {
+
+        if (result.paymentDetails.status === 'paid') {
+          clearInterval(paymentStatusInterval);
+          dispatch(clearCart());
           toast.success('Payment successful!');
-          navigate('/order-confirmation');
-          return true;
-        } else if (result.status === 'failed') {
-          toast.error('Payment failed');
-          return true;
+          navigate('/order-confirmation', { state: { orderId } });
+          return;
+        } else if (result.paymentDetails.status === 'failed') {
+          clearInterval(paymentStatusInterval);
+          toast.error('Payment failed. Please try again.');
+          setIsProcessingPayment(false);
+          return;
+        } else if (result.paymentDetails.status === 'expired') {
+          clearInterval(paymentStatusInterval);
+          toast.error('Payment expired. Please try again.');
+          setIsProcessingPayment(false);
+          return;
         }
-        return false;
+
+        // Stop polling after max attempts
+        if (attempts >= maxAttempts) {
+          clearInterval(paymentStatusInterval);
+          toast.warning(
+            'Payment is taking longer than expected. Please check your order status.'
+          );
+          setIsProcessingPayment(false);
+        }
       } catch (error) {
         console.error('Error checking payment status:', error);
-        return true;
+        attempts++;
+        if (attempts >= maxAttempts) {
+          clearInterval(paymentStatusInterval);
+          toast.error(
+            'Unable to verify payment status. Please check your order status.'
+          );
+          setIsProcessingPayment(false);
+        }
       }
     };
 
-    const poll = async () => {
-      const shouldStop = await checkStatus();
-      if (!shouldStop) {
-        setTimeout(poll, 5000); // Check every 5 seconds
-      }
-    };
-
-    poll();
+    const interval = setInterval(checkStatus, 5000);
+    setPaymentStatusInterval(interval);
   };
 
   if (!items.length) {
@@ -422,7 +482,11 @@ export default function CheckoutPage() {
                       type="tel"
                       value={formData.payment.phoneNumber}
                       onChange={(e) =>
-                        handleInputChange('payment', 'phoneNumber', e.target.value)
+                        handleInputChange(
+                          'payment',
+                          'phoneNumber',
+                          e.target.value
+                        )
                       }
                       placeholder="e.g., 254712345678"
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -459,7 +523,10 @@ export default function CheckoutPage() {
                   <h3 className="font-medium mb-2">Payment Method</h3>
                   <div className="bg-gray-50 p-4 rounded-md">
                     <p>
-                      {methods.find((m) => m.id === formData.payment.method)?.name}
+                      {
+                        methods.find((m) => m.id === formData.payment.method)
+                          ?.name
+                      }
                     </p>
                     {formData.payment.method === 'mpesa' && (
                       <p>Phone: {formData.payment.phoneNumber}</p>
@@ -537,4 +604,4 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
-} 
+}

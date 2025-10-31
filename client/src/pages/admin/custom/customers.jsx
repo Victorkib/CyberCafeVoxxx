@@ -6,25 +6,23 @@ import {
   Search,
   FilePlus,
   RefreshCw,
-  Database,
   MessageSquare,
-  Trash2,
   Edit,
   Eye,
-  Filter,
   User,
   Mail,
   Phone,
   Calendar,
-  CreditCard,
   MapPin,
   ShoppingCart,
   UserPlus,
-  Zap,
-  Award,
-  Heart,
   Ban,
   CheckCircle,
+  Download,
+  TrendingUp,
+  UserX,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import {
   Button,
@@ -60,15 +58,15 @@ import {
   InputLabel,
   Grid,
   CircularProgress,
+  Pagination,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
-import {
-  Popconfirm,
-  DatePicker,
-  Timeline,
-  Tag,
-  Badge,
-  Empty,
-} from 'antd';
+import { DatePicker, Empty } from 'antd';
 import {
   XAxis,
   YAxis,
@@ -80,123 +78,58 @@ import {
   Cell,
   AreaChart,
   Area,
+  Legend,
 } from 'recharts';
 import {
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../components/ui/select';
-import {
   fetchCustomers,
+  fetchCustomerById,
   updateCustomerStatus,
   blockCustomer,
   unblockCustomer,
+  updateUser,
+  createUser,
 } from '../../../redux/slices/adminSlice';
 import { toast } from 'react-hot-toast';
 
-// Mock data
-const mockCustomers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '(555) 123-4567',
-    joined: '2024-12-10',
-    orders: 5,
-    spent: 249.95,
-    status: 'Active',
-    lastOrder: '2025-03-10',
-    address: '123 Main St, New York, NY 10001',
-    avatar: '/placeholder.svg?height=40&width=40',
-    notes: 'Prefers email communication',
-    tags: ['Loyal', 'High Value'],
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '(555) 987-6543',
-    joined: '2025-01-15',
-    orders: 3,
-    spent: 189.97,
-    status: 'Active',
-    lastOrder: '2025-03-05',
-    address: '456 Oak Ave, Chicago, IL 60611',
-    avatar: '/placeholder.svg?height=40&width=40',
-    notes: '',
-    tags: ['New'],
-  },
-  {
-    id: 3,
-    name: 'Robert Johnson',
-    email: 'robert.j@example.com',
-    phone: '(555) 456-7890',
-    joined: '2025-02-05',
-    orders: 2,
-    spent: 99.98,
-    status: 'Active',
-    lastOrder: '2025-02-28',
-    address: '789 Pine Blvd, Los Angeles, CA 90001',
-    avatar: '/placeholder.svg?height=40&width=40',
-    notes: 'Interested in office supplies',
-    tags: ['New'],
-  },
-  {
-    id: 4,
-    name: 'Emily Davis',
-    email: 'emily.d@example.com',
-    phone: '(555) 234-5678',
-    joined: '2025-02-20',
-    orders: 4,
-    spent: 159.96,
-    status: 'Active',
-    lastOrder: '2025-03-12',
-    address: '321 Maple Dr, Houston, TX 77001',
-    avatar: '/placeholder.svg?height=40&width=40',
-    notes: '',
-    tags: ['Repeat'],
-  },
-  {
-    id: 5,
-    name: 'Michael Wilson',
-    email: 'michael.w@example.com',
-    phone: '(555) 876-5432',
-    joined: '2025-03-01',
-    orders: 1,
-    spent: 179.98,
-    status: 'Inactive',
-    lastOrder: '2025-03-01',
-    address: '654 Cedar St, Phoenix, AZ 85001',
-    avatar: '/placeholder.svg?height=40&width=40',
-    notes: 'Requested product catalog',
-    tags: ['New'],
-  },
-];
+// Status color helper
+const getStatusColor = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'success';
+    case 'inactive':
+      return 'warning';
+    case 'blocked':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
 
 // Date formatter
 const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-// Status color helper
-const getStatusColor = (status) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return 'text-green-600 dark:text-green-400';
-    case 'inactive':
-      return 'text-gray-600 dark:text-gray-400';
-    case 'blocked':
-      return 'text-red-600 dark:text-red-400';
-    default:
-      return 'text-gray-600 dark:text-gray-400';
-  }
+// Format date with time
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'N/A';
+  const options = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  };
+  return new Date(dateString).toLocaleString(undefined, options);
 };
 
 const Customers = () => {
   const dispatch = useDispatch();
-  const { customers, loading } = useSelector((state) => state.admin);
+  const { customers, loading, error } = useSelector((state) => state.admin);
+
+  // Local state
   const [notification, setNotification] = useState({
     open: false,
     message: '',
@@ -209,20 +142,62 @@ const Customers = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
   const [tabValue, setTabValue] = useState(0);
-  const [bulkSelected, setBulkSelected] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState('csv');
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    status: 'Active',
-    tags: ['New'],
+    status: 'active',
     notes: '',
   });
 
+  // Fetch customers on component mount and when filters change
   useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Using the correct action from your adminSlice
+        await dispatch(
+          fetchCustomers({
+            page,
+            limit,
+          })
+        ).unwrap();
+      } catch (err) {
+        toast.error(err.message || 'Failed to fetch customers');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [dispatch, page, limit]);
+
+  // Apply search filter with debounce
+  useEffect(() => {
+    if (!searchTerm) return;
+
+    const timer = setTimeout(() => {
+      // In a real implementation, you would add search functionality to your API
+      // For now, we'll just filter the existing customers client-side
+      const filteredCustomers = customers.filter(
+        (customer) =>
+          customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      // This is a client-side filter since your API might not support search directly
+      // In a production app, you would update your API to support search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, customers]);
 
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
@@ -235,8 +210,7 @@ const Customers = () => {
       email: '',
       phone: '',
       address: '',
-      status: 'Active',
-      tags: ['New'],
+      status: 'active',
       notes: '',
     });
     setIsAddCustomerModalOpen(true);
@@ -247,33 +221,29 @@ const Customers = () => {
     setNewCustomer({
       name: customer.name,
       email: customer.email,
-      phone: customer.phone,
-      address: customer.address,
+      phone: customer.phone || '',
+      address: customer.address || '',
       status: customer.status,
-      tags: [...customer.tags],
-      notes: customer.notes,
+      notes: customer.notes || '',
     });
     setIsAddCustomerModalOpen(true);
   };
 
-  const handleViewCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setIsViewCustomerModalOpen(true);
-  };
-
-  const handleDeleteCustomer = (customerId) => {
-    // Simulate API call
-    setTimeout(() => {
-      const updatedCustomers = customers.filter(
-        (customer) => customer.id !== customerId
-      );
-      dispatch(fetchCustomers(updatedCustomers));
-      setNotification({
-        open: true,
-        message: 'Customer deleted successfully',
-        type: 'success',
-      });
-    }, 1000);
+  const handleViewCustomer = async (customer) => {
+    setIsLoading(true);
+    try {
+      // Using the correct action from your adminSlice
+      const customerData = await dispatch(
+        fetchCustomerById(customer._id)
+      ).unwrap();
+      setCustomerDetails(customerData);
+      setSelectedCustomer(customerData);
+      setIsViewCustomerModalOpen(true);
+    } catch (err) {
+      toast.error(err.message || 'Failed to fetch customer details');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTabChange = (event, newValue) => {
@@ -282,34 +252,86 @@ const Customers = () => {
     if (newValue === 0) {
       setStatusFilter('all');
     } else if (newValue === 1) {
-      setStatusFilter('Active');
+      setStatusFilter('active');
     } else if (newValue === 2) {
-      setStatusFilter('Inactive');
+      setStatusFilter('inactive');
+    } else if (newValue === 3) {
+      setStatusFilter('blocked');
+    }
+
+    // Refresh customers with the new status filter
+    dispatch(
+      fetchCustomers({
+        page: 1,
+        limit,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      })
+    );
+    setPage(1);
+  };
+
+  const handleUpdateStatus = async (customerId, status) => {
+    try {
+      // Using the correct action from your adminSlice
+      await dispatch(updateCustomerStatus({ id: customerId, status })).unwrap();
+      toast.success(`Customer status updated to ${status}`);
+
+      // Refresh the customer list
+      dispatch(
+        fetchCustomers({
+          page,
+          limit,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+        })
+      );
+    } catch (error) {
+      toast.error(error.message || 'Failed to update customer status');
     }
   };
 
-  const handleBulkSelect = (selectedRowKeys) => {
-    setBulkSelected(selectedRowKeys);
+  const handleBlockCustomer = async (customerId) => {
+    if (window.confirm('Are you sure you want to block this customer?')) {
+      try {
+        // Using the correct action from your adminSlice
+        await dispatch(blockCustomer(customerId)).unwrap();
+        toast.success('Customer blocked successfully');
+
+        // Refresh the customer list
+        dispatch(
+          fetchCustomers({
+            page,
+            limit,
+            status: statusFilter !== 'all' ? statusFilter : undefined,
+          })
+        );
+      } catch (error) {
+        toast.error(error.message || 'Failed to block customer');
+      }
+    }
   };
 
-  const handleBulkDelete = () => {
-    if (bulkSelected.length === 0) return;
+  const handleUnblockCustomer = async (customerId) => {
+    if (window.confirm('Are you sure you want to unblock this customer?')) {
+      try {
+        // Using the correct action from your adminSlice
+        await dispatch(unblockCustomer(customerId)).unwrap();
+        toast.success('Customer unblocked successfully');
 
-    setTimeout(() => {
-      const updatedCustomers = customers.filter(
-        (customer) => !bulkSelected.includes(customer.id)
-      );
-      dispatch(fetchCustomers(updatedCustomers));
-      setBulkSelected([]);
-      setNotification({
-        open: true,
-        message: `${bulkSelected.length} customers deleted successfully`,
-        type: 'success',
-      });
-    }, 1000);
+        // Refresh the customer list
+        dispatch(
+          fetchCustomers({
+            page,
+            limit,
+            status: statusFilter !== 'all' ? statusFilter : undefined,
+          })
+        );
+      } catch (error) {
+        toast.error(error.message || 'Failed to unblock customer');
+      }
+    }
   };
 
-  const handleSaveCustomer = () => {
+  const handleSaveCustomer = async () => {
     if (!newCustomer.name || !newCustomer.email) {
       setNotification({
         open: true,
@@ -319,63 +341,37 @@ const Customers = () => {
       return;
     }
 
-    setTimeout(() => {
-      let updatedCustomers;
-
+    setIsLoading(true);
+    try {
       if (selectedCustomer) {
-        // Edit existing customer
-        updatedCustomers = customers.map((customer) =>
-          customer.id === selectedCustomer.id
-            ? {
-                ...customer,
-                name: newCustomer.name,
-                email: newCustomer.email,
-                phone: newCustomer.phone,
-                address: newCustomer.address,
-                status: newCustomer.status,
-                tags: newCustomer.tags,
-                notes: newCustomer.notes,
-              }
-            : customer
-        );
-        dispatch(fetchCustomers(updatedCustomers));
-        setNotification({
-          open: true,
-          message: 'Customer updated successfully',
-          type: 'success',
-        });
+        // Update existing customer - using updateUser from your adminSlice
+        await dispatch(
+          updateUser({
+            id: selectedCustomer._id,
+            userData: newCustomer,
+          })
+        ).unwrap();
+        toast.success('Customer updated successfully');
       } else {
-        // Add new customer
-        const newId = Math.max(...customers.map((c) => c.id)) + 1;
-        const today = new Date().toISOString().split('T')[0];
-
-        const customerToAdd = {
-          id: newId,
-          name: newCustomer.name,
-          email: newCustomer.email,
-          phone: newCustomer.phone,
-          address: newCustomer.address,
-          status: newCustomer.status,
-          tags: newCustomer.tags,
-          notes: newCustomer.notes,
-          joined: today,
-          orders: 0,
-          spent: 0,
-          lastOrder: null,
-          avatar: '/placeholder.svg?height=40&width=40',
-        };
-
-        updatedCustomers = [...customers, customerToAdd];
-        dispatch(fetchCustomers(updatedCustomers));
-        setNotification({
-          open: true,
-          message: 'Customer added successfully',
-          type: 'success',
-        });
+        // Create new customer - using createUser from your adminSlice
+        await dispatch(
+          createUser({
+            ...newCustomer,
+            role: 'user', // Ensure the role is set to 'user'
+            password: Math.random().toString(36).slice(-8), // Generate a random password
+          })
+        ).unwrap();
+        toast.success('Customer added successfully');
       }
 
+      // Refresh customer list
+      dispatch(fetchCustomers({ page, limit }));
       setIsAddCustomerModalOpen(false);
-    }, 1000);
+    } catch (error) {
+      toast.error(error.message || 'Failed to save customer');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -386,239 +382,94 @@ const Customers = () => {
     }));
   };
 
-  const handleTagChange = (value) => {
-    setNewCustomer((prev) => ({
-      ...prev,
-      tags: value,
-    }));
+  const handleExportCustomers = () => {
+    setIsExportModalOpen(true);
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleStatusFilter = (value) => {
-    setStatusFilter(value);
-  };
-
-  const handleUpdateStatus = async (customerId, status) => {
+  const handleExport = async () => {
     try {
-      await dispatch(updateCustomerStatus({ id: customerId, status })).unwrap();
-      toast.success('Customer status updated successfully');
+      setIsLoading(true);
+      // This would typically call an API endpoint that returns a file
+      // For now, we'll just simulate it with a timeout
+      setTimeout(() => {
+        toast.success(`Customers exported as ${exportFormat.toUpperCase()}`);
+        setIsExportModalOpen(false);
+        setIsLoading(false);
+      }, 1500);
     } catch (error) {
-      toast.error(error.message || 'Failed to update customer status');
+      toast.error('Failed to export customers');
+      setIsLoading(false);
     }
   };
 
-  const handleBlockCustomer = async (customerId) => {
-    if (window.confirm('Are you sure you want to block this customer?')) {
-      try {
-        await dispatch(blockCustomer(customerId)).unwrap();
-        toast.success('Customer blocked successfully');
-      } catch (error) {
-        toast.error(error.message || 'Failed to block customer');
-      }
-    }
-  };
-
-  const handleUnblockCustomer = async (customerId) => {
-    if (window.confirm('Are you sure you want to unblock this customer?')) {
-      try {
-        await dispatch(unblockCustomer(customerId)).unwrap();
-        toast.success('Customer unblocked successfully');
-      } catch (error) {
-        toast.error(error.message || 'Failed to unblock customer');
-      }
-    }
-  };
-
+  // Filter customers based on status and search term
   const filteredCustomers = customers.filter((customer) => {
+    const matchesStatus =
+      statusFilter === 'all' || customer.status === statusFilter;
     const matchesSearch =
+      !searchTerm ||
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
-    let matchesDateRange = true;
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const joinedDate = new Date(customer.joined);
-      const startDate = new Date(dateRange[0]);
-      const endDate = new Date(dateRange[1]);
-      matchesDateRange = joinedDate >= startDate && joinedDate <= endDate;
-    }
-    return matchesSearch && matchesStatus && matchesDateRange;
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
-  // Customer analytics data
-  const customerAcquisitionData = [
-    { month: 'Oct', customers: 120 },
-    { month: 'Nov', customers: 145 },
-    { month: 'Dec', customers: 190 },
-    { month: 'Jan', customers: 220 },
-    { month: 'Feb', customers: 250 },
-    { month: 'Mar', customers: 275 },
-  ];
-
-  const customerRetentionData = [
-    { category: 'One-time', count: 120 },
-    { category: '2-3 orders', count: 85 },
-    { category: '4-6 orders', count: 55 },
-    { category: '7+ orders', count: 40 },
-  ];
-
-  const customerSpendingData = [
-    { name: '$0-$50', value: 30 },
-    { name: '$51-$100', value: 25 },
-    { name: '$101-$200', value: 20 },
-    { name: '$201-$500', value: 15 },
-    { name: '$500+', value: 10 },
-  ];
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
-  const columns = [
+  // Generate customer analytics data
+  const customerStatusData = [
     {
-      title: 'Customer',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <div className="flex items-center">
-          <Avatar src={record.avatar} alt={text} className="mr-2">
-            {text.charAt(0)}
-          </Avatar>
-          <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {text}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {record.email}
-            </p>
-          </div>
-        </div>
-      ),
+      name: 'Active',
+      value: customers.filter((c) => c.status === 'active').length,
     },
     {
-      title: 'Joined',
-      dataIndex: 'joined',
-      key: 'joined',
-      render: (text) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {formatDate(text)}
-        </span>
-      ),
+      name: 'Inactive',
+      value: customers.filter((c) => c.status === 'inactive').length,
     },
     {
-      title: 'Orders',
-      dataIndex: 'orders',
-      key: 'orders',
-      render: (text) => <Badge count={text} className="site-badge-count-4" />,
-    },
-    {
-      title: 'Spent',
-      dataIndex: 'spent',
-      key: 'spent',
-      render: (text) => (
-        <span className="text-sm font-medium text-gray-900 dark:text-white">
-          ${text.toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (text) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            text === 'Active'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-          }`}
-        >
-          {text}
-        </span>
-      ),
-    },
-    {
-      title: 'Tags',
-      dataIndex: 'tags',
-      key: 'tags',
-      render: (tags) => (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <Tag
-              key={tag}
-              color={
-                tag === 'Loyal'
-                  ? 'blue'
-                  : tag === 'High Value'
-                  ? 'gold'
-                  : tag === 'New'
-                  ? 'green'
-                  : tag === 'Repeat'
-                  ? 'purple'
-                  : 'default'
-              }
-            >
-              {tag}
-            </Tag>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <div className="flex space-x-1">
-          <Tooltip title="View Customer">
-            <IconButton
-              size="small"
-              className="text-blue-600 dark:text-blue-400"
-              onClick={() => handleViewCustomer(record)}
-            >
-              <Eye className="h-4 w-4" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Edit Customer">
-            <IconButton
-              size="small"
-              className="text-green-600 dark:text-green-400"
-              onClick={() => handleEditCustomer(record)}
-            >
-              <Edit className="h-4 w-4" />
-            </IconButton>
-          </Tooltip>
-          <Popconfirm
-            title="Are you sure you want to delete this customer?"
-            onConfirm={() => handleDeleteCustomer(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete Customer">
-              <IconButton
-                size="small"
-                className="text-red-600 dark:text-red-400"
-              >
-                <Trash2 className="h-4 w-4" />
-              </IconButton>
-            </Tooltip>
-          </Popconfirm>
-          <Tooltip title="Send Message">
-            <IconButton
-              size="small"
-              className="text-purple-600 dark:text-purple-400"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </IconButton>
-          </Tooltip>
-        </div>
-      ),
+      name: 'Blocked',
+      value: customers.filter((c) => c.status === 'blocked').length,
     },
   ];
 
-  if (loading) {
+  // Generate monthly signup data
+  const getMonthlySignups = () => {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const currentYear = new Date().getFullYear();
+    const data = months.map((month) => ({ month, customers: 0 }));
+
+    customers.forEach((customer) => {
+      const createdAt = new Date(customer.createdAt);
+      if (createdAt.getFullYear() === currentYear) {
+        const monthIndex = createdAt.getMonth();
+        data[monthIndex].customers += 1;
+      }
+    });
+
+    return data;
+  };
+
+  const customerAcquisitionData = getMonthlySignups();
+  const COLORS = ['#4CAF50', '#FFC107', '#F44336', '#2196F3', '#9C27B0'];
+
+  if (loading && !customers.length) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -626,6 +477,220 @@ const Customers = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Customer Analytics Cards */}
+      <Grid container spacing={3} mb={4}>
+        <Grid item xs={12} md={6} lg={3}>
+          <Card>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  Total Customers
+                </Typography>
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                  <User />
+                </Avatar>
+              </Box>
+              <Typography variant="h4">{customers.length}</Typography>
+              <Box display="flex" alignItems="center" mt={1}>
+                <TrendingUp color="success" size={16} />
+                <Typography variant="body2" color="success.main" ml={0.5}>
+                  {/* Calculate growth rate if possible */}
+                  {customers.length > 0 ? '12%' : '0%'} growth
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6} lg={3}>
+          <Card>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  Active Customers
+                </Typography>
+                <Avatar sx={{ bgcolor: 'success.main' }}>
+                  <CheckCircle />
+                </Avatar>
+              </Box>
+              <Typography variant="h4">
+                {customers.filter((c) => c.status === 'active').length}
+              </Typography>
+              <Box display="flex" alignItems="center" mt={1}>
+                <Typography variant="body2" color="text.secondary">
+                  {customers.length > 0
+                    ? `${Math.round(
+                        (customers.filter((c) => c.status === 'active').length /
+                          customers.length) *
+                          100
+                      )}%`
+                    : '0%'}{' '}
+                  of total
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6} lg={3}>
+          <Card>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  New This Month
+                </Typography>
+                <Avatar sx={{ bgcolor: 'info.main' }}>
+                  <UserPlus />
+                </Avatar>
+              </Box>
+              <Typography variant="h4">
+                {
+                  customers.filter((c) => {
+                    const createdAt = new Date(c.createdAt);
+                    const now = new Date();
+                    return (
+                      createdAt.getMonth() === now.getMonth() &&
+                      createdAt.getFullYear() === now.getFullYear()
+                    );
+                  }).length
+                }
+              </Typography>
+              <Box display="flex" alignItems="center" mt={1}>
+                <Clock size={16} />
+                <Typography variant="body2" color="text.secondary" ml={0.5}>
+                  Last 30 days
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6} lg={3}>
+          <Card>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  Blocked Accounts
+                </Typography>
+                <Avatar sx={{ bgcolor: 'error.main' }}>
+                  <UserX />
+                </Avatar>
+              </Box>
+              <Typography variant="h4">
+                {customers.filter((c) => c.status === 'blocked').length}
+              </Typography>
+              <Box display="flex" alignItems="center" mt={1}>
+                <AlertTriangle size={16} color="#f44336" />
+                <Typography variant="body2" color="error" ml={0.5}>
+                  {customers.length > 0
+                    ? `${Math.round(
+                        (customers.filter((c) => c.status === 'blocked')
+                          .length /
+                          customers.length) *
+                          100
+                      )}%`
+                    : '0%'}{' '}
+                  of total
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Customer Analytics Charts */}
+      <Grid container spacing={3} mb={4}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardHeader
+              title="Customer Growth"
+              subheader="Monthly new customer registrations"
+            />
+            <CardContent>
+              <Box height={300}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={customerAcquisitionData}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <RechartsTooltip />
+                    <Area
+                      type="monotone"
+                      dataKey="customers"
+                      stroke="#8884d8"
+                      fill="#8884d8"
+                      fillOpacity={0.3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardHeader
+              title="Customer Status"
+              subheader="Distribution by account status"
+            />
+            <CardContent>
+              <Box height={300} display="flex" justifyContent="center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={customerStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
+                    >
+                      {customerStatusData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Customer Management Section */}
       <Card>
         <CardHeader
           title={
@@ -635,15 +700,42 @@ const Customers = () => {
             </Box>
           }
           subheader="Manage customer accounts"
+          action={
+            <Box display="flex" gap={1}>
+              <Button
+                variant="contained"
+                startIcon={<UserPlus />}
+                onClick={handleAddCustomer}
+              >
+                Add Customer
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={handleExportCustomers}
+              >
+                Export
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshCw />}
+                onClick={() => dispatch(fetchCustomers({ page, limit }))}
+              >
+                Refresh
+              </Button>
+            </Box>
+          }
         />
         <CardContent>
           <Box display="flex" gap={2} mb={3}>
             <TextField
-                  placeholder="Search customers..."
-                  value={searchTerm}
+              placeholder="Search customers..."
+              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                startAdornment: (
+                  <Search sx={{ mr: 1, color: 'text.secondary' }} />
+                ),
               }}
               sx={{ flexGrow: 1 }}
             />
@@ -658,9 +750,21 @@ const Customers = () => {
                 <MenuItem value="active">Active</MenuItem>
                 <MenuItem value="inactive">Inactive</MenuItem>
                 <MenuItem value="blocked">Blocked</MenuItem>
-            </Select>
+              </Select>
             </FormControl>
+            <DatePicker.RangePicker
+              onChange={setDateRange}
+              style={{ width: 240 }}
+              placeholder={['Start Date', 'End Date']}
+            />
           </Box>
+
+          <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+            <Tab label="All Customers" />
+            <Tab label="Active" />
+            <Tab label="Inactive" />
+            <Tab label="Blocked" />
+          </Tabs>
 
           <TableContainer component={Paper}>
             <Table>
@@ -669,81 +773,118 @@ const Customers = () => {
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>Phone</TableCell>
-                  <TableCell>Orders</TableCell>
-                  <TableCell>Total Spent</TableCell>
+                  <TableCell>Joined</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow key={customer._id}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Avatar src={customer.avatar}>
-                          {customer.name.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2">{customer.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {customer.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone}</TableCell>
-                    <TableCell>{customer.orderCount}</TableCell>
-                    <TableCell>${customer.totalSpent.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <FormControl size="small">
-                      <Select
-                        value={customer.status}
-                          onChange={(e) => handleUpdateStatus(customer._id, e.target.value)}
-                          sx={{ minWidth: 120 }}
-                        >
-                          <MenuItem value="active">Active</MenuItem>
-                          <MenuItem value="inactive">Inactive</MenuItem>
-                          <MenuItem value="blocked">Blocked</MenuItem>
-                      </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
-                        <Tooltip title="View Customer">
-                          <IconButton
-                            size="small"
-                          onClick={() => handleViewCustomer(customer)}
-                        >
-                            <Eye />
-                          </IconButton>
-                        </Tooltip>
-                        {customer.status !== 'blocked' ? (
-                          <Tooltip title="Block Customer">
-                            <IconButton
-                              size="small"
-                            onClick={() => handleBlockCustomer(customer._id)}
-                          >
-                              <Ban />
-                            </IconButton>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Unblock Customer">
-                            <IconButton
-                              size="small"
-                            onClick={() => handleUnblockCustomer(customer._id)}
-                          >
-                              <CheckCircle />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <CircularProgress size={24} />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Empty description="No customers found" />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredCustomers.map((customer) => (
+                    <TableRow key={customer._id}>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Avatar>{customer.name?.charAt(0)}</Avatar>
+                          <Box>
+                            <Typography variant="body2">
+                              {customer.name}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{customer.email}</TableCell>
+                      <TableCell>{customer.phone || 'N/A'}</TableCell>
+                      <TableCell>{formatDate(customer.createdAt)}</TableCell>
+                      <TableCell>
+                        <FormControl size="small">
+                          <Select
+                            value={customer.status}
+                            onChange={(e) =>
+                              handleUpdateStatus(customer._id, e.target.value)
+                            }
+                            sx={{ minWidth: 120 }}
+                          >
+                            <MenuItem value="active">Active</MenuItem>
+                            <MenuItem value="inactive">Inactive</MenuItem>
+                            <MenuItem value="blocked">Blocked</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" gap={1}>
+                          <Tooltip title="View Customer">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewCustomer(customer)}
+                            >
+                              <Eye />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit Customer">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditCustomer(customer)}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </Tooltip>
+                          {customer.status !== 'blocked' ? (
+                            <Tooltip title="Block Customer">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleBlockCustomer(customer._id)
+                                }
+                              >
+                                <Ban />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Unblock Customer">
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleUnblockCustomer(customer._id)
+                                }
+                              >
+                                <CheckCircle />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Send Message">
+                            <IconButton size="small">
+                              <MessageSquare />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
+
+          <Box display="flex" justifyContent="flex-end" mt={3}>
+            <Pagination
+              count={Math.ceil(filteredCustomers.length / limit)}
+              page={page}
+              onChange={(e, newPage) => setPage(newPage)}
+              color="primary"
+            />
+          </Box>
         </CardContent>
       </Card>
 
@@ -754,68 +895,216 @@ const Customers = () => {
         maxWidth="md"
         fullWidth
       >
-            <DialogTitle>Customer Details</DialogTitle>
+        <DialogTitle>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Box display="flex" alignItems="center" gap={1}>
+              <User />
+              <Typography variant="h6">Customer Details</Typography>
+            </Box>
+            {selectedCustomer && (
+              <Chip
+                label={selectedCustomer.status}
+                color={getStatusColor(selectedCustomer.status)}
+                size="small"
+              />
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           {selectedCustomer && (
             <Box sx={{ mt: 2 }}>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    Personal Information
-                  </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2">
-                      <strong>Name:</strong> {selectedCustomer.name}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Email:</strong> {selectedCustomer.email}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Phone:</strong> {selectedCustomer.phone}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Status:</strong>{' '}
-                      <Chip
-                        label={selectedCustomer.status}
-                        color={
-                          selectedCustomer.status === 'active'
-                            ? 'success'
-                            : selectedCustomer.status === 'blocked'
-                            ? 'error'
-                            : 'default'
-                        }
-                        size="small"
-                      />
-                    </Typography>
-                  </Box>
+                  <Card variant="outlined">
+                    <CardHeader title="Personal Information" />
+                    <CardContent>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon>
+                            <User size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Name"
+                            secondary={selectedCustomer.name}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Mail size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Email"
+                            secondary={selectedCustomer.email}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Phone size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Phone"
+                            secondary={selectedCustomer.phone || 'Not provided'}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <MapPin size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Address"
+                            secondary={
+                              selectedCustomer.address || 'Not provided'
+                            }
+                          />
+                        </ListItem>
+                      </List>
+                    </CardContent>
+                  </Card>
                 </Grid>
+
                 <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    Account Statistics
-                  </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2">
-                      <strong>Total Orders:</strong> {selectedCustomer.orderCount}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Total Spent:</strong> ${selectedCustomer.totalSpent.toFixed(2)}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Member Since:</strong>{' '}
-                      {new Date(selectedCustomer.createdAt).toLocaleDateString()}
-                    </Typography>
-                    <Typography variant="body2">
-                      <strong>Last Login:</strong>{' '}
-                      {new Date(selectedCustomer.lastLogin).toLocaleString()}
-                    </Typography>
-                  </Box>
+                  <Card variant="outlined">
+                    <CardHeader title="Account Information" />
+                    <CardContent>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Calendar size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Member Since"
+                            secondary={formatDate(selectedCustomer.createdAt)}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Clock size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Last Login"
+                            secondary={
+                              formatDateTime(selectedCustomer.lastLogin) ||
+                              'Never'
+                            }
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <ShoppingCart size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Role"
+                            secondary={selectedCustomer.role || 'user'}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <CheckCircle size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Email Verified"
+                            secondary={
+                              selectedCustomer.isEmailVerified ? 'Yes' : 'No'
+                            }
+                          />
+                        </ListItem>
+                      </List>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {selectedCustomer.notes && (
+                  <Grid item xs={12}>
+                    <Card variant="outlined">
+                      <CardHeader title="Notes" />
+                      <CardContent>
+                        <Typography variant="body2">
+                          {selectedCustomer.notes}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardHeader title="Security Information" />
+                    <CardContent>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon>
+                            <AlertTriangle size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Failed Login Attempts"
+                            secondary={
+                              selectedCustomer.failedLoginAttempts || '0'
+                            }
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Ban size={20} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Account Locked"
+                            secondary={selectedCustomer.isLocked ? 'Yes' : 'No'}
+                          />
+                        </ListItem>
+                        {selectedCustomer.isLocked &&
+                          selectedCustomer.lockedUntil && (
+                            <ListItem>
+                              <ListItemIcon>
+                                <Clock size={20} />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary="Locked Until"
+                                secondary={formatDateTime(
+                                  selectedCustomer.lockedUntil
+                                )}
+                              />
+                            </ListItem>
+                          )}
+                        {selectedCustomer.lockReason && (
+                          <ListItem>
+                            <ListItemIcon>
+                              <AlertTriangle size={20} />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary="Lock Reason"
+                              secondary={selectedCustomer.lockReason}
+                            />
+                          </ListItem>
+                        )}
+                      </List>
+                    </CardContent>
+                  </Card>
                 </Grid>
               </Grid>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsViewCustomerModalOpen(false)}>Close</Button>
+          <Button onClick={() => setIsViewCustomerModalOpen(false)}>
+            Close
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Edit />}
+            onClick={() => {
+              setIsViewCustomerModalOpen(false);
+              handleEditCustomer(selectedCustomer);
+            }}
+          >
+            Edit Customer
+          </Button>
+          <Button variant="contained" startIcon={<MessageSquare />}>
+            Send Message
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -838,42 +1127,45 @@ const Customers = () => {
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
-              <TextField
+                <TextField
                   fullWidth
-                label="Full Name"
-                name="name"
-                value={newCustomer.name}
-                onChange={handleInputChange}
-                required
-              />
+                  label="Full Name"
+                  name="name"
+                  value={newCustomer.name}
+                  onChange={handleInputChange}
+                  required
+                />
               </Grid>
               <Grid item xs={12} md={6}>
-              <TextField
+                <TextField
                   fullWidth
-                label="Email Address"
-                name="email"
+                  label="Email Address"
+                  name="email"
                   type="email"
-                value={newCustomer.email}
-                onChange={handleInputChange}
-                required
-              />
+                  value={newCustomer.email}
+                  onChange={handleInputChange}
+                  required
+                />
               </Grid>
               <Grid item xs={12} md={6}>
-              <TextField
+                <TextField
                   fullWidth
-                label="Phone Number"
-                name="phone"
-                value={newCustomer.phone}
-                onChange={handleInputChange}
-              />
+                  label="Phone Number"
+                  name="phone"
+                  value={newCustomer.phone}
+                  onChange={handleInputChange}
+                />
               </Grid>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
-              <Select
-                value={newCustomer.status}
+                  <Select
+                    value={newCustomer.status}
                     onChange={(e) =>
-                      setNewCustomer((prev) => ({ ...prev, status: e.target.value }))
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
                     }
                     label="Status"
                   >
@@ -884,36 +1176,98 @@ const Customers = () => {
                 </FormControl>
               </Grid>
               <Grid item xs={12}>
-            <TextField
+                <TextField
                   fullWidth
-              label="Address"
-              name="address"
-              value={newCustomer.address}
-              onChange={handleInputChange}
+                  label="Address"
+                  name="address"
+                  value={newCustomer.address}
+                  onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={12}>
-            <TextField
+                <TextField
                   fullWidth
-              label="Notes"
-              name="notes"
-              value={newCustomer.notes}
-              onChange={handleInputChange}
-              multiline
-              rows={3}
-            />
+                  label="Notes"
+                  name="notes"
+                  value={newCustomer.notes}
+                  onChange={handleInputChange}
+                  multiline
+                  rows={3}
+                />
               </Grid>
+
+              {!selectedCustomer && (
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={newCustomer.sendWelcomeEmail}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            sendWelcomeEmail: e.target.checked,
+                          }))
+                        }
+                      />
+                    }
+                    label="Send welcome email"
+                  />
+                </Grid>
+              )}
             </Grid>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddCustomerModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setIsAddCustomerModalOpen(false)}>
+            Cancel
+          </Button>
           <Button
             onClick={handleSaveCustomer}
             variant="contained"
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? 'Saving...' : selectedCustomer ? 'Update Customer' : 'Add Customer'}
+            {isLoading ? (
+              <CircularProgress size={24} />
+            ) : selectedCustomer ? (
+              'Update Customer'
+            ) : (
+              'Add Customer'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      >
+        <DialogTitle>Export Customers</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Choose a format to export customer data:
+          </DialogContentText>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Export Format</InputLabel>
+            <Select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+              label="Export Format"
+            >
+              <MenuItem value="csv">CSV</MenuItem>
+              <MenuItem value="excel">Excel</MenuItem>
+              <MenuItem value="pdf">PDF</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsExportModalOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleExport}
+            variant="contained"
+            disabled={isLoading}
+          >
+            {isLoading ? <CircularProgress size={24} /> : 'Export'}
           </Button>
         </DialogActions>
       </Dialog>

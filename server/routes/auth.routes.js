@@ -11,7 +11,8 @@ import {
   lockAccount,
   unlockAccount,
   refreshAccessToken,
-  logout
+  logout,
+  verifyEmail,
 } from '../controllers/auth.controller.js';
 import { authMiddleware, rateLimiter } from '../middleware/auth.middleware.js';
 
@@ -20,9 +21,10 @@ const router = express.Router();
 // Public routes
 router.post('/register', rateLimiter, register);
 router.post('/login', rateLimiter, login);
+router.post('/verify-email', rateLimiter, verifyEmail);
 router.post('/forgot-password', rateLimiter, forgotPassword);
 router.post('/reset-password', rateLimiter, resetPassword);
-router.post('/refresh-token', rateLimiter, refreshAccessToken);
+router.post('/refresh-access-token', rateLimiter, refreshAccessToken);
 router.post('/logout', logout);
 
 // Protected routes

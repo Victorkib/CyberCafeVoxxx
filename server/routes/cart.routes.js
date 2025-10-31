@@ -5,6 +5,7 @@ import {
   removeFromCart,
   clearCart,
   updateCartItem,
+  getCartSummary,
 } from '../controllers/cart.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 
@@ -14,9 +15,10 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/', getCart);
-router.post('/', addToCart);
-router.put('/:productId', updateCartItem);
-router.delete('/:productId', removeFromCart);
-router.delete('/', clearCart);
+router.get('/summary', getCartSummary);
+router.post('/add', addToCart);
+router.put('/update/:productId', updateCartItem);
+router.delete('/remove/:productId', removeFromCart);
+router.delete('/clear', clearCart);
 
-export default router; 
+export default router;

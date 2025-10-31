@@ -12,8 +12,8 @@ import notificationReducer from './slices/notificationSlice';
 import adminReducer from './slices/adminSlice';
 import newsletterReducer from './slices/newsletterSlice';
 import adminNotificationReducer from './slices/adminNotificationSlice';
+import wishlistReducer from './slices/wishlistSlice'; // ✅ Added this line
 
-// Create the store
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -29,20 +29,21 @@ export const store = configureStore({
     admin: adminReducer,
     newsletter: newsletterReducer,
     adminNotifications: adminNotificationReducer,
+    wishlist: wishlistReducer, // ✅ Registered wishlist slice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
         ignoredActions: ['auth/login/fulfilled', 'auth/register/fulfilled'],
-        // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.timestamp', 'payload.createdAt', 'payload.updatedAt'],
-        // Ignore these paths in the state
+        ignoredActionPaths: [
+          'payload.timestamp',
+          'payload.createdAt',
+          'payload.updatedAt',
+        ],
         ignoredPaths: ['auth.user.createdAt', 'auth.user.updatedAt'],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',
 });
 
-// Export the store as default as well
 export default store;

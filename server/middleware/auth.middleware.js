@@ -7,7 +7,7 @@ import rateLimit from 'express-rate-limit';
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 10 requests per windowMs
-  message: 'Too many attempts, please try again after 15 minutes'
+  message: 'Too many attempts, please try again after 15 minutes',
 });
 
 const SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
@@ -25,7 +25,7 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
 
       // First, find user via token in active sessions
       const user = await User.findOne({
-        'activeSessions.token': token
+        'activeSessions.token': token,
       }).select('-password');
 
       if (!user) {
@@ -34,7 +34,7 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
       }
 
       // Get matching session
-      const session = user.activeSessions.find(s => s.token === token);
+      const session = user.activeSessions.find((s) => s.token === token);
       if (!session) {
         res.status(401);
         throw new Error('Invalid session. Please login again.');
@@ -50,7 +50,10 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
         if (refreshToken) {
           try {
             // Attempt refresh
-            const refreshDecoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+            const refreshDecoded = jwt.verify(
+              refreshToken,
+              process.env.JWT_REFRESH_SECRET
+            );
             // If valid, refresh activity and allow
             await user.updateSessionActivity(token);
             console.log('Session refreshed via middleware');
@@ -95,7 +98,6 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
       // ✅ Attach user to request
       req.user = user;
       next();
-
     } catch (error) {
       console.error('Auth error:', error.message);
       if (error.name === 'JsonWebTokenError') {
@@ -114,7 +116,6 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized, no token');
   }
 });
-
 
 // Grant access to specific roles
 export const authorize = (...roles) => {
@@ -146,6 +147,7 @@ export const adminRateLimiter = rateLimit({
   max: 1000, // limit each IP to 50 requests per windowMs
   message: {
     success: false,
-    error: 'Too many admin requests from this IP, please try again after 15 minutes',
+    error:
+      'Too many admin requests from this IP, please try again after 15 minutes',
   },
-}); 
+});

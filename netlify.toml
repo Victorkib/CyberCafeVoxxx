@@ -1,0 +1,27 @@
+[build]
+  publish = "client/dist"            # ✅ No need for base if publish is full path
+  command = "cd client && npm install && npm run build"  # ✅ Ensure it's run from client
+
+[dev]
+  command = "npm run dev"
+  port = 5173
+  targetPort = 5173
+  publish = "client"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://cybercafe-backend.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/webhooks/*"
+  to = "https://cybercafe-backend.onrender.com/webhooks/:splat"
+  status = 200
+  force = true
+
+# ✅ Fallback for SPA routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
