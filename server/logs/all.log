@@ -1281,3 +1281,9 @@
 2025-07-05 17:49:24:4924 [32minfo[39m: [32mFetching user orders[39m
 2025-07-05 17:49:27:4927 [32minfo[39m: [32mFetching user orders[39m
 2025-07-05 17:49:31:4931 [32minfo[39m: [32mFetching user orders[39m
+2025-10-31 09:40:43:4043 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-10-31 09:40:43:4043 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-10-31 09:41:16:4116 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-10-31 09:41:17:4117 [32minfo[39m: [32mEmail service initialized with available providers[39m
+2025-10-31 09:42:21:4221 [32minfo[39m: [32mUsing mailjet as email provider[39m
+2025-10-31 09:42:22:4222 [32minfo[39m: [32mEmail service initialized with available providers[39m

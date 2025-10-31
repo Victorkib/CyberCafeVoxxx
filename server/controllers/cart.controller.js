@@ -198,4 +198,46 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   );
 
   res.json(updatedCart);
-}); 
+});
+
+// @desc    Get cart summary
+// @route   GET /api/cart/summary
+// @access  Private
+export const getCartSummary = asyncHandler(async (req, res) => {
+  const cart = await Cart.findOne({ user: req.user._id }).populate(
+    'items.product',
+    'name price images countInStock salePrice'
+  );
+
+  if (!cart || cart.items.length === 0) {
+    return res.json({
+      itemCount: 0,
+      totalAmount: 0,
+      subtotal: 0,
+      tax: 0,
+      shipping: 0,
+      items: []
+    });
+  }
+
+  // Calculate totals
+  const subtotal = cart.items.reduce((total, item) => {
+    const price = item.product.salePrice || item.product.price;
+    return total + (price * item.quantity);
+  }, 0);
+
+  const tax = subtotal * 0.16; // 16% tax
+  const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
+  const totalAmount = subtotal + tax + shipping;
+
+  const itemCount = cart.items.reduce((total, item) => total + item.quantity, 0);
+
+  res.json({
+    itemCount,
+    totalAmount,
+    subtotal,
+    tax,
+    shipping,
+    items: cart.items
+  });
+});

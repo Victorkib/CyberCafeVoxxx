@@ -178,10 +178,10 @@ export const endpoints = {
   },
   cart: {
     get: "/cart",
-    add: "/cart",
-    update: (productId) => `/cart/${productId}`,
-    remove: (productId) => `/cart/${productId}`,
-    clear: "/cart",
+    add: "/cart/add",
+    update: (productId) => `/cart/update/${productId}`,
+    remove: (productId) => `/cart/remove/${productId}`,
+    clear: "/cart/clear",
   },
   coupons: {
     validate: "/coupons/validate",

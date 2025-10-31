@@ -1,5 +1,5 @@
 // Import the existing API setup
-import { defaultApi, endpoints } from './api.js';
+import { apiRequest, endpoints } from './api.js';
 
 // ENHANCED: Extend the existing endpoints with additional payment endpoints
 const paymentEndpoints = {
@@ -22,19 +22,19 @@ export const paymentAPI = {
   // Get available payment methods
   getMethods: () => {
     console.log('🌐 API: Fetching payment methods');
-    return defaultApi.get(paymentEndpoints.methods);
+    return apiRequest.get(paymentEndpoints.methods);
   },
 
   // Initialize payment
   initialize: (paymentData) => {
     console.log('🌐 API: Initializing payment with data:', paymentData);
-    return defaultApi.post(paymentEndpoints.initialize, paymentData);
+    return apiRequest.post(paymentEndpoints.initialize, paymentData);
   },
 
   // FIXED: Process inline callback (critical for stock reduction)
   processInlineCallback: (callbackData) => {
     console.log('🌐 API: Processing inline callback with data:', callbackData);
-    return defaultApi.post(paymentEndpoints.inlineCallback, callbackData);
+    return apiRequest.post(paymentEndpoints.inlineCallback, callbackData);
   },
 
   // FIXED: Verify inline payment (critical for stock reduction)
@@ -43,58 +43,58 @@ export const paymentAPI = {
       '🌐 API: Verifying inline payment with data:',
       verificationData
     );
-    return defaultApi.post(paymentEndpoints.inlineVerify, verificationData);
+    return apiRequest.post(paymentEndpoints.inlineVerify, verificationData);
   },
 
   // Retry payment
   retry: (retryData) => {
     console.log('🌐 API: Retrying payment with data:', retryData);
-    return defaultApi.post(paymentEndpoints.retry, retryData);
+    return apiRequest.post(paymentEndpoints.retry, retryData);
   },
 
   // Check payment status
   checkStatus: (orderId) => {
     console.log('🌐 API: Checking payment status for order:', orderId);
-    return defaultApi.get(paymentEndpoints.status(orderId));
+    return apiRequest.get(paymentEndpoints.status(orderId));
   },
 
   // Get payment history
   getHistory: (params) => {
     console.log('🌐 API: Fetching payment history with params:', params);
-    return defaultApi.get(paymentEndpoints.history, { params });
+    return apiRequest.get(paymentEndpoints.history, { params });
   },
 
   // Get payment details
   getDetails: (orderId) => {
     console.log('🌐 API: Fetching payment details for order:', orderId);
-    return defaultApi.get(paymentEndpoints.details(orderId));
+    return apiRequest.get(paymentEndpoints.details(orderId));
   },
 
   // Get refund history
   getRefundHistory: (params) => {
     console.log('🌐 API: Fetching refund history with params:', params);
-    return defaultApi.get(paymentEndpoints.refunds, { params });
+    return apiRequest.get(paymentEndpoints.refunds, { params });
   },
 
   // ENHANCED: Admin endpoints with better logging
   getAnalytics: (params) => {
     console.log('🌐 API: Fetching payment analytics with params:', params);
-    return defaultApi.get(paymentEndpoints.adminAnalytics, { params });
+    return apiRequest.get(paymentEndpoints.adminAnalytics, { params });
   },
 
   refund: (paymentId, reason) => {
     console.log('🌐 API: Processing refund:', { paymentId, reason });
-    return defaultApi.post(paymentEndpoints.adminRefund, { paymentId, reason });
+    return apiRequest.post(paymentEndpoints.adminRefund, { paymentId, reason });
   },
 
   getSettings: () => {
     console.log('🌐 API: Fetching payment settings');
-    return defaultApi.get(paymentEndpoints.adminSettings);
+    return apiRequest.get(paymentEndpoints.adminSettings);
   },
 
   updateSettings: (settings) => {
     console.log('🌐 API: Updating payment settings with data:', settings);
-    return defaultApi.put(paymentEndpoints.adminSettings, settings);
+    return apiRequest.put(paymentEndpoints.adminSettings, settings);
   },
 
   // ENHANCED: Additional utility methods for better integration
@@ -103,13 +103,13 @@ export const paymentAPI = {
       '🌐 API: Verifying payment with provider for payment:',
       paymentId
     );
-    return defaultApi.post(`/payments/verify-provider/${paymentId}`);
+    return apiRequest.post(`/payments/verify-provider/${paymentId}`);
   },
 
   // Webhook endpoints (for admin use)
   processWebhook: (provider, webhookData) => {
     console.log('🌐 API: Processing webhook for provider:', provider);
-    return defaultApi.post(`/payments/webhooks/${provider}`, webhookData);
+    return apiRequest.post(`/payments/webhooks/${provider}`, webhookData);
   },
 };
 
