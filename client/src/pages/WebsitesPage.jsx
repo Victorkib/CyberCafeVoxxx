@@ -26,7 +26,7 @@ const WebsitesPage = () => {
       title: "Corporate Websites",
       description: "Professional business websites that build trust and drive conversions",
       features: ["Responsive Design", "SEO Optimized", "Fast Loading", "Mobile First"],
-      price: "From $299",
+      price: "From Ksh 29,900",
       icon: <Monitor className="w-8 h-8" />,
       color: "bg-blue-500"
     },
@@ -35,7 +35,7 @@ const WebsitesPage = () => {
       title: "E-commerce Stores",
       description: "Complete online stores with payment processing and inventory management",
       features: ["Payment Integration", "Inventory Management", "Order Tracking", "Analytics"],
-      price: "From $599",
+      price: "From Ksh 59,900",
       icon: <Globe className="w-8 h-8" />,
       color: "bg-green-500"
     },
@@ -44,7 +44,7 @@ const WebsitesPage = () => {
       title: "Web Applications",
       description: "Custom web applications tailored to your business needs",
       features: ["Custom Features", "User Management", "API Integration", "Scalable"],
-      price: "From $999",
+      price: "From Ksh 99,900",
       icon: <Code className="w-8 h-8" />,
       color: "bg-purple-500"
     },
@@ -53,7 +53,7 @@ const WebsitesPage = () => {
       title: "Mobile-First Sites",
       description: "Optimized for mobile devices with progressive web app features",
       features: ["PWA Ready", "Offline Support", "Push Notifications", "App-like Experience"],
-      price: "From $399",
+      price: "From Ksh 39,900",
       icon: <Smartphone className="w-8 h-8" />,
       color: "bg-orange-500"
     }

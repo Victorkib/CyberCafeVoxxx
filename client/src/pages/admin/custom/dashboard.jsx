@@ -1167,7 +1167,7 @@ function generateRecentActivities() {
   return [
     {
       title: 'New Order Received',
-      description: 'Order #1234 for $156.00 has been placed',
+      description: 'Order #1234 for Ksh 15,600 has been placed',
       time: '5 minutes ago',
       icon: <ShoppingCart className="h-4 w-4 text-green-600" />,
       iconBg: 'bg-green-100',

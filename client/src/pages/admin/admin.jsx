@@ -374,7 +374,7 @@ const Admin = () => {
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <p className="text-sm text-gray-500">Total Sales</p>
-              <p className="text-xl font-bold text-blue-700">$22,550</p>
+              <p className="text-xl font-bold text-blue-700">Ksh 2,255,000</p>
               <p className="text-xs text-green-600">+15% from last month</p>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
@@ -538,7 +538,7 @@ const Admin = () => {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Revenue</p>
-              <p className="text-2xl font-bold text-red-700">$22,550</p>
+              <p className="text-2xl font-bold text-red-700">Ksh 2,255,000</p>
               <p className="text-xs text-green-600">+15% from last month</p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
@@ -1256,7 +1256,7 @@ export const Orders = () => {
                       </div>
                       <div className="flex justify-between w-64">
                         <p className="text-sm text-gray-500">Shipping:</p>
-                        <p className="text-sm">$0.00</p>
+                        <p className="text-sm">Ksh 0.00</p>
                       </div>
                       <div className="flex justify-between w-64 font-bold">
                         <p>Total:</p>

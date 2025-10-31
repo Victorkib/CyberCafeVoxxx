@@ -57,7 +57,7 @@ const Navbar = ({ setIsCheckoutOpen }) => {
             color: 'inherit'
           }}
         >
-          CyberCafe
+          VoxCyber
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

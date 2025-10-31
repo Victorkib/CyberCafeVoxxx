@@ -460,7 +460,7 @@ const QuickViewModal = memo(
                           Free Shipping
                         </h4>
                         <p className="text-xs text-gray-600 dark:text-gray-300">
-                          On orders over $50. Delivery within 3-5 business days.
+                          On orders over Ksh 5,000. Delivery within 3-5 business days.
                         </p>
                       </div>
                     </div>

@@ -773,7 +773,7 @@ const BatchEditModal = ({ visible, onCancel, onConfirm, selectedCount, categorie
           <Form.Item name="update_price" valuePropName="checked">
             <Checkbox />
           </Form.Item>
-          <Form.Item name="price" label="Price ($)">
+          <Form.Item name="price" label="Price (Ksh)">
             <InputNumber min={0} precision={2} style={{ width: "100%" }} />
           </Form.Item>
 
@@ -2159,7 +2159,7 @@ const handleBulkStatusUpdate = async (status) => {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <Form.Item
                   name="price"
-                  label="Price ($)"
+                  label="Price (Ksh)"
                   rules={[{ required: true, message: "Please enter product price" }]}
                 >
                   <InputNumber
@@ -2171,7 +2171,7 @@ const handleBulkStatusUpdate = async (status) => {
                   />
                 </Form.Item>
 
-                <Form.Item name="salePrice" label="Sale Price ($)">
+                <Form.Item name="salePrice" label="Sale Price (Ksh)">
                   <InputNumber
                     min={0}
                     precision={2}

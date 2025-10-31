@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="relative bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 text-white py-16 overflow-hidden">
+    <footer className="relative bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 text-white py-16 overflow-hidden">
       {/* Tech-inspired background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20"></div>
+      <div className="absolute inset-0 opacity-15">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-purple-600/30"></div>
         <div className="absolute top-0 left-0 w-full h-full">
           <div className="grid grid-cols-12 gap-4 h-full opacity-30">
             {Array.from({ length: 48 }).map((_, i) => (
@@ -35,7 +35,7 @@ const Footer = () => {
                 VoxCyber
               </h3>
             </div>
-            <p className="text-gray-300 leading-relaxed">
+            <p className="text-gray-100 leading-relaxed">
               Innovative websites & web apps solutions. We build creative, scalable, and business-driven digital solutions to help brands grow.
             </p>
             <div className="flex items-center space-x-2 text-sm text-blue-400">
@@ -54,7 +54,7 @@ const Footer = () => {
               <li>
                 <Link 
                   to="/" 
-                  className="text-gray-300 hover:text-blue-400 transition-all duration-300 hover:translate-x-1 inline-block group"
+                  className="text-gray-100 hover:text-blue-300 transition-all duration-300 hover:translate-x-1 inline-block group"
                 >
                   <span className="relative">
                     Home
@@ -65,7 +65,7 @@ const Footer = () => {
               <li>
                 <Link 
                   to="/services" 
-                  className="text-gray-300 hover:text-blue-400 transition-all duration-300 hover:translate-x-1 inline-block group"
+                  className="text-gray-100 hover:text-blue-300 transition-all duration-300 hover:translate-x-1 inline-block group"
                 >
                   <span className="relative">
                     Services
@@ -76,7 +76,7 @@ const Footer = () => {
               <li>
                 <Link 
                   to="#portfolio" 
-                  className="text-gray-300 hover:text-blue-400 transition-all duration-300 hover:translate-x-1 inline-block group"
+                  className="text-gray-100 hover:text-blue-300 transition-all duration-300 hover:translate-x-1 inline-block group"
                 >
                   <span className="relative">
                     Portfolio
@@ -87,7 +87,7 @@ const Footer = () => {
               <li>
                 <Link 
                   to="#about" 
-                  className="text-gray-300 hover:text-blue-400 transition-all duration-300 hover:translate-x-1 inline-block group"
+                  className="text-gray-100 hover:text-blue-300 transition-all duration-300 hover:translate-x-1 inline-block group"
                 >
                   <span className="relative">
                     About
@@ -105,26 +105,26 @@ const Footer = () => {
               <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-transparent"></div>
             </h3>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-300">
-                <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-center space-x-3 text-gray-100 hover:text-blue-300 transition-colors duration-300">
+                <div className="w-5 h-5 bg-blue-500/30 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
                 </div>
                 <span>info@voxcyber.com</span>
               </div>
-              <div className="flex items-center space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-300">
-                <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-center space-x-3 text-gray-100 hover:text-blue-300 transition-colors duration-300">
+                <div className="w-5 h-5 bg-blue-500/30 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                   </svg>
                 </div>
                 <span>+1 (555) 123-4567</span>
               </div>
-              <div className="flex items-start space-x-3 text-gray-300 hover:text-blue-400 transition-colors duration-300">
-                <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center mt-0.5">
-                  <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <div className="flex items-start space-x-3 text-gray-100 hover:text-blue-300 transition-colors duration-300">
+                <div className="w-5 h-5 bg-blue-500/30 rounded-full flex items-center justify-center mt-0.5">
+                  <svg className="w-3 h-3 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -162,12 +162,12 @@ const Footer = () => {
               />
             </div>
             <div className="mt-6">
-              <p className="text-sm text-gray-400 mb-2">Stay updated with our latest projects</p>
+              <p className="text-sm text-gray-200 mb-2">Stay updated with our latest projects</p>
               <div className="flex">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors duration-300"
+                  className="flex-1 px-3 py-2 bg-gray-800/70 border border-gray-600 rounded-l-lg text-white placeholder-gray-300 focus:outline-none focus:border-blue-400 focus:bg-gray-800 transition-colors duration-300"
                 />
                 <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-r-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -180,19 +180,19 @@ const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-gray-700/50">
+        <div className="mt-12 pt-8 border-t border-gray-600/50">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-200 text-sm">
               &copy; {new Date().getFullYear()} VoxCyber. All rights reserved.
             </p>
             <div className="flex space-x-6 text-sm">
-              <Link to="/privacy" className="text-gray-400 hover:text-blue-400 transition-colors duration-300">
+              <Link to="/privacy" className="text-gray-200 hover:text-blue-300 transition-colors duration-300">
                 Privacy Policy
               </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-blue-400 transition-colors duration-300">
+              <Link to="/terms" className="text-gray-200 hover:text-blue-300 transition-colors duration-300">
                 Terms of Service
               </Link>
-              <Link to="/cookies" className="text-gray-400 hover:text-blue-400 transition-colors duration-300">
+              <Link to="/cookies" className="text-gray-200 hover:text-blue-300 transition-colors duration-300">
                 Cookie Policy
               </Link>
             </div>
@@ -241,7 +241,7 @@ const SocialIcon = ({ href, icon, label }) => {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-all duration-300 hover:scale-110 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-purple-500/20 border border-gray-700 hover:border-blue-500/50"
+      className="group relative w-10 h-10 bg-gray-800/70 rounded-lg flex items-center justify-center text-gray-200 hover:text-white transition-all duration-300 hover:scale-110 hover:bg-gradient-to-r hover:from-blue-500/30 hover:to-purple-500/30 border border-gray-600 hover:border-blue-400/70"
       aria-label={label}
     >
       {getIcon()}
