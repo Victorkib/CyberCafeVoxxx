@@ -98,69 +98,84 @@ const AdminLayout = () => {
     navigate('/');
   };
 
-  const navigation = [
+  const allNavigationItems = [
     {
       name: 'Dashboard',
       id: 'dashboard',
       icon: LayoutDashboard,
       path: '/admin/dashboard',
+      roles: ['admin', 'super_admin'], // Both roles can access
     },
     {
       name: 'Products',
       id: 'products',
       icon: Package,
       path: '/admin/products',
+      roles: ['admin', 'super_admin'], // Both roles can access
     },
     {
       name: 'Orders',
       id: 'orders',
       icon: ShoppingCart,
       path: '/admin/orders',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Customers',
       id: 'customers',
       icon: Users,
       path: '/admin/customers',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Categories',
       id: 'categories',
       icon: Users,
       path: '/admin/categories',
+      roles: ['admin', 'super_admin'], // Both roles can access
     },
     {
       name: 'Payments',
       id: 'payments',
       icon: CreditCard,
       path: '/admin/payments',
-      group: 'main'
+      group: 'main',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Users',
       id: 'users',
       icon: UserCog,
       path: '/admin/users',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Newsletter',
       id: 'newsletter',
       icon: Mail,
       path: '/admin/newsletter',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Notifications',
       id: 'notifications',
       icon: Bell,
       path: '/admin/notifications',
+      roles: ['super_admin'], // Only super_admin can access
     },
     {
       name: 'Settings',
       id: 'settings',
       icon: Settings,
       path: '/admin/settings',
+      roles: ['super_admin'], // Only super_admin can access
     },
   ];
+
+  // Filter navigation items based on user role
+  const navigation = allNavigationItems.filter(item => 
+    item.roles.includes(user?.role)
+  );
 
   // Group navigation items
   const mainNavItems = navigation.slice(0, 4);
@@ -354,9 +369,18 @@ const AdminLayout = () => {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {user?.name || 'Admin User'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.role || 'Admin' || 'Super Admin'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                    </p>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                      user?.role === 'super_admin' 
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    }`}>
+                      {user?.role === 'super_admin' ? 'SUPER' : 'ADMIN'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -478,7 +502,7 @@ const AdminLayout = () => {
                       {user?.name || 'Admin User'}
                     </p>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      {user?.role || 'Administrator' || 'Super Admin' || 'Admin'}
+                      {user?.role === 'super_admin' ? 'Super Administrator' : 'Administrator'}
                     </p>
                   </div>
                 </div>
@@ -614,16 +638,42 @@ const AdminLayout = () => {
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/products" element={<Products />} />
-                  <Route path="/orders" element={<Order />} />
-                  <Route path="/customers" element={<Customers />} />
                   <Route path="/categories" element={<CategoryManagement />} />
-                  <Route path="/payments" element={<PaymentManagementPage />} />
-                  <Route path="/payments/analytics" element={<PaymentAnalyticsPage />} />
-                  <Route path="/users" element={<UsersManagement />} />
-                  <Route path="/newsletter" element={<NewsletterManagement />} />
-                  <Route path="/notifications" element={<NotificationsManagement />} />
-                  <Route path="/settings" element={<Settings />} />
+                  
+                  {/* Super Admin Only Routes */}
+                  {user?.role === 'super_admin' && (
+                    <>
+                      <Route path="/orders" element={<Order />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/payments" element={<PaymentManagementPage />} />
+                      <Route path="/payments/analytics" element={<PaymentAnalyticsPage />} />
+                      <Route path="/users" element={<UsersManagement />} />
+                      <Route path="/newsletter" element={<NewsletterManagement />} />
+                      <Route path="/notifications" element={<NotificationsManagement />} />
+                      <Route path="/settings" element={<Settings />} />
+                    </>
+                  )}
+                  
                   <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+                  
+                  {/* Fallback for unauthorized access */}
+                  <Route path="*" element={
+                    <div className="flex flex-col items-center justify-center h-64 text-center">
+                      <div className="text-6xl mb-4">🚫</div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        Access Denied
+                      </h2>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        You don't have permission to access this page.
+                      </p>
+                      <Link 
+                        to="/admin/dashboard" 
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        Go to Dashboard
+                      </Link>
+                    </div>
+                  } />
                 </Routes>
               </div>
             </div>

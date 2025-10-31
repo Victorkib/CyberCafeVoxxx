@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
+import formatCurrency from '../../utils/formatCurrency';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../../redux/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '../../redux/slices/wishlistSlice';
@@ -111,13 +112,9 @@ export default function ProductCard({ product }) {
           </span>
         </div>
         <div className="flex items-baseline">
-          <span className="text-lg font-bold text-gray-900">
-            ${product.price?.toFixed(2)}
-          </span>
+          <span className="text-lg font-bold text-gray-900">{formatCurrency(product.price)}</span>
           {product.originalPrice && (
-            <span className="ml-2 text-sm text-gray-500 line-through">
-              ${product.originalPrice.toFixed(2)}
-            </span>
+            <span className="ml-2 text-sm text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>
           )}
         </div>
       </div>

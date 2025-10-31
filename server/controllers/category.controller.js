@@ -6,7 +6,7 @@ import { uploadSingle } from '../middleware/upload.middleware.js';
 // @route   GET /api/categories
 // @access  Public
 export const getCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find({});
+  const categories = await Category.find({}).populate('productCount');
   res.json(categories);
 });
 
@@ -14,7 +14,7 @@ export const getCategories = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/:id
 // @access  Public
 export const getCategoryById = asyncHandler(async (req, res) => {
-  const category = await Category.findById(req.params.id);
+  const category = await Category.findById(req.params.id).populate('productCount');
 
   if (category) {
     res.json(category);
@@ -78,23 +78,28 @@ export const deleteCategory = asyncHandler(async (req, res) => {
 // @route   GET /api/categories/featured
 // @access  Public
 export const getFeaturedCategories = asyncHandler(async (req, res) => {
-  // If there are no categories in the database, return an empty array
-  const count = await Category.countDocuments();
-  
-  if (count === 0) {
-    return res.json([]);
+  try {
+    // If there are no categories in the database, return an empty array
+    const count = await Category.countDocuments();
+    
+    if (count === 0) {
+      return res.json([]);
+    }
+    
+    // Check if there are any featured categories
+    const featuredCount = await Category.countDocuments({ featured: true, status: 'active' });
+    
+    if (featuredCount === 0) {
+      // If no featured categories, return first 6 active categories
+      const categories = await Category.find({ status: 'active' }).limit(6).populate('productCount');
+      return res.json(categories);
+    }
+    
+    // Otherwise, return featured categories
+    const categories = await Category.find({ featured: true, status: 'active' }).limit(8).populate('productCount');
+    res.json(categories);
+  } catch (error) {
+    console.error('Error fetching featured categories:', error);
+    res.json([]); // Return empty array instead of error
   }
-  
-  // Check if there are any featured categories
-  const featuredCount = await Category.countDocuments({ featured: true });
-  
-  if (featuredCount === 0) {
-    // If no featured categories, return all categories
-    const categories = await Category.find({}).limit(8);
-    return res.json(categories);
-  }
-  
-  // Otherwise, return featured categories
-  const categories = await Category.find({ featured: true });
-  res.json(categories);
 }); 

@@ -19,11 +19,16 @@ import {
   decreaseQuantity,
 } from '../../redux/slices/cartSlice';
 import { openAuthModal } from '../../redux/slices/uiSlice';
+import formatCurrency from '../../utils/formatCurrency';
 
 const CheckoutModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const { items, totalAmount } = useSelector((state) => state.cart);
+  const { items, total: totalAmount } = useSelector((state) => state.cart);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  
+  // Calculate total from items as fallback
+  const calculatedTotal = items?.reduce((sum, item) => sum + (item.totalPrice || 0), 0) || 0;
+  const displayTotal = totalAmount || calculatedTotal;
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -180,15 +185,21 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   };
 
   const handleIncreaseQuantity = (item) => {
-    dispatch(addToCart(item));
+    dispatch(addToCart({
+      productId: item.product._id,
+      quantity: 1
+    }));
   };
 
-  const handleDecreaseQuantity = (id) => {
-    dispatch(decreaseQuantity(id));
+  const handleDecreaseQuantity = (item) => {
+    dispatch(decreaseQuantity({
+      productId: item.product._id,
+      currentQuantity: item.quantity
+    }));
   };
 
-  const handleRemoveItem = (id) => {
-    dispatch(removeFromCart(id));
+  const handleRemoveItem = (productId) => {
+    dispatch(removeFromCart(productId));
   };
 
   const formatCardNumber = (value) => {
@@ -296,7 +307,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </p>
             </div>
 
-            {items.length === 0 ? (
+            {!items || items.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingBag className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                 <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
@@ -312,29 +323,29 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             ) : (
               <>
                 <div className="max-h-80 overflow-y-auto mb-6">
-                  {items.map((item) => (
+                  {items && items.map((item) => (
                     <div
-                      key={item.id}
+                      key={item._id}
                       className="flex items-center py-4 border-b border-gray-200 dark:border-gray-700"
                     >
                       <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0">
                         <img
-                          src={item.image || '/placeholder.svg'}
-                          alt={item.name}
+                          src={item.product?.images?.[0] || '/placeholder.svg'}
+                          alt={item.product?.name || 'Product'}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="ml-4 flex-1">
                         <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                          {item.name}
+                          {item.product?.name || 'Unknown Product'}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          ${item.price.toFixed(2)}
+                          {formatCurrency(item.product?.salePrice || item.product?.price || item.price || 0)}
                         </p>
                       </div>
                       <div className="flex items-center">
                         <button
-                          onClick={() => handleDecreaseQuantity(item.id)}
+                          onClick={() => handleDecreaseQuantity(item)}
                           className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
                           disabled={item.quantity <= 1}
                         >
@@ -352,10 +363,10 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                       <div className="ml-4 text-right">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          ${item.totalPrice.toFixed(2)}
+                          {formatCurrency(item.totalPrice)}
                         </p>
                         <button
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => handleRemoveItem(item.product._id)}
                           className="text-red-500 hover:text-red-700 text-xs flex items-center mt-1"
                         >
                           <Trash2 size={12} className="mr-1" />
@@ -372,7 +383,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       Subtotal
                     </p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${totalAmount.toFixed(2)}
+                      {formatCurrency(displayTotal)}
                     </p>
                   </div>
                   <div className="flex justify-between mb-2">
@@ -380,7 +391,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       Shipping
                     </p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      $0.00
+                      {formatCurrency(0)}
                     </p>
                   </div>
                   <div className="flex justify-between mb-2">
@@ -388,7 +399,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       Tax
                     </p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      ${(totalAmount * 0.1).toFixed(2)}
+                      {formatCurrency(displayTotal * 0.1)}
                     </p>
                   </div>
                   <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -396,7 +407,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       Total
                     </p>
                     <p className="text-base font-bold text-gray-900 dark:text-white">
-                      ${(totalAmount * 1.1).toFixed(2)}
+                      {formatCurrency(displayTotal * 1.1)}
                     </p>
                   </div>
                 </div>
@@ -759,7 +770,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   Subtotal
                 </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  ${totalAmount.toFixed(2)}
+                  ${displayTotal.toFixed(2)}
                 </p>
               </div>
               <div className="flex justify-between mb-2">
@@ -773,7 +784,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               <div className="flex justify-between mb-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Tax</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  ${(totalAmount * 0.1).toFixed(2)}
+                  ${(displayTotal * 0.1).toFixed(2)}
                 </p>
               </div>
               <div className="flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -781,7 +792,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   Total
                 </p>
                 <p className="text-base font-bold text-gray-900 dark:text-white">
-                  ${(totalAmount * 1.1).toFixed(2)}
+                  ${(displayTotal * 1.1).toFixed(2)}
                 </p>
               </div>
             </div>

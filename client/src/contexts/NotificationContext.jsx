@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useState, useEffect, useContext } from "react"
+import { useSelector } from "react-redux"
 import { notificationClient } from "../services/notification.service"
 import { toast } from "react-toastify"
 
@@ -18,7 +19,15 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // Get authentication state from Redux
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
+
   useEffect(() => {
+    // Only initialize notifications if user is authenticated
+    if (!isAuthenticated || !user) {
+      return
+    }
+
     // Initialize the notification service
     notificationClient.init()
 
@@ -32,10 +41,19 @@ export const NotificationProvider = ({ children }) => {
       setNotifications((prev) => [notification, ...prev])
     })
 
-    // Try to fetch initial notifications
+    // Try to fetch initial notifications only if authenticated
     fetchNotifications()
 
-    // Load preferences from localStorage
+    return () => {
+      // Clean up event listeners
+      unsubscribeCount()
+      unsubscribeNotifications()
+      notificationClient.disconnect()
+    }
+  }, [isAuthenticated, user])
+
+  useEffect(() => {
+    // Load preferences from localStorage (this can run without authentication)
     const savedPreferences = localStorage.getItem("notificationPreferences")
     if (savedPreferences) {
       try {
@@ -44,16 +62,15 @@ export const NotificationProvider = ({ children }) => {
         console.error("Error parsing notification preferences:", error)
       }
     }
-
-    return () => {
-      // Clean up event listeners
-      unsubscribeCount()
-      unsubscribeNotifications()
-      notificationClient.disconnect()
-    }
   }, [])
 
   const fetchNotifications = async (options = {}) => {
+    // Don't fetch if not authenticated
+    if (!isAuthenticated || !user) {
+      console.log("Not authenticated, skipping notification fetch")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -78,8 +95,8 @@ export const NotificationProvider = ({ children }) => {
       setError(error.message || "Failed to fetch notifications")
       setNotifications([]) // Reset to empty array on error
 
-      // Show error toast only if it's not a development mock data situation
-      if (!error.message?.includes("mock")) {
+      // Don't show error toast for authentication errors
+      if (!error.message?.includes("mock") && !error.message?.includes("authorized") && !error.message?.includes("token")) {
         toast.error(`Failed to fetch notifications: ${error.message}`)
       }
     } finally {

@@ -76,6 +76,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../../../components/ui/card';
+import formatCurrency from '../../../utils/formatCurrency';
 
 // Mock data
 const mockOrders = [
@@ -394,13 +395,13 @@ export const Order = () => {
         </span>
       ),
     },
-    {
+      {
       title: 'Total',
       dataIndex: 'total',
       key: 'total',
       render: (text) => (
         <span className="text-sm font-medium text-gray-900 dark:text-white">
-          ${text.toFixed(2)}
+          {formatCurrency(text)}
         </span>
       ),
     },
@@ -821,8 +822,8 @@ export const Order = () => {
                         {record.payment}
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">Total:</span> $
-                        {record.total.toFixed(2)}
+                        <span className="font-medium">Total:</span>{' '}
+                        {formatCurrency(record.total)}
                       </p>
                     </div>
                   </div>
@@ -1037,7 +1038,7 @@ export const Order = () => {
                       Amount
                     </p>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      ${selectedOrder.total.toFixed(2)}
+                      {formatCurrency(selectedOrder.total)}
                     </p>
                   </div>
                 </div>
@@ -1084,10 +1085,10 @@ export const Order = () => {
                       {/* Mock items based on the order's item count */}
                       {Array.from({ length: selectedOrder.items }).map(
                         (_, index) => {
-                          const price = (
+                          const priceNum =
                             (selectedOrder.total / selectedOrder.items) *
-                            (0.7 + Math.random() * 0.6)
-                          ).toFixed(2);
+                            (0.7 + Math.random() * 0.6);
+                          const price = priceNum.toFixed(2);
                           const quantity = Math.floor(Math.random() * 3) + 1;
                           return (
                             <tr key={index}>
@@ -1128,13 +1129,13 @@ export const Order = () => {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                ${price}
+                                {formatCurrency(Number(price))}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                 {quantity}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                ${(price * quantity).toFixed(2)}
+                                {formatCurrency(Number((priceNum * quantity).toFixed(2)))}
                               </td>
                             </tr>
                           );
@@ -1150,7 +1151,7 @@ export const Order = () => {
                         Subtotal:
                       </span>
                       <span className="text-gray-700 dark:text-gray-300">
-                        ${(selectedOrder.total * 0.9).toFixed(2)}
+                        {formatCurrency((selectedOrder.total * 0.9).toFixed(2))}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -1158,7 +1159,7 @@ export const Order = () => {
                         Tax:
                       </span>
                       <span className="text-gray-700 dark:text-gray-300">
-                        ${(selectedOrder.total * 0.1).toFixed(2)}
+                        {formatCurrency((selectedOrder.total * 0.1).toFixed(2))}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -1166,7 +1167,7 @@ export const Order = () => {
                         Shipping:
                       </span>
                       <span className="text-gray-700 dark:text-gray-300">
-                        $0.00
+                        {formatCurrency(0)}
                       </span>
                     </div>
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1">
@@ -1175,7 +1176,7 @@ export const Order = () => {
                           Total:
                         </span>
                         <span className="text-gray-900 dark:text-white">
-                          ${selectedOrder.total.toFixed(2)}
+                          {formatCurrency(selectedOrder.total)}
                         </span>
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import express from "express"
 import { authMiddleware, adminRateLimiter } from "../middleware/auth.middleware.js"
-import { isAdmin, isSuperAdmin } from "../middleware/admin.middleware.js"
+import { isAdmin, isSuperAdmin, canModify, canManageProducts } from "../middleware/admin.middleware.js"
+import { hasPermission, getUserPermissions } from "../middleware/permissions.middleware.js"
 import adminNotificationRoutes from "./admin-notification.routes.js"
 
 // Import admin controllers
@@ -58,7 +59,9 @@ import {
   resendInvitation,
   cancelInvitation,
   lockAccount,
-  unlockAccount
+  unlockAccount,
+  createAdminUser,
+  updateUserRole as adminUpdateUserRole
 } from "../controllers/admin.controller.js"
 
 const router = express.Router()
@@ -79,6 +82,13 @@ router.post("/cleanup-invitations", isAdmin, adminRateLimiter, cleanupExpiredInv
 router.post("/lock-account", isAdmin, adminRateLimiter, lockAccount)
 router.post("/unlock-account", isAdmin, adminRateLimiter, unlockAccount)
 
+// Super admin only routes for user management
+router.post("/create-admin-user", hasPermission('canManageAdmins'), adminRateLimiter, createAdminUser)
+router.patch("/users/:id/role", hasPermission('canManageAdmins'), adminRateLimiter, adminUpdateUserRole)
+
+// Get user permissions
+router.get("/permissions", isAdmin, getUserPermissions)
+
 // Dashboard routes
 router.get("/dashboard/stats", isAdmin, getDashboardStats)
 router.get("/dashboard/sales-analytics", isAdmin, getSalesAnalytics)
@@ -86,13 +96,13 @@ router.get("/dashboard/inventory-stats", isAdmin, getInventoryStats)
 router.get("/dashboard/customer-stats", isAdmin, getCustomerStats)
 
 // Product management routes
-router.get("/products", isAdmin, getAllProducts)
-router.get("/products/:id", isAdmin, getProductById)
-router.post("/products", isAdmin, adminRateLimiter, createProduct)
-router.put("/products/:id", isAdmin, adminRateLimiter, updateProduct)
-router.delete("/products/:id", isAdmin, adminRateLimiter, deleteProduct)
-router.patch("/products/:id/stock", isAdmin, adminRateLimiter, updateProductStock)
-router.patch("/products/:id/status", isAdmin, adminRateLimiter, updateProductStatus)
+router.get("/products", hasPermission('canViewAll'), getAllProducts)
+router.get("/products/:id", hasPermission('canViewAll'), getProductById)
+router.post("/products", hasPermission('canManageProducts'), adminRateLimiter, createProduct)
+router.put("/products/:id", hasPermission('canManageProducts'), adminRateLimiter, updateProduct)
+router.delete("/products/:id", hasPermission('canManageProducts'), adminRateLimiter, deleteProduct)
+router.patch("/products/:id/stock", hasPermission('canManageProducts'), adminRateLimiter, updateProductStock)
+router.patch("/products/:id/status", hasPermission('canManageProducts'), adminRateLimiter, updateProductStatus)
 
 // Order management routes
 router.get("/orders", isAdmin, getAllOrders)
@@ -119,11 +129,11 @@ router.patch("/users/:id/role", isSuperAdmin, adminRateLimiter, updateUserRole)
 router.patch("/users/:id/status", isSuperAdmin, adminRateLimiter, updateUserStatus)
 
 // Category management routes
-router.get("/categories", isAdmin, getAllCategories)
-router.get("/categories/:id", isAdmin, getCategoryById)
-router.post("/categories", isAdmin, adminRateLimiter, createCategory)
-router.put("/categories/:id", isAdmin, adminRateLimiter, updateCategory)
-router.delete("/categories/:id", isAdmin, adminRateLimiter, deleteCategory)
+router.get("/categories", hasPermission('canViewAll'), getAllCategories)
+router.get("/categories/:id", hasPermission('canViewAll'), getCategoryById)
+router.post("/categories", hasPermission('canManageCategories'), adminRateLimiter, createCategory)
+router.put("/categories/:id", hasPermission('canManageCategories'), adminRateLimiter, updateCategory)
+router.delete("/categories/:id", hasPermission('canManageCategories'), adminRateLimiter, deleteCategory)
 
 // Settings management routes
 router.get("/settings", isSuperAdmin, getSettings)

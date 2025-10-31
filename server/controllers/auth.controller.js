@@ -195,7 +195,7 @@ export const login = asyncHandler(async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     
@@ -495,12 +495,14 @@ export const refreshToken = asyncHandler(async (req, res) => {
 // SOLUTION: Updated refreshAccessToken function
 export const refreshAccessToken = asyncHandler(async (req, res) => {
   console.log('Refresh token endpoint called');
+  console.log('Cookies:', req.cookies);
+  console.log('Body:', req.body);
   
-  // Get refresh token from cookies
-  const refreshToken = req.cookies.refreshToken;
+  // Get refresh token from cookies or request body
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
   
   if (!refreshToken) {
-    console.log('No refresh token provided');
+    console.log('No refresh token provided in cookies or body');
     res.status(401);
     throw new Error('No refresh token provided');
   }

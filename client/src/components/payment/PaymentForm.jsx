@@ -3,6 +3,7 @@ import { Box, TextField, Button, Typography, Alert, CircularProgress } from '@mu
 import { PAYMENT_METHODS, PAYMENT_VALIDATION, PAYMENT_ERROR_MESSAGES } from '../../constants/payment';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import PaymentStatus from './PaymentStatus';
+import formatCurrency from '../../utils/formatCurrency';
 
 const PaymentForm = ({ order, onPaymentComplete, onPaymentError }) => {
   const [selectedMethod, setSelectedMethod] = useState('');
@@ -167,7 +168,7 @@ const PaymentForm = ({ order, onPaymentComplete, onPaymentError }) => {
 
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6">
-          Total: KES {order.total.toFixed(2)}
+          Total: {formatCurrency(order.total)}
         </Typography>
         <Button
           type="submit"

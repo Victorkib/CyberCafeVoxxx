@@ -9,13 +9,13 @@ import { sendAbandonedCartEmail } from '../utils/email.js';
 export const getCart = asyncHandler(async (req, res) => {
   const cart = await Cart.findOne({ user: req.user._id }).populate(
     'items.product',
-    'name price image countInStock'
+    'name price images countInStock salePrice'
   );
 
   if (cart) {
     res.json(cart);
   } else {
-    res.json({ items: [], totalPrice: 0 });
+    res.json({ items: [], totalAmount: 0 });
   }
 });
 
@@ -38,6 +38,8 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   let cart = await Cart.findOne({ user: req.user._id });
 
+  const itemPrice = product.salePrice || product.price;
+
   if (cart) {
     // Cart exists, check if product is already in cart
     const itemIndex = cart.items.findIndex(
@@ -46,10 +48,16 @@ export const addToCart = asyncHandler(async (req, res) => {
 
     if (itemIndex > -1) {
       // Product exists in cart, update quantity
-      cart.items[itemIndex].quantity = quantity;
+      cart.items[itemIndex].quantity += quantity;
+      cart.items[itemIndex].totalPrice = cart.items[itemIndex].quantity * itemPrice;
     } else {
       // Product does not exist in cart, add new item
-      cart.items.push({ product: productId, quantity });
+      cart.items.push({
+        product: productId,
+        quantity,
+        price: itemPrice,
+        totalPrice: quantity * itemPrice
+      });
     }
 
     await cart.save();
@@ -57,13 +65,18 @@ export const addToCart = asyncHandler(async (req, res) => {
     // Create new cart
     cart = await Cart.create({
       user: req.user._id,
-      items: [{ product: productId, quantity }],
+      items: [{
+        product: productId,
+        quantity,
+        price: itemPrice,
+        totalPrice: quantity * itemPrice
+      }],
     });
   }
 
   const updatedCart = await Cart.findById(cart._id).populate(
     'items.product',
-    'name price image countInStock'
+    'name price images countInStock salePrice'
   );
 
   res.json(updatedCart);
@@ -84,7 +97,7 @@ export const removeFromCart = asyncHandler(async (req, res) => {
 
     const updatedCart = await Cart.findById(cart._id).populate(
       'items.product',
-      'name price image countInStock'
+      'name price images countInStock salePrice'
     );
 
     res.json(updatedCart);
@@ -171,14 +184,17 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   if (quantity <= 0) {
     cart.items.splice(itemIndex, 1);
   } else {
+    const itemPrice = product.salePrice || product.price;
     cart.items[itemIndex].quantity = quantity;
+    cart.items[itemIndex].price = itemPrice;
+    cart.items[itemIndex].totalPrice = quantity * itemPrice;
   }
 
   await cart.save();
 
   const updatedCart = await Cart.findById(cart._id).populate(
     'items.product',
-    'name price image countInStock'
+    'name price images countInStock salePrice'
   );
 
   res.json(updatedCart);

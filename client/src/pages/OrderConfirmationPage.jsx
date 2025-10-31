@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
+import formatCurrency from '../utils/formatCurrency';
 
 export default function OrderConfirmationPage() {
   const { currentOrder } = useSelector((state) => state.orders);
@@ -47,7 +48,7 @@ export default function OrderConfirmationPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Amount</span>
-              <span className="font-medium">${currentOrder.total.toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(currentOrder.total)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Payment Method</span>

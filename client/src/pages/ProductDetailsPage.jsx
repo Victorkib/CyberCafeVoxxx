@@ -16,6 +16,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import formatCurrency from '../utils/formatCurrency';
 import { addToCart } from '../redux/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '../redux/slices/wishlistSlice';
 import { fetchProductDetails, fetchRelatedProducts } from '../redux/slices/productsSlice';
@@ -192,11 +193,11 @@ export default function ProductDetailsPage() {
 
           <div className="flex items-baseline">
             <span className="text-3xl font-bold text-gray-900">
-              ${currentProduct.price?.toFixed(2)}
+              {formatCurrency(currentProduct.price)}
             </span>
             {currentProduct.originalPrice && (
               <span className="ml-3 text-lg text-gray-500 line-through">
-                ${currentProduct.originalPrice.toFixed(2)}
+                {formatCurrency(currentProduct.originalPrice)}
               </span>
             )}
             {currentProduct.discountPercentage && (

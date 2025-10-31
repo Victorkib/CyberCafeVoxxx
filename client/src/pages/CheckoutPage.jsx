@@ -13,6 +13,7 @@ import { createOrder } from '../redux/slices/orderSlice';
 import { clearCart } from '../redux/slices/cartSlice';
 import { getPaymentMethods, initializePayment, checkPaymentStatus } from '../redux/slices/paymentSlice';
 import { toast } from 'react-hot-toast';
+import formatCurrency from '../utils/formatCurrency';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -482,14 +483,14 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                         <p className="font-medium">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatCurrency(item.price * item.quantity)}
                         </p>
                       </div>
                     ))}
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex justify-between font-medium">
                         <p>Total</p>
-                        <p>${total.toFixed(2)}</p>
+                        <p>{formatCurrency(total)}</p>
                       </div>
                     </div>
                   </div>

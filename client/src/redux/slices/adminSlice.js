@@ -10,7 +10,7 @@ export const fetchDashboardStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await adminApi.getDashboardStats();
-      return response.data;
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard statistics');
     }
@@ -22,7 +22,7 @@ export const fetchSalesAnalytics = createAsyncThunk(
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await adminApi.getSalesAnalytics(startDate, endDate);
-      return response.data;
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch sales analytics');
     }
@@ -34,7 +34,7 @@ export const fetchInventoryStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await adminApi.getInventoryStats();
-      return response.data;
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch inventory statistics');
     }
@@ -46,7 +46,7 @@ export const fetchCustomerStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await adminApi.getCustomerStats();
-      return response.data;
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch customer statistics');
     }
@@ -99,7 +99,7 @@ export const updateProduct = createAsyncThunk(
     try {
       const response = await adminApi.updateProduct(id, productData);
       toast.success('Product updated successfully');
-      return response.data;
+      return response.data || response;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update product');
       return rejectWithValue(error.response?.data?.message || 'Failed to update product');
@@ -502,7 +502,7 @@ export const updateCategory = createAsyncThunk(
     try {
       const response = await adminApi.updateCategory(id, categoryData);
       toast.success('Category updated successfully');
-      return response.data;
+      return response.data || response;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update category');
       return rejectWithValue(error.response?.data?.message || 'Failed to update category');

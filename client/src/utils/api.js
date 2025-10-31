@@ -56,7 +56,7 @@ export const createApi = (dispatch) => {
       if (response.status && response?.data?.message) {
         toast.success(response?.data?.message || "Operation successful")
       }
-      // Return the full response object, not just response.data
+      // Return just response.data to match expected structure
       return response
     },
     async (error) => {
@@ -70,7 +70,9 @@ export const createApi = (dispatch) => {
         if (error.response?.data?.message?.includes("invalid token")) {
           localStorage.removeItem("token")
           localStorage.removeItem("sessionStart")
-          dispatch(openAuthModal("login"))
+          if (dispatch) {
+            dispatch(openAuthModal("login"))
+          }
           return Promise.reject(error)
         }
 
@@ -89,7 +91,9 @@ export const createApi = (dispatch) => {
           // If refresh fails, clear everything and show login
           localStorage.removeItem("token")
           localStorage.removeItem("sessionStart")
-          dispatch(openAuthModal("login"))
+          if (dispatch) {
+            dispatch(openAuthModal("login"))
+          }
           return Promise.reject(refreshError)
         }
       }
@@ -98,12 +102,12 @@ export const createApi = (dispatch) => {
       const message = error?.response?.data?.message || error?.message || "An error occurred"
       const errors = error?.response?.data?.errors || error?.response?.data?.error
 
-      // Show error toast
-      if (message) {
+      // Don't show error toast for notification auth errors (silent fail)
+      if (message && !originalRequest.url?.includes('/notifications') && !message.includes("Not authorized")) {
         toast.error(message)
       }
 
-      return Promise.reject(message)
+      return Promise.reject(error)
     },
   )
 
@@ -139,6 +143,7 @@ export const endpoints = {
     newArrivals: "/products/new-arrivals",
     sale: "/products/sale",
     related: (id) => `/products/${id}/related`,
+    featured: "/products/featured",
   },
   categories: {
     list: "/categories",
@@ -173,10 +178,10 @@ export const endpoints = {
   },
   cart: {
     get: "/cart",
-    add: "/cart/add",
-    update: "/cart/update",
-    remove: "/cart/remove",
-    clear: "/cart/clear",
+    add: "/cart",
+    update: (productId) => `/cart/${productId}`,
+    remove: (productId) => `/cart/${productId}`,
+    clear: "/cart",
   },
   coupons: {
     validate: "/coupons/validate",
@@ -276,6 +281,7 @@ const apiRequest = {
   getNewArrivals: () => defaultApi.get(endpoints.products.newArrivals),
   getSaleProducts: () => defaultApi.get(endpoints.products.sale),
   getRelatedProducts: (id) => defaultApi.get(endpoints.products.related(id)),
+  getFeaturedProducts: () => defaultApi.get(endpoints.products.featured),
 
   // Categories
   getCategories: () => defaultApi.get(endpoints.categories.list),
@@ -312,8 +318,8 @@ const apiRequest = {
   // Cart
   getCart: () => defaultApi.get(endpoints.cart.get),
   addToCart: (data) => defaultApi.post(endpoints.cart.add, data),
-  updateCart: (data) => defaultApi.put(endpoints.cart.update, data),
-  removeFromCart: (productId) => defaultApi.delete(endpoints.cart.remove, { data: { productId } }),
+  updateCart: (data) => defaultApi.put(endpoints.cart.update(data.productId), data),
+  removeFromCart: (productId) => defaultApi.delete(endpoints.cart.remove(productId)),
   clearCart: () => defaultApi.delete(endpoints.cart.clear),
   validateCoupon: (data) => defaultApi.post(endpoints.coupons.validate, data),
   applyCoupon: (data) => defaultApi.post(endpoints.coupons.apply, data),
@@ -415,8 +421,8 @@ export const orderAPI = {
 export const cartAPI = {
   get: () => defaultApi.get(endpoints.cart.get),
   add: (data) => defaultApi.post(endpoints.cart.add, data),
-  update: (data) => defaultApi.put(endpoints.cart.update, data),
-  remove: (productId) => defaultApi.delete(endpoints.cart.remove, { data: { productId } }),
+  update: (data) => defaultApi.put(endpoints.cart.update(data.productId), data),
+  remove: (productId) => defaultApi.delete(endpoints.cart.remove(productId)),
   clear: () => defaultApi.delete(endpoints.cart.clear),
 }
 

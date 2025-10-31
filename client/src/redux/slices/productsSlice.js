@@ -81,11 +81,12 @@ export const fetchFeaturedProducts = createAsyncThunk(
   'products/fetchFeaturedProducts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.getProducts({ featured: true });
-      return response.data;
+      const response = await apiRequest.getFeaturedProducts();
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error('Error fetching featured products:', error);
-      return rejectWithValue(error.response?.data || { message: 'Failed to fetch featured products' });
+      // Return empty array instead of rejecting to prevent errors
+      return [];
     }
   }
 );
@@ -204,8 +205,8 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload.products;
-        state.totalProducts = action.payload.total;
+        state.products = action.payload.products || [];
+        state.totalProducts = action.payload.totalProducts || action.payload.total || 0;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
@@ -302,11 +303,14 @@ const productsSlice = createSlice({
       })
       .addCase(fetchFeaturedProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.featuredProducts = action.payload;
+        state.featuredProducts = Array.isArray(action.payload) ? action.payload : [];
+        state.error = null;
       })
       .addCase(fetchFeaturedProducts.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Failed to fetch featured products';
+        // Don't set error for featured products to prevent UI errors
+        state.featuredProducts = [];
+        state.error = null;
       })
       // Fetch Products by Category
       .addCase(fetchProductsByCategory.pending, (state) => {

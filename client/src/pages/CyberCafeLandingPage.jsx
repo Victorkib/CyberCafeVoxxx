@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -42,7 +42,7 @@ import {
   Menu,
 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
-import { addToCart } from "../redux/slices/cartSlice"
+import { addToCart, fetchCart } from "../redux/slices/cartSlice"
 import { openAuthModal } from "../redux/slices/uiSlice"
 import { toggleDarkMode } from "../redux/slices/uiSlice"
 import CheckoutModal from "../components/checkout/CheckoutModal"
@@ -57,11 +57,83 @@ import { fetchCategories, fetchFeaturedCategories } from "../redux/slices/catego
 import { fetchSpecialOffers } from "../redux/slices/specialOffersSlice"
 import { fetchHeroSlides } from "../redux/slices/heroSlidesSlice"
 import { clearError, clearSuccess, subscribeToNewsletter } from "../redux/slices/newsletterSlice"
+import formatCurrency from '../utils/formatCurrency';
 
 // Import our enhanced components
 import LoadingScreen from "./common/LoadingScreen"
 import ErrorFallback from "./common/ErrorFallback"
 import StatusMessage from "./common/StatusMessage"
+
+// Fun loading quotes and facts
+const funLoadingContent = [
+  {
+    type: "quote",
+    text: "Loading faster than your WiFi on a good day! 🚀",
+    author: "The Internet"
+  },
+  {
+    type: "quote",
+    text: "Patience is a virtue, but loading screens are temporary! ⏳",
+    author: "Ancient Developer Wisdom"
+  },
+  {
+    type: "quote",
+    text: "Good things come to those who wait... and refresh the page! 🔄",
+    author: "Every Developer Ever"
+  },
+  {
+    type: "fact",
+    text: "The first computer bug was an actual bug - a moth found in a Harvard computer in 1947! 🐛"
+  },
+  {
+    type: "fact",
+    text: "The term 'debugging' was coined by Admiral Grace Hopper when she found that moth! 🔍"
+  },
+  {
+    type: "fact",
+    text: "The first 1GB hard drive weighed over 500 pounds and cost $40,000 in 1980! 💾"
+  },
+  {
+    type: "fact",
+    text: "Your smartphone has more computing power than NASA used to land on the moon! 🌙"
+  },
+  {
+    type: "fact",
+    text: "The first webcam was created to monitor a coffee pot at Cambridge University! ☕"
+  },
+  {
+    type: "quote",
+    text: "99 little bugs in the code, 99 little bugs... take one down, patch it around, 117 little bugs in the code! 🐛",
+    author: "Developer's Lament"
+  },
+  {
+    type: "fact",
+    text: "The '@' symbol was used in email for the first time in 1971 by Ray Tomlinson! 📧"
+  },
+  {
+    type: "quote",
+    text: "There are only 10 types of people: those who understand binary and those who don't! 💻",
+    author: "Binary Joke #1"
+  },
+  {
+    type: "fact",
+    text: "The first computer virus was created in 1983 and was called 'Elk Cloner'! 🦌"
+  },
+  {
+    type: "quote",
+    text: "Loading... Please wait while we untangle the internet cables! 🕸️",
+    author: "IT Support"
+  },
+  {
+    type: "fact",
+    text: "Google processes over 8.5 billion searches per day! That's 99,000 searches per second! 🔍"
+  },
+  {
+    type: "quote",
+    text: "Ctrl+Z is the closest thing we have to time travel! ⏰",
+    author: "Every Designer"
+  }
+]
 
 // Define services array
 const services = [
@@ -721,9 +793,8 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
     >
       <motion.div
         ref={modalRef}
-        className={`relative w-full max-w-4xl rounded-2xl shadow-2xl ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        } max-h-[90vh] flex flex-col`}
+        className={`relative w-full max-w-4xl rounded-2xl shadow-2xl ${darkMode ? "bg-gray-800" : "bg-white"
+          } max-h-[90vh] flex flex-col`}
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{
           opacity: isClosing ? 0 : 1,
@@ -785,11 +856,10 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                    selectedImage === idx
-                      ? "border-blue-600 dark:border-blue-400 shadow-md scale-110"
-                      : "border-transparent hover:border-gray-300 dark:hover:border-gray-600 opacity-70 hover:opacity-100"
-                  }`}
+                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${selectedImage === idx
+                    ? "border-blue-600 dark:border-blue-400 shadow-md scale-110"
+                    : "border-transparent hover:border-gray-300 dark:hover:border-gray-600 opacity-70 hover:opacity-100"
+                    }`}
                   aria-label={`View image ${idx + 1}`}
                 >
                   <img
@@ -843,15 +913,15 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
                 {product.salePrice ? (
                   <>
                     <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                      ${product.salePrice?.toFixed(2)}
+                      {formatCurrency(product.salePrice)}
                     </span>
                     <span className="ml-2 sm:ml-3 text-base sm:text-lg text-gray-500 dark:text-gray-400 line-through">
-                      ${product.price?.toFixed(2)}
+                      {formatCurrency(product.price)}
                     </span>
                   </>
                 ) : (
                   <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    ${product.price?.toFixed(2) || "0.00"}
+                    {formatCurrency(product.price || 0)}
                   </span>
                 )}
               </div>
@@ -867,31 +937,28 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
               <div className="flex space-x-4">
                 <button
                   onClick={() => setSelectedTab("description")}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === "description"
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`pb-2 text-sm font-medium ${selectedTab === "description"
+                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
                 >
                   Description
                 </button>
                 <button
                   onClick={() => setSelectedTab("specifications")}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === "specifications"
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`pb-2 text-sm font-medium ${selectedTab === "specifications"
+                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
                 >
                   Specifications
                 </button>
                 <button
                   onClick={() => setSelectedTab("shipping")}
-                  className={`pb-2 text-sm font-medium ${
-                    selectedTab === "shipping"
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                  className={`pb-2 text-sm font-medium ${selectedTab === "shipping"
+                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
                 >
                   Shipping
                 </button>
@@ -1289,11 +1356,10 @@ const NewsletterPopup = ({ isOpen, onClose }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg ${
-                    darkMode
-                      ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
-                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
-                  }`}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg ${darkMode
+                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   required
                   disabled={subscribeLoading}
                 />
@@ -1325,9 +1391,8 @@ const NewsletterPopup = ({ isOpen, onClose }) => {
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={handleClose}
-                className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                  darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
-                } transition-colors`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg ${darkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                  } transition-colors`}
                 disabled={subscribeLoading}
               >
                 Maybe Later
@@ -1427,13 +1492,34 @@ const CyberCafeLandingPage = () => {
   const products = useDataWithFallback(productsData, fallbackProducts, productsLoading, productsError)
   const specialOffers = useDataWithFallback(specialOffersData, fallbackSpecialOffers, offersLoading, offersError)
 
+  // Rotate loading content every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLoadingContentIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % funLoadingContent.length
+        setCurrentLoadingContent(funLoadingContent[nextIndex])
+        return nextIndex
+      })
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Fetch cart when user is authenticated
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchCart())
+    }
+  }, [user, dispatch])
+
   // Add this after the Redux state declarations
 
   // Use fallback data when server data is empty
-  const effectiveHeroSlides = useDataWithFallback(heroSlides, fallbackHeroSlides, slidesLoading, slidesError)
-  const effectiveCategories = useDataWithFallback(categories, fallbackCategories, categoriesLoading, categoriesError)
-  const effectiveProducts = useDataWithFallback(products, fallbackProducts, productsLoading, productsError)
-  const effectiveSpecialOffers = useDataWithFallback(specialOffers, fallbackSpecialOffers, offersLoading, offersError)
+  const effectiveHeroSlides = useDataWithFallback(heroSlidesData, fallbackHeroSlides, slidesLoading, slidesError)
+  const effectiveCategories = useDataWithFallback(categoriesData, fallbackCategories, categoriesLoading, categoriesError)
+  const allProducts = useDataWithFallback(productsData?.products || productsData, fallbackProducts, productsLoading, productsError)
+  const effectiveSpecialOffers = useDataWithFallback(specialOffersData, fallbackSpecialOffers, offersLoading, offersError)
+
 
   // Local state
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -1448,6 +1534,9 @@ const CyberCafeLandingPage = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [showCategoryView, setShowCategoryView] = useState(false)
+  const [currentLoadingContent, setCurrentLoadingContent] = useState(funLoadingContent[0])
+  const [loadingContentIndex, setLoadingContentIndex] = useState(0)
   const [selectedSort, setSelectedSort] = useState("featured")
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false)
@@ -1466,6 +1555,20 @@ const CyberCafeLandingPage = () => {
   const [categoriesRef, categoriesVisible] = useIntersectionObserver({
     threshold: 0.1,
   })
+
+  // Filter products based on selected category (ensure `selectedCategory` is defined first)
+  const effectiveProducts = useMemo(() => {
+    if (!Array.isArray(allProducts)) return []
+
+    if (selectedCategory === "All") {
+      return allProducts
+    }
+
+    return allProducts.filter(product => {
+      const categoryName = product.category?.name || product.categoryName
+      return categoryName === selectedCategory
+    })
+  }, [allProducts, selectedCategory])
   const [productsRef, productsVisible] = useIntersectionObserver({
     threshold: 0.1,
   })
@@ -1493,7 +1596,7 @@ const CyberCafeLandingPage = () => {
     try {
       // Fetch data in parallel
       const promises = [
-        dispatch(fetchProducts(filters)).unwrap(),
+        dispatch(fetchProducts({})).unwrap(), // Fetch all products without filters
         dispatch(fetchFeaturedProducts()).unwrap(),
         dispatch(fetchNewArrivals()).unwrap(),
         dispatch(fetchSaleProducts()).unwrap(),
@@ -1501,6 +1604,7 @@ const CyberCafeLandingPage = () => {
         dispatch(fetchFeaturedCategories()).unwrap(),
         dispatch(fetchSpecialOffers()).unwrap(),
         dispatch(fetchHeroSlides()).unwrap(),
+
       ]
 
       // Update progress as promises resolve
@@ -1669,12 +1773,38 @@ const CyberCafeLandingPage = () => {
 
   // Cart and checkout functions
   const handleAddToCart = (product, quantity = 1) => {
-    // Add the product to cart multiple times based on quantity
-    for (let i = 0; i < quantity; i++) {
-      dispatch(addToCart(product))
+    // Check if user is authenticated
+    if (!user) {
+      addStatusMessage({
+        type: "error",
+        message: "Please login to add items to cart",
+        duration: 5000
+      })
+      dispatch(openAuthModal("login"))
+      return
     }
 
-    // Show feedback via status message
+    // Add the product to cart with correct API format
+    dispatch(addToCart({
+      productId: product._id,
+      quantity: quantity
+    })).then(() => {
+      // Show feedback via status message
+      addStatusMessage({
+        type: "success",
+        message: `${product.name} added to cart!`,
+        duration: 3000
+      })
+    }).catch((error) => {
+      // Show error message
+      addStatusMessage({
+        type: "error",
+        message: error.message || "Failed to add item to cart",
+        duration: 5000
+      })
+    })
+
+    // Legacy status message (keeping for compatibility)
     addStatusMessage({
       type: "success",
       title: "Added to Cart",
@@ -1755,9 +1885,8 @@ const CyberCafeLandingPage = () => {
 
   return (
     <div
-      className={`min-h-screen ${
-        darkMode ? "dark bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
-      } overflow-x-hidden transition-colors duration-300`}
+      className={`min-h-screen ${darkMode ? "dark bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
+        } overflow-x-hidden transition-colors duration-300`}
     >
       {/* Status Messages */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
@@ -1824,9 +1953,8 @@ const CyberCafeLandingPage = () => {
 
       {/* Header and Navigation */}
       <header
-        className={`sticky top-0 z-40 ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        } shadow-md transition-colors duration-300`}
+        className={`sticky top-0 z-40 ${darkMode ? "bg-gray-800" : "bg-white"
+          } shadow-md transition-colors duration-300`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center py-4">
@@ -1843,19 +1971,17 @@ const CyberCafeLandingPage = () => {
 
             {/* Search Bar */}
             <div
-              className={`hidden md:block relative flex-1 mx-10 max-w-2xl transition-all ${
-                isSearchFocused ? "scale-105" : ""
-              }`}
+              className={`hidden md:block relative flex-1 mx-10 max-w-2xl transition-all ${isSearchFocused ? "scale-105" : ""
+                }`}
             >
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
                   placeholder="Search for products, categories, brands..."
-                  className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${
-                    darkMode
-                      ? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
-                      : "border-gray-200 bg-white text-gray-900 focus:border-blue-500"
-                  } focus:outline-none transition-all`}
+                  className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${darkMode
+                    ? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
+                    : "border-gray-200 bg-white text-gray-900 focus:border-blue-500"
+                    } focus:outline-none transition-all`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -1877,25 +2003,22 @@ const CyberCafeLandingPage = () => {
             <nav className="hidden lg:flex items-center space-x-8">
               <Link
                 to="/shop"
-                className={`text-sm font-medium ${
-                  darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
-                } transition-colors`}
+                className={`text-sm font-medium ${darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
+                  } transition-colors`}
               >
                 Shop
               </Link>
               <Link
                 to="/services"
-                className={`text-sm font-medium ${
-                  darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
-                } transition-colors`}
+                className={`text-sm font-medium ${darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
+                  } transition-colors`}
               >
                 Services
               </Link>
               <Link
                 to="/websites"
-                className={`text-sm font-medium ${
-                  darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
-                } transition-colors`}
+                className={`text-sm font-medium ${darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
+                  } transition-colors`}
               >
                 Websites
               </Link>
@@ -1914,9 +2037,8 @@ const CyberCafeLandingPage = () => {
             {/* Icons */}
             <div className="flex items-center space-x-4">
               <button
-                className={`relative p-2 ${
-                  darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
-                } transition-colors`}
+                className={`relative p-2 ${darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
+                  } transition-colors`}
                 aria-label="Wishlist"
               >
                 <Heart size={24} />
@@ -1925,16 +2047,17 @@ const CyberCafeLandingPage = () => {
                 </span>
               </button>
               <button
-                className={`relative p-2 ${
-                  darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
-                } transition-colors`}
+                className={`relative p-2 ${darkMode ? "text-gray-300 hover:text-blue-400" : "text-gray-700 hover:text-blue-600"
+                  } transition-colors`}
                 onClick={() => setIsCheckoutOpen(true)}
                 aria-label="Cart"
               >
                 <ShoppingCart size={24} />
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
+                {cartItems && cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
               </button>
 
               {/* Auth Buttons / User Menu */}
@@ -1942,9 +2065,8 @@ const CyberCafeLandingPage = () => {
                 {user ? (
                   <div className="relative group">
                     <button
-                      className={`flex items-center space-x-1 ${
-                        darkMode ? "text-white hover:text-blue-400" : "text-gray-900 hover:text-blue-600"
-                      }`}
+                      className={`flex items-center space-x-1 ${darkMode ? "text-white hover:text-blue-400" : "text-gray-900 hover:text-blue-600"
+                        }`}
                     >
                       <span className="font-medium text-sm">{user.name}</span>
                       <ChevronDown size={16} />
@@ -2007,9 +2129,8 @@ const CyberCafeLandingPage = () => {
               <input
                 type="text"
                 placeholder="Search products..."
-                className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${
-                  darkMode ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-white text-gray-900"
-                } focus:border-blue-500 focus:outline-none`}
+                className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${darkMode ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-white text-gray-900"
+                  } focus:border-blue-500 focus:outline-none`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search"
@@ -2034,40 +2155,36 @@ const CyberCafeLandingPage = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className={`lg:hidden ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } absolute w-full shadow-lg z-50 overflow-hidden`}
+              className={`lg:hidden ${darkMode ? "bg-gray-800" : "bg-white"
+                } absolute w-full shadow-lg z-50 overflow-hidden`}
             >
               <div className="p-4 space-y-3">
                 <Link
                   to="/shop"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                  } rounded-lg`}
+                  className={`block py-2 px-4 ${darkMode
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    } rounded-lg`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Shop
                 </Link>
                 <Link
                   to="/services"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                  } rounded-lg`}
+                  className={`block py-2 px-4 ${darkMode
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    } rounded-lg`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Services
                 </Link>
                 <Link
                   to="/websites"
-                  className={`block py-2 px-4 ${
-                    darkMode
-                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                  } rounded-lg`}
+                  className={`block py-2 px-4 ${darkMode
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                    } rounded-lg`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Websites
@@ -2092,11 +2209,10 @@ const CyberCafeLandingPage = () => {
                           dispatch(openAuthModal("login"))
                           setIsMenuOpen(false)
                         }}
-                        className={`block w-full text-left py-2 px-4 ${
-                          darkMode
-                            ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                        } rounded-lg`}
+                        className={`block w-full text-left py-2 px-4 ${darkMode
+                          ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                          : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          } rounded-lg`}
                       >
                         Login
                       </button>
@@ -2105,11 +2221,10 @@ const CyberCafeLandingPage = () => {
                           dispatch(openAuthModal("register"))
                           setIsMenuOpen(false)
                         }}
-                        className={`block w-full text-left py-2 px-4 ${
-                          darkMode
-                            ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                        } rounded-lg`}
+                        className={`block w-full text-left py-2 px-4 ${darkMode
+                          ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                          : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          } rounded-lg`}
                       >
                         Register
                       </button>
@@ -2123,32 +2238,29 @@ const CyberCafeLandingPage = () => {
                       <div className="mt-2 space-y-1">
                         <Link
                           to="/account"
-                          className={`block py-1 px-2 text-sm ${
-                            darkMode
-                              ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                              : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                          } rounded`}
+                          className={`block py-1 px-2 text-sm ${darkMode
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                            } rounded`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           My Account
                         </Link>
                         <Link
                           to="/orders"
-                          className={`block py-1 px-2 text-sm ${
-                            darkMode
-                              ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                              : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                          } rounded`}
+                          className={`block py-1 px-2 text-sm ${darkMode
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                            } rounded`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           Orders
                         </Link>
                         <button
-                          className={`block w-full text-left py-1 px-2 text-sm ${
-                            darkMode
-                              ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                              : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                          } rounded`}
+                          className={`block w-full text-left py-1 px-2 text-sm ${darkMode
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                            } rounded`}
                           onClick={() => {
                             // Handle logout
                             setIsMenuOpen(false)
@@ -2161,31 +2273,28 @@ const CyberCafeLandingPage = () => {
                   )}
                   <a
                     href="#"
-                    className={`block py-2 px-4 ${
-                      darkMode
-                        ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    } rounded-lg`}
+                    className={`block py-2 px-4 ${darkMode
+                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      } rounded-lg`}
                   >
                     Track Order
                   </a>
                   <a
                     href="#"
-                    className={`block py-2 px-4 ${
-                      darkMode
-                        ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    } rounded-lg`}
+                    className={`block py-2 px-4 ${darkMode
+                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      } rounded-lg`}
                   >
                     Customer Support
                   </a>
                   <button
                     onClick={handleToggleTheme}
-                    className={`flex items-center w-full py-2 px-4 ${
-                      darkMode
-                        ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                    } rounded-lg`}
+                    className={`flex items-center w-full py-2 px-4 ${darkMode
+                      ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      } rounded-lg`}
                   >
                     {darkMode ? <Sun size={18} className="mr-2" /> : <Moon size={18} className="mr-2" />}
                     Switch to {darkMode ? "Light" : "Dark"} Mode
@@ -2229,9 +2338,8 @@ const CyberCafeLandingPage = () => {
                   {effectiveHeroSlides.map((slide, index) => (
                     <div
                       key={slide._id}
-                      className={`absolute inset-0 flex items-center transition-opacity duration-1000 ease-in-out ${
-                        index === currentSlide ? "opacity-100" : "opacity-0"
-                      }`}
+                      className={`absolute inset-0 flex items-center transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
+                        }`}
                       aria-hidden={index !== currentSlide}
                     >
                       <div className={`absolute inset-0 ${slide.backgroundColor || "bg-black"} bg-opacity-80`}></div>
@@ -2304,9 +2412,8 @@ const CyberCafeLandingPage = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentSlide(index)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                          index === currentSlide ? "bg-white" : "bg-white/50 hover:bg-white/70"
-                        }`}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors ${index === currentSlide ? "bg-white" : "bg-white/50 hover:bg-white/70"
+                          }`}
                         aria-label={`Go to slide ${index + 1}`}
                         aria-current={index === currentSlide}
                       ></button>
@@ -2324,18 +2431,16 @@ const CyberCafeLandingPage = () => {
 
         {/* Services Bar */}
         <section
-          className={`py-6 ${darkMode ? "bg-gray-800" : "bg-white"} border-b ${
-            darkMode ? "border-gray-700" : "border-gray-200"
-          }`}
+          className={`py-6 ${darkMode ? "bg-gray-800" : "bg-white"} border-b ${darkMode ? "border-gray-700" : "border-gray-200"
+            }`}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {services.slice(0, 4).map((service) => (
                 <div key={service.id} className="flex items-center justify-center md:justify-start">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      darkMode ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"
-                    } mr-3`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${darkMode ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"
+                      } mr-3`}
                   >
                     {service.icon}
                   </div>
@@ -2352,16 +2457,48 @@ const CyberCafeLandingPage = () => {
         </section>
 
         {/* Categories Section */}
-        <section ref={categoriesRef} className="py-16">
+        <section ref={categoriesRef} className="py-20 relative overflow-hidden">
+          {/* Gradient Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+
           {sectionLoadingStates.categories ? (
-            <div className="flex items-center justify-center h-[400px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">Loading categories...</p>
+            <div className="relative z-10 flex items-center justify-center h-[500px]">
+              <div className="text-center max-w-md mx-auto px-6">
+                <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-400 mb-6"></div>
+                <motion.div
+                  key={loadingContentIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="space-y-4"
+                >
+                  {currentLoadingContent.type === 'quote' ? (
+                    <>
+                      <p className="text-lg text-gray-200 italic">"{currentLoadingContent.text}"</p>
+                      <p className="text-sm text-blue-400">- {currentLoadingContent.author}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-blue-400 font-semibold">💡 Did you know?</p>
+                      <p className="text-lg text-gray-200">{currentLoadingContent.text}</p>
+                    </>
+                  )}
+                </motion.div>
+                <div className="mt-6 flex justify-center space-x-1">
+                  {funLoadingContent.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-colors duration-300 ${index === loadingContentIndex ? 'bg-blue-400' : 'bg-gray-600'
+                        }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           ) : categoriesError ? (
-            <div className="py-12">
+            <div className="relative z-10 py-12">
               <ErrorFallback
                 error={categoriesError}
                 resetErrorBoundary={() => {
@@ -2371,7 +2508,7 @@ const CyberCafeLandingPage = () => {
               />
             </div>
           ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
@@ -2379,13 +2516,16 @@ const CyberCafeLandingPage = () => {
                   y: categoriesVisible ? 0 : 20,
                 }}
                 transition={{ duration: 0.5 }}
-                className="text-center mb-12"
+                className="text-center mb-16"
               >
-                <h2 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-4">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full"></div>
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-4">
                   Browse By Category
                 </h2>
-                <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                  Find everything you need for work or study
+                <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                  Discover everything you need for work, study, and entertainment
                 </p>
               </motion.div>
 
@@ -2396,53 +2536,353 @@ const CyberCafeLandingPage = () => {
                   y: categoriesVisible ? 0 : 20,
                 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
               >
-                {effectiveCategories.map((category) => (
-                  <motion.a
+                {effectiveCategories.map((category, index) => (
+                  <motion.button
                     key={category._id}
-                    href="#featured-products"
-                    onClick={() => setSelectedCategory(category.name)}
-                    whileHover={{ scale: 1.03 }}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(category.name)
+                      setShowCategoryView(true)
+                    }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    whileHover={{
+                      scale: 1.05,
+                      transition: { duration: 0.2 }
+                    }}
                     whileTap={{ scale: 0.98 }}
-                    className={`${
-                      darkMode
-                        ? "bg-gray-800 border-gray-700 hover:border-blue-500"
-                        : "bg-gray-50 border-gray-100 hover:border-blue-200"
-                    } border rounded-xl p-6 text-center hover:shadow-md transition-all group`}
+                    className="group relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10"
                   >
-                    <div className="flex justify-center mb-4">
-                      <div
-                        className={`w-16 h-16 flex items-center justify-center rounded-full ${
-                          darkMode
-                            ? "bg-blue-900/40 text-blue-400 group-hover:bg-blue-800 group-hover:text-blue-300"
-                            : "bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
-                        } transition-colors`}
-                      >
-                        {category.icon}
+                    {/* Category Image */}
+                    <div className="relative h-48 overflow-hidden">
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
+                          <div className="text-4xl text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                            {category.icon}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Featured Badge */}
+                      {category.featured && (
+                        <div className="absolute top-3 right-3">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500 text-white">
+                            FEATURED
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Item Count Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-900/80 text-gray-300 backdrop-blur-sm">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {category.productCount || 0} items
+                        </span>
                       </div>
                     </div>
-                    <h3 className={`font-medium ${darkMode ? "text-white" : "text-gray-900"} mb-1`}>{category.name}</h3>
-                    <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                      {category.productCount || 0} items
-                    </p>
-                    <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-600"}`}>
-                      {category.description}
-                    </p>
-                  </motion.a>
+
+                    {/* Category Content */}
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                        {category.name}
+                      </h3>
+
+                      <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                        {category.description}
+                      </p>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-flex items-center text-sm text-green-400 font-medium">
+                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Popular
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xs text-gray-500">Order: {category.order || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hover Effect Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  </motion.button>
                 ))}
               </motion.div>
             </div>
           )}
         </section>
 
+        {/* Category Detail View */}
+        <AnimatePresence>
+          {showCategoryView && selectedCategory !== "All" && (
+            <motion.section
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="fixed inset-0 z-50 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700/50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setShowCategoryView(false)}
+                      className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                      <span>Back to Featured</span>
+                    </button>
+
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm text-gray-400">CATEGORY</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-white font-medium">{selectedCategory}</span>
+                        <span className="text-sm text-gray-400">
+                          {effectiveProducts.length} items
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Category Hero */}
+              <div className="relative py-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="text-center"
+                  >
+                    <h1 className="text-5xl font-bold text-white mb-6">
+                      {selectedCategory} Collection
+                    </h1>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+                      {effectiveCategories.find(cat => cat.name === selectedCategory)?.description ||
+                        `Discover the latest in cutting-edge technology with our wide range of ${selectedCategory.toLowerCase()} goods. From powerful laptops and sleek smartphones to essential accessories like headphones, keyboards, and chargers, we bring you top-quality devices designed to enhance your daily life. Whether you're upgrading your home setup, shopping for work essentials, or looking for the perfect gift, our ${selectedCategory.toLowerCase()} collection combines performance, innovation, and great value—all in one place.`}
+                    </p>
+
+                    <div className="flex items-center justify-center space-x-8 text-sm text-gray-400">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <Check className="w-2 h-2 text-white" />
+                        </div>
+                        <span>Filtered by: {selectedCategory}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Filter className="w-4 h-4" />
+                        <span>Showing {effectiveProducts.length} products</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Products Grid */}
+              <div className="pb-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                  {effectiveProducts.length > 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.4 }}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                    >
+                      {effectiveProducts.map((product, index) => (
+                        <motion.div
+                          key={product._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className="group relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10"
+                        >
+                          {/* Product Image */}
+                          <div className="relative h-48 overflow-hidden">
+                            <img
+                              src={product.images?.[0] || '/placeholder-product.jpg'}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+
+                            {/* Sale Badge */}
+                            {product.salePrice && product.salePrice < product.price && (
+                              <div className="absolute top-3 right-3">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white">
+                                  -{Math.round(((product.price - product.salePrice) / product.price) * 100)}%
+                                </span>
+                              </div>
+                            )}
+
+                            {/* New Badge */}
+                            {product.isNew && (
+                              <div className="absolute top-3 left-3">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500 text-white">
+                                  NEW
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Product Content */}
+                          <div className="p-6">
+                            <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
+                              {product.name}
+                            </h3>
+
+                            <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center space-x-2">
+                                {product.salePrice && product.salePrice < product.price ? (
+                                  <>
+                                    <span className="text-xl font-bold text-green-400">
+                                      {formatCurrency(product.salePrice)}
+                                    </span>
+                                    <span className="text-sm text-gray-500 line-through">
+                                      {formatCurrency(product.price)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-xl font-bold text-white">
+                                    {formatCurrency(product.price)}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center space-x-1">
+                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                <span className="text-sm text-gray-400">
+                                  {product.rating || 4.5}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                // Check if user is authenticated
+                                if (!user) {
+                                  addStatusMessage({
+                                    type: "error",
+                                    message: "Please login to add items to cart",
+                                    duration: 5000
+                                  })
+                                  dispatch(openAuthModal("login"))
+                                  return
+                                }
+
+                                dispatch(addToCart({
+                                  productId: product._id,
+                                  quantity: 1
+                                })).then(() => {
+                                  // Show success feedback
+                                  addStatusMessage({
+                                    type: "success",
+                                    message: `${product.name} added to cart!`,
+                                    duration: 3000
+                                  })
+                                }).catch((error) => {
+                                  // Show error feedback
+                                  addStatusMessage({
+                                    type: "error",
+                                    message: error.message || "Failed to add item to cart",
+                                    duration: 5000
+                                  })
+                                })
+                              }}
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
+                            >
+                              Add to Cart
+                            </button>
+                          </div>
+
+                          {/* Hover Effect Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.4 }}
+                      className="text-center py-20"
+                    >
+                      <div className="text-6xl text-gray-600 mb-4">🔍</div>
+                      <h3 className="text-2xl font-bold text-white mb-2">No products found</h3>
+                      <p className="text-gray-400 mb-6">
+                        We couldn't find any products in the {selectedCategory} category.
+                      </p>
+                      <button
+                        onClick={() => setShowCategoryView(false)}
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300"
+                      >
+                        Browse All Categories
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
         {/* Products Section */}
         <section ref={productsRef} id="featured-products" className="py-16">
           {sectionLoadingStates.products ? (
-            <div className="flex items-center justify-center h-[500px] bg-gray-100 dark:bg-gray-800">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-300">Loading products...</p>
+            <div className={`flex items-center justify-center h-[500px] ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <div className="text-center max-w-md mx-auto px-6">
+                <div className={`inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 ${darkMode ? 'border-blue-400' : 'border-blue-600'} mb-6`}></div>
+                <motion.div
+                  key={loadingContentIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="space-y-4"
+                >
+                  {currentLoadingContent.type === 'quote' ? (
+                    <>
+                      <p className={`text-lg ${darkMode ? 'text-gray-200' : 'text-gray-700'} italic`}>"{currentLoadingContent.text}"</p>
+                      <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>- {currentLoadingContent.author}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-semibold`}>💡 Did you know?</p>
+                      <p className={`text-lg ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{currentLoadingContent.text}</p>
+                    </>
+                  )}
+                </motion.div>
+                <div className="mt-6 flex justify-center space-x-1">
+                  {funLoadingContent.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-colors duration-300 ${index === loadingContentIndex
+                        ? (darkMode ? 'bg-blue-400' : 'bg-blue-600')
+                        : (darkMode ? 'bg-gray-600' : 'bg-gray-400')
+                        }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           ) : productsError ? (
@@ -2451,7 +2891,7 @@ const CyberCafeLandingPage = () => {
                 error={productsError}
                 resetErrorBoundary={() => {
                   setSectionLoadingStates((prev) => ({ ...prev, products: true }))
-                  dispatch(fetchProducts(filters))
+                  dispatch(fetchProducts({}))
                 }}
               />
             </div>
@@ -2468,18 +2908,17 @@ const CyberCafeLandingPage = () => {
               >
                 <div>
                   <h2 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
-                    Featured Products
+                    {selectedCategory === 'All' ? 'Featured Products' : `${selectedCategory} Collection`}
                   </h2>
                   <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    Hand-picked products for your tech needs
+                    {selectedCategory === 'All' ? 'Hand-picked products for your tech needs' : `Discover the best products in ${selectedCategory}`}
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setAreFiltersShown(!areFiltersShown)}
-                    className={`flex items-center px-4 py-2 ${
-                      darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-white hover:bg-gray-100 text-gray-700"
-                    } rounded-lg border ${darkMode ? "border-gray-600" : "border-gray-300"}`}
+                    className={`flex items-center px-4 py-2 ${darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-white hover:bg-gray-100 text-gray-700"
+                      } rounded-lg border ${darkMode ? "border-gray-600" : "border-gray-300"}`}
                     aria-expanded={areFiltersShown}
                     aria-controls="product-filters"
                   >
@@ -2493,9 +2932,8 @@ const CyberCafeLandingPage = () => {
                   <select
                     value={selectedSort}
                     onChange={(e) => setSelectedSort(e.target.value)}
-                    className={`px-4 py-2 rounded-lg border ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-700"
-                    }`}
+                    className={`px-4 py-2 rounded-lg border ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-700"
+                      }`}
                     aria-label="Sort products"
                   >
                     <option value="featured">Featured</option>
@@ -2525,32 +2963,36 @@ const CyberCafeLandingPage = () => {
                         </h3>
                         <div className="space-y-2">
                           <button
-                            onClick={() => setSelectedCategory("All")}
-                            className={`block px-3 py-2 rounded-md text-sm w-full text-left ${
-                              selectedCategory === "All"
-                                ? darkMode
-                                  ? "bg-blue-900/30 text-blue-400"
-                                  : "bg-blue-100 text-blue-700"
-                                : darkMode
-                                  ? "text-gray-300 hover:bg-gray-600"
-                                  : "text-gray-700 hover:bg-gray-100"
-                            }`}
+                            onClick={() => {
+                              setSelectedCategory("All")
+                              setShowCategoryView(false)
+                            }}
+                            className={`block px-3 py-2 rounded-md text-sm w-full text-left ${selectedCategory === "All"
+                              ? darkMode
+                                ? "bg-blue-900/30 text-blue-400"
+                                : "bg-blue-100 text-blue-700"
+                              : darkMode
+                                ? "text-gray-300 hover:bg-gray-600"
+                                : "text-gray-700 hover:bg-gray-100"
+                              }`}
                           >
                             All Categories
                           </button>
                           {effectiveCategories.map((category) => (
                             <button
                               key={category._id}
-                              onClick={() => setSelectedCategory(category.name)}
-                              className={`block px-3 py-2 rounded-md text-sm w-full text-left ${
-                                selectedCategory === category.name
-                                  ? darkMode
-                                    ? "bg-blue-900/30 text-blue-400"
-                                    : "bg-blue-100 text-blue-700"
-                                  : darkMode
-                                    ? "text-gray-300 hover:bg-gray-600"
-                                    : "text-gray-700 hover:bg-gray-100"
-                              }`}
+                              onClick={() => {
+                                setSelectedCategory(category.name)
+                                setShowCategoryView(true)
+                              }}
+                              className={`block px-3 py-2 rounded-md text-sm w-full text-left ${selectedCategory === category.name
+                                ? darkMode
+                                  ? "bg-blue-900/30 text-blue-400"
+                                  : "bg-blue-100 text-blue-700"
+                                : darkMode
+                                  ? "text-gray-300 hover:bg-gray-600"
+                                  : "text-gray-700 hover:bg-gray-100"
+                                }`}
                             >
                               {category.name}
                             </button>
@@ -2620,9 +3062,8 @@ const CyberCafeLandingPage = () => {
                     <motion.div
                       key={product._id}
                       whileHover={{ y: -5 }}
-                      className={`${
-                        darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
-                      } rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group`}
+                      className={`${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
+                        } rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group`}
                     >
                       <div className="relative">
                         <img
@@ -2668,9 +3109,8 @@ const CyberCafeLandingPage = () => {
                           {product.category?.name || "Uncategorized"}
                         </div>
                         <h3
-                          className={`font-medium ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          } mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer`}
+                          className={`font-medium ${darkMode ? "text-white" : "text-gray-900"
+                            } mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer`}
                           onClick={() => handleQuickView(product)}
                         >
                           {product.name}
@@ -2700,20 +3140,18 @@ const CyberCafeLandingPage = () => {
                                 ${product.salePrice.toFixed(2)}
                               </span>
                               <span className="ml-2 text-sm text-gray-500 line-through">
-                                ${product.price.toFixed(2)}
+                                {formatCurrency(product.price)}
                               </span>
                             </div>
                           ) : (
                             <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                              ${product.price?.toFixed(2) || "0.00"}
+                              {formatCurrency(product.price)}
                             </span>
                           )}
                           <button
-                            className={`p-2 ${
-                              darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                            } text-white rounded-full transition-colors ${
-                              product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
+                            className={`p-2 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+                              } text-white rounded-full transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
                             onClick={() => handleAddToCart(product)}
                             disabled={product.stock <= 0}
                             aria-label="Add to cart"
@@ -2723,13 +3161,11 @@ const CyberCafeLandingPage = () => {
                         </div>
                         <button
                           onClick={() => handleBuyNow(product)}
-                          className={`w-full py-1.5 text-center text-sm font-medium ${
-                            darkMode
-                              ? "text-blue-400 border-blue-400 hover:bg-blue-900/20"
-                              : "text-blue-600 border-blue-600 hover:bg-blue-50"
-                          } border rounded-lg transition-colors ${
-                            product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
+                          className={`w-full py-1.5 text-center text-sm font-medium ${darkMode
+                            ? "text-blue-400 border-blue-400 hover:bg-blue-900/20"
+                            : "text-blue-600 border-blue-600 hover:bg-blue-50"
+                            } border rounded-lg transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           disabled={product.stock <= 0}
                         >
                           {product.stock <= 0 ? "Out of Stock" : "Buy Now"}
@@ -2760,9 +3196,8 @@ const CyberCafeLandingPage = () => {
               {effectiveProducts.length > 0 && (
                 <div className="mt-8 text-center">
                   <button
-                    className={`inline-flex items-center px-6 py-3 ${
-                      darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                    } text-white font-medium rounded-lg transition-colors shadow-md`}
+                    className={`inline-flex items-center px-6 py-3 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+                      } text-white font-medium rounded-lg transition-colors shadow-md`}
                   >
                     Load More Products
                     <ChevronDown size={20} className="ml-2" />
@@ -2831,9 +3266,8 @@ const CyberCafeLandingPage = () => {
                     <motion.div
                       key={offer._id}
                       whileHover={{ scale: 1.02 }}
-                      className={`${
-                        darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
-                      } rounded-xl border overflow-hidden shadow-md`}
+                      className={`${darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                        } rounded-xl border overflow-hidden shadow-md`}
                     >
                       <div className="flex flex-col md:flex-row">
                         <div className="md:w-2/5">
@@ -2875,9 +3309,8 @@ const CyberCafeLandingPage = () => {
                           </div>
                           <div className="mb-4">
                             <h4
-                              className={`text-xs font-medium uppercase ${
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              } mb-2`}
+                              className={`text-xs font-medium uppercase ${darkMode ? "text-gray-400" : "text-gray-500"
+                                } mb-2`}
                             >
                               Includes:
                             </h4>
@@ -2889,9 +3322,8 @@ const CyberCafeLandingPage = () => {
                                 >
                                   <Check
                                     size={16}
-                                    className={`mr-2 mt-0.5 flex-shrink-0 ${
-                                      darkMode ? "text-green-400" : "text-green-500"
-                                    }`}
+                                    className={`mr-2 mt-0.5 flex-shrink-0 ${darkMode ? "text-green-400" : "text-green-500"
+                                      }`}
                                   />
                                   {item}
                                 </li>
@@ -2905,9 +3337,8 @@ const CyberCafeLandingPage = () => {
                           )}
                           <div className="flex flex-col sm:flex-row gap-3">
                             <button
-                              className={`flex-1 py-2 px-4 ${
-                                darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                              } text-white font-medium rounded-lg transition-colors`}
+                              className={`flex-1 py-2 px-4 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+                                } text-white font-medium rounded-lg transition-colors`}
                             >
                               Add Bundle to Cart
                             </button>
@@ -2944,9 +3375,8 @@ const CyberCafeLandingPage = () => {
               {testimonials.map((testimonial) => (
                 <div
                   key={testimonial.id}
-                  className={`${
-                    darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
-                  } rounded-xl border p-6 shadow-md`}
+                  className={`${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
+                    } rounded-xl border p-6 shadow-md`}
                 >
                   <div className="flex items-center mb-4">
                     <img
@@ -3000,19 +3430,17 @@ const CyberCafeLandingPage = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
-                    className={`${
-                      darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                    } text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg`}
+                    className={`${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+                      } text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg`}
                     onClick={() => setIsCheckoutOpen(true)}
                   >
                     View Cart
                   </button>
                   <button
-                    className={`${
-                      darkMode
-                        ? "bg-gray-800 text-blue-400 border-blue-400 hover:bg-gray-700"
-                        : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
-                    } font-bold py-3 px-8 rounded-lg border-2 transition-colors`}
+                    className={`${darkMode
+                      ? "bg-gray-800 text-blue-400 border-blue-400 hover:bg-gray-700"
+                      : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
+                      } font-bold py-3 px-8 rounded-lg border-2 transition-colors`}
                   >
                     Contact Sales
                   </button>
@@ -3029,9 +3457,8 @@ const CyberCafeLandingPage = () => {
         <section className={`py-12 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
           <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
             <div
-              className={`p-8 ${
-                darkMode ? "bg-gray-700 border-gray-600" : "bg-blue-50 border-blue-100"
-              } rounded-2xl border`}
+              className={`p-8 ${darkMode ? "bg-gray-700 border-gray-600" : "bg-blue-50 border-blue-100"
+                } rounded-2xl border`}
             >
               <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                 <Mail className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -3046,9 +3473,8 @@ const CyberCafeLandingPage = () => {
                 <input
                   type="email"
                   placeholder="Your email address"
-                  className={`flex-1 px-4 py-3 rounded-lg ${
-                    darkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
-                  } border focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`flex-1 px-4 py-3 rounded-lg ${darkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
+                    } border focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                   aria-label="Email address"
                 />

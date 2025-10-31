@@ -21,6 +21,7 @@ import {
 } from '../redux/slices/cartSlice';
 import { toast } from 'react-hot-toast';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import formatCurrency from '../utils/formatCurrency';
 
 export default function ShoppingCartPage() {
   const dispatch = useDispatch();
@@ -154,7 +155,7 @@ export default function ShoppingCartPage() {
                     </button>
                   </div>
                   <span className="ml-4 font-medium text-gray-900">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {formatCurrency(item.price * item.quantity)}
                   </span>
                 </div>
               </div>
@@ -222,26 +223,26 @@ export default function ShoppingCartPage() {
 
             {/* Summary Details */}
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
+                <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-900">${total.toFixed(2)}</span>
+                <span className="text-gray-900">{formatCurrency(total)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-${discount.toFixed(2)}</span>
+                  <span>-{formatCurrency(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
                 <span className="text-gray-900">
-                  {shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}
+                  {shipping === 0 ? 'Free' : formatCurrency(shipping)}
                 </span>
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between font-bold text-gray-900">
                   <span>Total</span>
-                  <span>${finalTotal.toFixed(2)}</span>
+                  <span>{formatCurrency(finalTotal)}</span>
                 </div>
               </div>
             </div>

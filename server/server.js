@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit"
 import mongoSanitize from "express-mongo-sanitize"
 import xss from "xss-clean"
 import hpp from "hpp"
+import cookieParser from "cookie-parser"
 import { Server } from "socket.io"
 import http from "http"
 
@@ -68,13 +69,21 @@ app.use("/api/", limiter)
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5174",
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5175",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175"
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   }),
 )
 app.use(express.json({ limit: "10kb" }))
 app.use(morgan("dev"))
 app.use(express.urlencoded({ extended: true, limit: "10kb" }))
+app.use(cookieParser())
 app.use(compression())
 
 // Static files
@@ -88,7 +97,12 @@ const server = http.createServer(app)
 // Create Socket.IO server with CORS configuration
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5175",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175"
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },

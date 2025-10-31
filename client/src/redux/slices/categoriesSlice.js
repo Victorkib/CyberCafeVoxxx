@@ -19,9 +19,11 @@ export const fetchFeaturedCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await categoryAPI.getFeatured();
-      return response.data;
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch featured categories');
+      console.error('Error fetching featured categories:', error);
+      // Return empty array instead of rejecting to prevent errors
+      return [];
     }
   }
 );
@@ -80,12 +82,14 @@ const categoriesSlice = createSlice({
       })
       .addCase(fetchFeaturedCategories.fulfilled, (state, action) => {
         state.loading = false;
-        state.featuredCategories = action.payload;
+        state.featuredCategories = Array.isArray(action.payload) ? action.payload : [];
+        state.error = null;
       })
       .addCase(fetchFeaturedCategories.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-        toast.error(action.payload);
+        // Don't set error for featured categories to prevent UI errors
+        state.featuredCategories = [];
+        state.error = null;
       })
       // Get category by ID
       .addCase(getCategoryById.pending, (state) => {

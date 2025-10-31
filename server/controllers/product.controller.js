@@ -50,7 +50,8 @@ export const getProducts = asyncHandler(async (req, res) => {
   const products = await Product.find(filter)
     .limit(pageSize)
     .skip(pageSize * (page - 1))
-    .sort({ [sort]: order === 'desc' ? -1 : 1 });
+    .sort({ [sort]: order === 'desc' ? -1 : 1 })
+    .populate('category', 'name slug');
 
   res.json({
     products,
@@ -64,7 +65,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/:id
 // @access  Public
 export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(req.params.id).populate('category', 'name slug');
 
   if (product) {
     res.json(product);
@@ -400,11 +401,26 @@ export const getRelatedProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/featured
 // @access  Public
 export const getFeaturedProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ featured: true })
-    .sort({ createdAt: -1 })
-    .limit(8);
-  
-  res.json(products);
+  try {
+    // First try to get featured products
+    let products = await Product.find({ featured: true, status: 'active' })
+      .populate('category', 'name slug')
+      .sort({ createdAt: -1 })
+      .limit(8);
+    
+    // If no featured products, get recent products
+    if (products.length === 0) {
+      products = await Product.find({ status: 'active' })
+        .populate('category', 'name slug')
+        .sort({ createdAt: -1 })
+        .limit(8);
+    }
+    
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching featured products:', error);
+    res.json([]); // Return empty array instead of error
+  }
 });
 
 // Helper function to generate SKU

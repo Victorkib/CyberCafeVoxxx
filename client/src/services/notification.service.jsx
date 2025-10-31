@@ -273,7 +273,22 @@ class NotificationClient {
     } catch (error) {
       console.error("Error fetching notifications:", error)
 
-      // Return mock data for development
+      // Check if it's an authentication error
+      if (error.message?.includes("authorized") || error.message?.includes("token") || error.status === 401) {
+        console.log("Authentication error - user not logged in")
+        // Return empty data instead of mock data for auth errors
+        return {
+          status: "success",
+          data: {
+            notifications: [],
+            total: 0,
+            page: 1,
+            limit: 10,
+          },
+        }
+      }
+
+      // Return mock data for other development errors
       console.warn("Returning mock data due to API error")
       return this.getMockNotifications()
     }

@@ -8,7 +8,7 @@ export const fetchCart = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.getCart();
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -20,7 +20,7 @@ export const addToCart = createAsyncThunk(
   async ({ productId, quantity, size, color }, { rejectWithValue }) => {
     try {
       const response = await apiRequest.addToCart({ productId, quantity, size, color });
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -29,10 +29,10 @@ export const addToCart = createAsyncThunk(
 
 export const updateCartItemQuantity = createAsyncThunk(
   'cart/updateCartItemQuantity',
-  async ({ itemId, quantity }, { rejectWithValue }) => {
+  async ({ productId, quantity }, { rejectWithValue }) => {
     try {
-      const response = await apiRequest.updateCart({ itemId, quantity });
-      return response;
+      const response = await apiRequest.updateCart({ productId, quantity });
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -44,7 +44,7 @@ export const removeFromCart = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     try {
       const response = await apiRequest.removeFromCart(productId);
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -56,7 +56,7 @@ export const clearCart = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiRequest.clearCart();
-      return response;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -89,13 +89,13 @@ export const applyCoupon = createAsyncThunk(
 
 export const decreaseQuantity = createAsyncThunk(
   'cart/decreaseQuantity',
-  async ({ itemId, currentQuantity }, { rejectWithValue }) => {
+  async ({ productId, currentQuantity }, { rejectWithValue }) => {
     try {
       if (currentQuantity <= 1) {
         return rejectWithValue('Cannot decrease quantity below 1');
       }
-      const response = await apiRequest.updateCart({ itemId, quantity: currentQuantity - 1 });
-      return response;
+      const response = await apiRequest.updateCart({ productId, quantity: currentQuantity - 1 });
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }

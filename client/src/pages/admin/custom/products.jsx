@@ -96,10 +96,10 @@ function useDebounce(value, delay) {
 
 // Helper function to format currency
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount)
+  if (amount === undefined || amount === null) return 'KSh 0.00';
+  const num = Number(amount);
+  if (Number.isNaN(num)) return 'KSh 0.00';
+  return `KSh ${num.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Helper function to generate SKU
@@ -1157,7 +1157,7 @@ const handleSubmit = async (values) => {
 
   try {
     if (selectedProduct) {
-      await dispatch(updateProduct({ id: selectedProduct._id, data: productData })).unwrap();
+      await dispatch(updateProduct({ id: selectedProduct._id, productData: productData })).unwrap();
       toast.success("Product updated successfully");
     } else {
       await dispatch(createProduct(productData)).unwrap();
@@ -1834,8 +1834,8 @@ const handleBulkStatusUpdate = async (status) => {
                   onChange={setPriceRange}
                 />
                 <div style={{ display: "flex", justifyContent: "space-between", color: "#8c8c8c" }}>
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
+                  <span>KSh {priceRange[0]}</span>
+                  <span>KSh {priceRange[1]}</span>
                 </div>
               </div>
 

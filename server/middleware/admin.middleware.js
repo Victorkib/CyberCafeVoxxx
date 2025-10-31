@@ -20,7 +20,7 @@ export const isAdmin = async (req, res, next) => {
       throw createError(403, 'Your admin account has been deactivated');
     }
 
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (!['admin', 'super_admin', 'moderator'].includes(req.user.role)) {
       throw createError(403, 'Access denied. Admin privileges required.');
     }
 
@@ -82,6 +82,66 @@ export const isAdminOrManager = async (req, res, next) => {
 
     if (!['admin', 'super_admin', 'manager'].includes(req.user.role)) {
       throw createError(403, 'Access denied. Admin or manager privileges required.');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware to check if the user can modify data (admin or super_admin only)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+export const canModify = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw createError(401, 'Authentication required');
+    }
+
+    if (!req.user.isEmailVerified) {
+      throw createError(403, 'Email verification required');
+    }
+
+    if (req.user.status !== 'active') {
+      throw createError(403, 'Your account has been deactivated');
+    }
+
+    if (!['admin', 'super_admin'].includes(req.user.role)) {
+      throw createError(403, 'Access denied. Modification privileges required.');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware to check if the user can only manage products and categories (admin role)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+export const canManageProducts = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw createError(401, 'Authentication required');
+    }
+
+    if (!req.user.isEmailVerified) {
+      throw createError(403, 'Email verification required');
+    }
+
+    if (req.user.status !== 'active') {
+      throw createError(403, 'Your account has been deactivated');
+    }
+
+    if (!['admin', 'super_admin'].includes(req.user.role)) {
+      throw createError(403, 'Access denied. Product management privileges required.');
     }
 
     next();

@@ -13,6 +13,11 @@ import ErrorMessage from "./common/ErrorMessage"
 import StatusMessage from "./common/StatusMessage"
 import EmptyState from "./common/EmptyState"
 import LoadingOverlay from "./common/LoadingOverlay"
+import { TypewriterEffect, FloatingShapes, AnimatedBackground } from "../components/animated"
+import useParallax from "../hooks/useParallax"
+import useStaggeredAnimation from "../hooks/useStaggeredAnimation"
+import CTAButton from "../components/ui/CTAButton"
+import Footer from "../components/common/Footer"
 
 export default function LandingPage() {
   const [activeService, setActiveService] = useState("shop")
@@ -36,6 +41,36 @@ export default function LandingPage() {
     right: "10%",
   })
 
+  // Animation states
+  const [typewriterComplete, setTypewriterComplete] = useState(false)
+  const parallaxOffset = useParallax(0.3)
+  const visibleItems = useStaggeredAnimation(4, 300) // 4 items with 300ms delay
+
+  // CTA button handlers
+  const handleGetStarted = () => {
+    // Scroll to services section or navigate to contact
+    const servicesSection = document.querySelector('.services-section');
+    if (servicesSection) {
+      servicesSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/services');
+    }
+  };
+
+  const handleSeeOurWork = () => {
+    // Scroll to portfolio section or navigate to portfolio page
+    const portfolioSection = document.querySelector('.portfolio-section');
+    if (portfolioSection) {
+      portfolioSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // For now, scroll to featured products as a placeholder
+      const featuredSection = document.querySelector('.featured-products-section');
+      if (featuredSection) {
+        featuredSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   // Add a status message
   const addStatusMessage = (message) => {
     const id = Date.now()
@@ -52,15 +87,18 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await dispatch(fetchFeaturedProducts()).unwrap()
-        await dispatch(fetchFeaturedCategories()).unwrap()
+        // Dispatch both actions and handle them gracefully
+        const [productsResult, categoriesResult] = await Promise.allSettled([
+          dispatch(fetchFeaturedProducts()),
+          dispatch(fetchFeaturedCategories())
+        ])
 
-        // Show success message only if not initial load
-        if (!isInitialLoad) {
+        // Show success message only if not initial load and at least one succeeded
+        if (!isInitialLoad && (productsResult.status === 'fulfilled' || categoriesResult.status === 'fulfilled')) {
           addStatusMessage({
             type: "success",
             title: "Content Updated",
-            message: "Featured products and categories have been refreshed.",
+            message: "Featured content has been refreshed.",
             duration: 3,
           })
         }
@@ -161,13 +199,13 @@ export default function LandingPage() {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
-  // Handle empty featured products and categories
-  const hasFeaturedProducts = featuredProducts && featuredProducts.length > 0
-  const hasFeaturedCategories = featuredCategories && featuredCategories.length > 0
+  // Handle empty featured products and categories with fallback
+  const hasFeaturedProducts = Array.isArray(featuredProducts) && featuredProducts.length > 0
+  const hasFeaturedCategories = Array.isArray(featuredCategories) && featuredCategories.length > 0
 
   // Determine loading states
-  const isLoading = productsLoading && categoriesLoading && isInitialLoad
-  const hasError = productsError && categoriesError
+  const isLoading = (productsLoading || categoriesLoading) && isInitialLoad
+  const hasError = productsError && categoriesError && isInitialLoad
 
   // Show full-page loading spinner only on initial load
   if (isLoading) {
@@ -204,13 +242,33 @@ export default function LandingPage() {
         ))}
       </div>
 
-      {/* Background elements */}
-      <div className="absolute top-[-10%] right-[-5%] w-1/2 h-1/2 rounded-full bg-blue-500/10 blur-[60px] z-0"></div>
-      <div className="absolute bottom-[-15%] left-[-10%] w-2/5 h-2/5 rounded-full bg-blue-500/10 blur-[80px] z-0"></div>
-      <div className="absolute top-[40%] left-[30%] w-1/5 h-1/5 rounded-full bg-blue-500/10 blur-[50px] opacity-50 z-0"></div>
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0">
+        <AnimatedBackground variant="particles" intensity="medium" />
+      </div>
 
-      {/* Cyber background image */}
-      <div className="absolute inset-0 z-[1] pointer-events-none">
+      {/* Parallax Background Elements */}
+      <div 
+        className="absolute top-[-10%] right-[-5%] w-1/2 h-1/2 rounded-full bg-blue-500/10 blur-[60px] z-[1]"
+        style={{ transform: `translateY(${parallaxOffset * 0.5}px)` }}
+      ></div>
+      <div 
+        className="absolute bottom-[-15%] left-[-10%] w-2/5 h-2/5 rounded-full bg-blue-500/10 blur-[80px] z-[1]"
+        style={{ transform: `translateY(${-parallaxOffset * 0.3}px)` }}
+      ></div>
+      <div 
+        className="absolute top-[40%] left-[30%] w-1/5 h-1/5 rounded-full bg-blue-500/10 blur-[50px] opacity-50 z-[1]"
+        style={{ transform: `translateY(${parallaxOffset * 0.7}px)` }}
+      ></div>
+
+      {/* Floating Geometric Shapes */}
+      <FloatingShapes count={8} className="z-[2]" />
+
+      {/* Cyber background image with parallax */}
+      <div 
+        className="absolute inset-0 z-[3] pointer-events-none"
+        style={{ transform: `translateY(${parallaxOffset * 0.2}px)` }}
+      >
         <img
           src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070"
           alt="Cyber background"
@@ -219,7 +277,7 @@ export default function LandingPage() {
       </div>
 
       {/* Cyber overlay pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,120,215,0.05)_25%,transparent_25%,transparent_50%,rgba(0,120,215,0.05)_50%,rgba(0,120,215,0.05)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-30 pointer-events-none z-[2]"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(0,120,215,0.05)_25%,transparent_25%,transparent_50%,rgba(0,120,215,0.05)_50%,rgba(0,120,215,0.05)_75%,transparent_75%,transparent)] bg-[length:4px_4px] opacity-30 pointer-events-none z-[4]"></div>
 
       {/* Header */}
       <header className="relative flex items-center justify-between px-6 py-6 z-10">
@@ -369,28 +427,59 @@ export default function LandingPage() {
       <main className="flex flex-1 flex-col lg:flex-row px-6 py-8 relative z-[5]">
         <div className="hero-section flex flex-1 items-center">
           <div className="max-w-xl">
-            <div className="inline-block px-3 py-1 bg-blue-500/10 text-blue-600 rounded-lg text-xs font-medium mb-4">
-              Next-Gen Cyber Solutions
+            <div 
+              className={`inline-block px-3 py-1 bg-blue-500/10 text-blue-600 rounded-lg text-xs font-medium mb-4 transition-all duration-700 ${
+                visibleItems.has(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              Digital Solutions Experts
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
-              Welcome to <span className="text-blue-600">VoxCyber</span>
-              {!authLoading && user && <span className="text-blue-400 text-2xl ml-2 font-normal">, {user.name}</span>}
+              <TypewriterEffect
+                text="Innovative "
+                speed={100}
+                delay={500}
+                className="text-gray-900"
+                onComplete={() => setTypewriterComplete(true)}
+              />
+              {typewriterComplete && (
+                <span className="animate-fade-in animate-delay-200">
+                  <span className="text-blue-600">Websites & Web Apps</span> Solutions
+                </span>
+              )}
+              {!authLoading && user && typewriterComplete && (
+                <span className="text-blue-400 text-2xl ml-2 font-normal animate-fade-in animate-delay-500">
+                  , {user.name}
+                </span>
+              )}
             </h1>
-            <p className="text-gray-600 text-lg leading-relaxed mb-8">
-              Empowering your digital presence with cutting-edge cybersecurity solutions and comprehensive digital
-              services.
+            <p 
+              className={`text-gray-600 text-lg leading-relaxed mb-8 transition-all duration-700 ${
+                visibleItems.has(1) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              We build creative, scalable, and business-driven digital solutions to help brands grow
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                onClick={() => navigate("/shop")}
+            <div 
+              className={`flex flex-col sm:flex-row gap-4 transition-all duration-700 ${
+                visibleItems.has(2) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              <CTAButton
+                variant="primary"
+                onClick={handleGetStarted}
+                className="animate-delay-300"
               >
                 Get Started
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </button>
-              <button className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                Learn More
-              </button>
+              </CTAButton>
+              <CTAButton
+                variant="secondary"
+                onClick={handleSeeOurWork}
+                className="animate-delay-500"
+                icon={null}
+              >
+                See Our Work
+              </CTAButton>
             </div>
           </div>
         </div>
@@ -530,7 +619,7 @@ export default function LandingPage() {
       </main>
 
       {/* Featured Products Section */}
-      <section className="py-16 px-6 relative z-10">
+      <section className="featured-products-section py-16 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
@@ -653,44 +742,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="flex flex-col sm:flex-row items-center justify-between px-6 py-6 border-t border-gray-200 relative z-10">
-        <p className="text-xs text-gray-600 mb-4 sm:mb-0">
-          © {new Date().getFullYear()} VoxCyber. All rights reserved.
-        </p>
-        <div className="flex gap-6">
-          <a
-            href="/terms"
-            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["terms"] ? "text-blue-600" : ""
-            }`}
-            onMouseEnter={() => handleLinkHover("terms", true)}
-            onMouseLeave={() => handleLinkHover("terms", false)}
-          >
-            Terms
-          </a>
-          <a
-            href="/privacy"
-            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["privacy"] ? "text-blue-600" : ""
-            }`}
-            onMouseEnter={() => handleLinkHover("privacy", true)}
-            onMouseLeave={() => handleLinkHover("privacy", false)}
-          >
-            Privacy
-          </a>
-          <a
-            href="/contact"
-            className={`text-xs text-gray-600 hover:text-blue-600 transition-colors ${
-              hoveredLinks["contact"] ? "text-blue-600" : ""
-            }`}
-            onMouseEnter={() => handleLinkHover("contact", true)}
-            onMouseLeave={() => handleLinkHover("contact", false)}
-          >
-            Contact
-          </a>
-        </div>
-      </footer>
+      {/* Enhanced Footer */}
+      <Footer />
     </div>
   )
 }

@@ -1297,3 +1297,100 @@ export const cleanupExpiredInvitations = asyncHandler(async (req, res, next) => 
   }
 });
 
+// @desc    Create admin user (super admin only)
+// @route   POST /api/admin/create-admin-user
+// @access  Private (Super Admin only)
+export const createAdminUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body;
+
+  // Validate required fields
+  if (!name || !email || !password || !role) {
+    res.status(400);
+    throw new Error('Name, email, password, and role are required');
+  }
+
+  // Validate role
+  if (!['admin', 'moderator'].includes(role)) {
+    res.status(400);
+    throw new Error('Invalid role. Only admin and moderator roles can be created');
+  }
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    res.status(400);
+    throw new Error('User with this email already exists');
+  }
+
+  // Create new admin user
+  const user = new User({
+    name,
+    email,
+    password,
+    role,
+    status: 'active',
+    isEmailVerified: true
+  });
+
+  await user.save();
+
+  res.status(201).json({
+    success: true,
+    message: `${role} user created successfully`,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      isEmailVerified: user.isEmailVerified
+    }
+  });
+});
+
+// @desc    Update user role (super admin only)
+// @route   PATCH /api/admin/users/:id/role
+// @access  Private (Super Admin only)
+export const adminUpdateUserRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  // Validate role
+  if (!['user', 'admin', 'moderator'].includes(role)) {
+    res.status(400);
+    throw new Error('Invalid role');
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Prevent changing super admin role
+  if (user.role === 'super_admin') {
+    res.status(403);
+    throw new Error('Cannot change super admin role');
+  }
+
+  // Prevent non-super admin from creating super admin
+  if (role === 'super_admin') {
+    res.status(403);
+    throw new Error('Cannot assign super admin role');
+  }
+
+  user.role = role;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'User role updated successfully',
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    }
+  });
+});

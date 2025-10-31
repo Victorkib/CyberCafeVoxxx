@@ -24,7 +24,7 @@ const productSchema = new mongoose.Schema(
     },
     images: [{
       type: String,
-      required: [true, 'Please provide at least one product image'],
+      default: '/placeholder.svg',
     }],
     category: {
       type: mongoose.Schema.Types.ObjectId,

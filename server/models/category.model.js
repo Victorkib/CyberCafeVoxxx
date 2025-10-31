@@ -15,7 +15,7 @@ const categorySchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      required: [true, 'Please provide a category image'],
+      default: '/placeholder.svg',
     },
     featured: {
       type: Boolean,
