@@ -749,7 +749,7 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
   if (!isOpen || !product) return null
 
   // Use real product images
-  const productImages = product.images || [product.image || "/placeholder.svg"]
+  const productImages = product.images || [product.image || "/Techsetup.jpg"]
 
   // Calculate discount percentage
   const discountPercentage =
@@ -822,7 +822,7 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
             <div className="aspect-square overflow-hidden">
               <motion.img
                 key={selectedImage}
-                src={productImages[selectedImage] || "/placeholder.svg"}
+                src={productImages[selectedImage] || "/Techsetup.jpg"}
                 alt={product.name}
                 className="w-full h-full object-contain p-2 sm:p-4"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -2717,9 +2717,12 @@ const CyberCafeLandingPage = () => {
                           {/* Product Image */}
                           <div className="relative h-48 overflow-hidden">
                             <img
-                              src={product.images?.[0] || '/placeholder-product.jpg'}
+                              src={product.images?.[0] || '/Techsetup.jpg'}
                               alt={product.name}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              onError={(e) => {
+                                e.target.src = "/Techsetup.jpg";
+                              }}
                             />
 
                             {/* Sale Badge */}
@@ -3067,9 +3070,12 @@ const CyberCafeLandingPage = () => {
                     >
                       <div className="relative">
                         <img
-                          src={product.images?.[0] || product.image || "/placeholder.svg"}
+                          src={product.images?.[0] || product.image || "/Techsetup.jpg"}
                           alt={product.name}
                           className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            e.target.src = "/Techsetup.jpg";
+                          }}
                         />
                         {/* Product badges */}
                         <div className="absolute top-2 left-2 flex flex-col gap-2">
@@ -3137,7 +3143,7 @@ const CyberCafeLandingPage = () => {
                           {product.salePrice ? (
                             <div>
                               <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                                ${product.salePrice.toFixed(2)}
+                                {formatCurrency(product.salePrice)}
                               </span>
                               <span className="ml-2 text-sm text-gray-500 line-through">
                                 {formatCurrency(product.price)}
@@ -3300,10 +3306,10 @@ const CyberCafeLandingPage = () => {
                           <div className="mb-4">
                             <div className="flex items-baseline">
                               <span className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"} mr-2`}>
-                                ${offer.salePrice?.toFixed(2)}
+                                {formatCurrency(offer.salePrice)}
                               </span>
                               <span className={`text-sm line-through ${darkMode ? "text-gray-500" : "text-gray-500"}`}>
-                                ${offer.regularPrice?.toFixed(2)}
+                                {formatCurrency(offer.regularPrice)}
                               </span>
                             </div>
                           </div>
@@ -3582,15 +3588,15 @@ const CyberCafeLandingPage = () => {
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <MapPin size={20} className="text-blue-300 mr-2 mt-1 flex-shrink-0" />
-                  <span className="text-blue-100">123 Tech Avenue, Downtown District, City, State, 12345</span>
+                  <span className="text-blue-100">08 Vox Hse, Rurii Road, Githurai</span>
                 </li>
                 <li className="flex items-center">
                   <Phone size={20} className="text-blue-300 mr-2 flex-shrink-0" />
-                  <span className="text-blue-100">+1 (234) 567-8900</span>
+                  <span className="text-blue-100">+254 710 345 787</span>
                 </li>
                 <li className="flex items-center">
                   <Mail size={20} className="text-blue-300 mr-2 flex-shrink-0" />
-                  <span className="text-blue-100">info@VoxCyber.com</span>
+                  <span className="text-blue-100">info@voxcyber.co.ke/voxcyber254@gmail.com</span>
                 </li>
                 <li className="flex items-center">
                   <Clock1 size={20} className="text-blue-300 mr-2 flex-shrink-0" />
