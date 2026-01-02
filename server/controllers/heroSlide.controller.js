@@ -35,7 +35,16 @@ export const getActiveHeroSlides = asyncHandler(async (req, res) => {
 // @route   POST /api/hero-slides
 // @access  Private/Admin
 export const createHeroSlide = asyncHandler(async (req, res) => {
-  const heroSlide = await HeroSlide.create(req.body);
+  const { startDate, endDate, order, ...rest } = req.body;
+  
+  const slideData = {
+    ...rest,
+    startDate: startDate && startDate.trim() !== '' ? new Date(startDate) : new Date(),
+    endDate: endDate && endDate.trim() !== '' ? new Date(endDate) : new Date(),
+    order: order !== undefined && order !== null ? Number(order) : 0,
+  };
+
+  const heroSlide = await HeroSlide.create(slideData);
 
   res.status(201).json({
     success: true,
@@ -56,9 +65,23 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
     });
   }
 
+  const { startDate, endDate, ...rest } = req.body;
+  
+  const updateData = {
+    ...rest,
+  };
+
+  if (startDate && startDate.trim() !== '') {
+    updateData.startDate = new Date(startDate);
+  }
+
+  if (endDate && endDate.trim() !== '') {
+    updateData.endDate = new Date(endDate);
+  }
+
   const updatedHeroSlide = await HeroSlide.findByIdAndUpdate(
     req.params.id,
-    req.body,
+    updateData,
     {
       new: true,
       runValidators: true,
@@ -84,7 +107,7 @@ export const deleteHeroSlide = asyncHandler(async (req, res) => {
     });
   }
 
-  await heroSlide.remove();
+  await heroSlide.deleteOne();
 
   res.json({
     success: true,

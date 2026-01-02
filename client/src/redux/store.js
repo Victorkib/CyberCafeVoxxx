@@ -8,6 +8,7 @@ import categoriesReducer from './slices/categoriesSlice';
 import paymentReducer from './slices/paymentSlice';
 import specialOffersReducer from './slices/specialOffersSlice';
 import heroSlidesReducer from './slices/heroSlidesSlice';
+import promotionBannerReducer from './slices/promotionBannerSlice';
 import notificationReducer from './slices/notificationSlice';
 import adminReducer from './slices/adminSlice';
 import newsletterReducer from './slices/newsletterSlice';
@@ -25,6 +26,7 @@ export const store = configureStore({
     payment: paymentReducer,
     specialOffers: specialOffersReducer,
     heroSlides: heroSlidesReducer,
+    promotionBanner: promotionBannerReducer,
     notifications: notificationReducer,
     admin: adminReducer,
     newsletter: newsletterReducer,

@@ -49,6 +49,8 @@ import PaymentManagementPage from './PaymentManagementPage';
 import NotificationBell from './notifications/NotificationBell';
 import NotificationsManagement from './notifications/NotificationsManagement';
 import CategoryManagement from './categories/CategoryManagement';
+import PromotionBannerManagement from './PromotionBannerManagement';
+import HeroSlidesManagement from './HeroSlidesManagement';
 
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -132,6 +134,20 @@ const AdminLayout = () => {
       id: 'categories',
       icon: Users,
       path: '/admin/categories',
+      roles: ['admin', 'super_admin'], // Both roles can access
+    },
+    {
+      name: 'Hero Slides',
+      id: 'hero-slides',
+      icon: FileText,
+      path: '/admin/hero-slides',
+      roles: ['admin', 'super_admin'], // Both roles can access
+    },
+    {
+      name: 'Promo Banner',
+      id: 'promo-banner',
+      icon: Activity,
+      path: '/admin/promo-banner',
       roles: ['admin', 'super_admin'], // Both roles can access
     },
     {
@@ -639,6 +655,8 @@ const AdminLayout = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/categories" element={<CategoryManagement />} />
+                  <Route path="/hero-slides" element={<HeroSlidesManagement />} />
+                  <Route path="/promo-banner" element={<PromotionBannerManagement />} />
                   
                   {/* Super Admin Only Routes */}
                   {user?.role === 'super_admin' && (

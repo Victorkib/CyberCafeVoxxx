@@ -90,9 +90,21 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
       }
 
       // 🔐 Password expiration check
-      if (user.passwordExpiresAt && user.passwordExpiresAt < new Date()) {
-        res.status(403);
-        throw new Error('Password has expired. Please update your password.');
+      // Allow read operations and essential routes even with expired passwords
+      const isUpdatePasswordRoute = req.path.includes('/update-password');
+      const isReadOperation = req.method === 'GET';
+      const isAuthRoute = req.path.includes('/auth/me') || req.path.includes('/auth/sessions');
+      
+      // Only enforce password expiration for write operations (POST, PUT, DELETE, PATCH)
+      // Allow read operations and auth routes so users can view their profile and update password
+      const shouldCheckExpiration = !isUpdatePasswordRoute && !isReadOperation && !isAuthRoute;
+      
+      if (shouldCheckExpiration && user.passwordExpiresAt && user.passwordExpiresAt < new Date()) {
+        return res.status(403).json({
+          success: false,
+          error: 'Password has expired. Please update your password.',
+          message: 'Password has expired. Please update your password.'
+        });
       }
 
       // ✅ Attach user to request

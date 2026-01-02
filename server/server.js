@@ -29,6 +29,7 @@ import cartRoutes from "./routes/cart.routes.js"
 import orderRoutes from "./routes/order.routes.js"
 import specialOfferRoutes from "./routes/specialOffer.routes.js"
 import heroSlideRoutes from "./routes/heroSlide.routes.js"
+import promotionBannerRoutes from "./routes/promotionBanner.routes.js"
 import newsletterRoutes from "./routes/newsletter.routes.js"
 import paymentRoutes from "./routes/payment.routes.js"
 import notificationRoutes from "./routes/notification.routes.js"
@@ -130,6 +131,7 @@ app.use("/api/orders", authMiddleware, orderRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use("/api/special-offers", specialOfferRoutes)
 app.use("/api/hero-slides", heroSlideRoutes)
+app.use("/api/promotion-banner", promotionBannerRoutes)
 app.use("/api/newsletter", newsletterRoutes)
 app.use("/api/notifications", notificationRoutes)
 app.use("/api/admin", adminRoutes)

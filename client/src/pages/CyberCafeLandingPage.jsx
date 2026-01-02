@@ -56,6 +56,7 @@ import {
 import { fetchCategories, fetchFeaturedCategories } from "../redux/slices/categoriesSlice"
 import { fetchSpecialOffers } from "../redux/slices/specialOffersSlice"
 import { fetchHeroSlides } from "../redux/slices/heroSlidesSlice"
+import { fetchActivePromotionBanner } from "../redux/slices/promotionBannerSlice"
 import { clearError, clearSuccess, subscribeToNewsletter } from "../redux/slices/newsletterSlice"
 import formatCurrency from '../utils/formatCurrency';
 
@@ -1484,6 +1485,8 @@ const CyberCafeLandingPage = () => {
     error: slidesError,
   } = useSelector((state) => state.heroSlides)
 
+  const { banner: promotionBanner } = useSelector((state) => state.promotionBanner)
+
   const { items: cartItems } = useSelector((state) => state.cart)
 
   // Use the hook to get data with fallback
@@ -1596,6 +1599,7 @@ const CyberCafeLandingPage = () => {
     try {
       // Fetch data in parallel
       const promises = [
+        dispatch(fetchActivePromotionBanner()).unwrap(), // Fetch active promotion banner
         dispatch(fetchProducts({})).unwrap(), // Fetch all products without filters
         dispatch(fetchFeaturedProducts()).unwrap(),
         dispatch(fetchNewArrivals()).unwrap(),
@@ -1925,11 +1929,21 @@ const CyberCafeLandingPage = () => {
       <NewsletterPopup isOpen={isNewsletterOpen} onClose={() => setIsNewsletterOpen(false)} />
 
       {/* Top Bar - Announcements & Quick Links */}
-      <div className="bg-blue-900 text-white py-2 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0">
-            🔥 Special Promotion: Get 15% off all electronics with code: <span className="font-bold">CYBER15</span>
-          </p>
+      {promotionBanner && (
+        <div 
+          className="text-white py-2 px-4"
+          style={{ backgroundColor: promotionBanner.backgroundColor || '#1e3a8a' }}
+        >
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <p 
+              className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0"
+              style={{ color: promotionBanner.textColor || '#ffffff' }}
+            >
+              {promotionBanner.icon || '🔥'} {promotionBanner.text}
+              {promotionBanner.code && (
+                <span className="font-bold ml-2">{promotionBanner.code}</span>
+              )}
+            </p>
           <div className="flex space-x-4 text-sm">
             <a href="#" className="hover:underline">
               Track Order
@@ -1948,8 +1962,9 @@ const CyberCafeLandingPage = () => {
               {darkMode ? "Light Mode" : "Dark Mode"}
             </button>
           </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Header and Navigation */}
       <header

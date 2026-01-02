@@ -63,7 +63,8 @@ export const register = asyncHandler(async (req, res) => {
     role: 'user', // Force role to be user for public registration
     emailVerificationToken: verificationToken,
     emailVerificationExpire: verificationExpire,
-    isEmailVerified: false
+    isEmailVerified: false,
+    passwordExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days from now
   });
 
   if (user) {
@@ -207,6 +208,14 @@ export const login = asyncHandler(async (req, res) => {
     // Update user's last login time
     user.lastLogin = new Date();
     user.failedLoginAttempts = 0;
+    
+    // Set or reset password expiration on successful login
+    // This gives users a fresh 90 days when they successfully authenticate
+    // If passwordExpiresAt is null/undefined or expired, set a new expiration date
+    if (!user.passwordExpiresAt || user.passwordExpiresAt < new Date()) {
+      user.passwordExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
+    }
+    
     await user.save();
     
     // Return user data and token

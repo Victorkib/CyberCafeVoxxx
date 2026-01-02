@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { openAuthModal, toggleDarkMode } from '../../redux/slices/uiSlice';
 import { logoutUser } from '../../redux/slices/authSlice';
+import { fetchActivePromotionBanner } from '../../redux/slices/promotionBannerSlice';
 
 // Import our loader components
 import ButtonLoader from './loaders/ButtonLoader';
@@ -40,6 +41,12 @@ const Header = ({
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { darkMode } = useSelector((state) => state.ui);
+  const { banner: promotionBanner } = useSelector((state) => state.promotionBanner);
+
+  // Fetch promotion banner on mount
+  useEffect(() => {
+    dispatch(fetchActivePromotionBanner());
+  }, [dispatch]);
 
   // Local loading states
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -222,14 +229,23 @@ const Header = ({
       />
 
       {/* Top Bar */}
-      <div className="bg-blue-900 text-white py-2 px-4 relative z-50">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0">
-            🔥 Special Promotion: Get 15% off all electronics with code:{' '}
-            <span className="font-bold bg-blue-800 px-2 py-1 rounded text-yellow-300">
-              CYBER15
-            </span>
-          </p>
+      {promotionBanner && (
+        <div 
+          className="text-white py-2 px-4 relative z-50"
+          style={{ backgroundColor: promotionBanner.backgroundColor || '#1e3a8a' }}
+        >
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <p 
+              className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0"
+              style={{ color: promotionBanner.textColor || '#ffffff' }}
+            >
+              {promotionBanner.icon || '🔥'} {promotionBanner.text}
+              {promotionBanner.code && (
+                <span className="font-bold bg-blue-800 px-2 py-1 rounded text-yellow-300 ml-2">
+                  {promotionBanner.code}
+                </span>
+              )}
+            </p>
           <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 text-sm">
             <a
               href="#"
@@ -273,8 +289,9 @@ const Header = ({
               </span>
             </ButtonLoader>
           </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Header */}
       <header
