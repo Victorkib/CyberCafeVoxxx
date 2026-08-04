@@ -44,6 +44,21 @@ export const createHeroSlide = asyncHandler(async (req, res) => {
     order: order !== undefined && order !== null ? Number(order) : 0,
   };
 
+  // If files were uploaded, use the Cloudinary URLs
+  if (req.files) {
+    if (req.files.imageFile && req.files.imageFile[0]) {
+      slideData.image = req.files.imageFile[0].path;
+    }
+    if (req.files.mobileImageFile && req.files.mobileImageFile[0]) {
+      slideData.mobileImage = req.files.mobileImageFile[0].path;
+    }
+  }
+
+  // Handle isActive being sent as string from FormData
+  if (typeof slideData.isActive === 'string') {
+    slideData.isActive = slideData.isActive === 'true';
+  }
+
   const heroSlide = await HeroSlide.create(slideData);
 
   res.status(201).json({
@@ -70,6 +85,21 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
   const updateData = {
     ...rest,
   };
+
+  // If files were uploaded, use the Cloudinary URLs
+  if (req.files) {
+    if (req.files.imageFile && req.files.imageFile[0]) {
+      updateData.image = req.files.imageFile[0].path;
+    }
+    if (req.files.mobileImageFile && req.files.mobileImageFile[0]) {
+      updateData.mobileImage = req.files.mobileImageFile[0].path;
+    }
+  }
+
+  // Handle isActive being sent as string from FormData
+  if (typeof updateData.isActive === 'string') {
+    updateData.isActive = updateData.isActive === 'true';
+  }
 
   if (startDate && startDate.trim() !== '') {
     updateData.startDate = new Date(startDate);

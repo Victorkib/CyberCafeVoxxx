@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Image as ImageIcon, Upload, Link, X } from 'lucide-react';
 import api from '../../utils/api';
 
 const HeroSlidesManagement = () => {
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingSlide, setEditingSlide] = useState(null);
   const [formData, setFormData] = useState({
@@ -23,6 +24,17 @@ const HeroSlidesManagement = () => {
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   });
 
+  // Image upload state
+  const [imageMode, setImageMode] = useState('upload'); // 'upload' or 'url'
+  const [mobileImageMode, setMobileImageMode] = useState('upload');
+  const [imageFile, setImageFile] = useState(null);
+  const [mobileImageFile, setMobileImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [mobileImagePreview, setMobileImagePreview] = useState(null);
+
+  const imageInputRef = useRef(null);
+  const mobileImageInputRef = useRef(null);
+
   useEffect(() => {
     fetchSlides();
   }, []);
@@ -38,20 +50,125 @@ const HeroSlidesManagement = () => {
     }
   };
 
+  const handleFileSelect = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, or GIF)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (type === 'desktop') {
+        setImageFile(file);
+        setImagePreview(reader.result);
+        setFormData(prev => ({ ...prev, image: '' }));
+      } else {
+        setMobileImageFile(file);
+        setMobileImagePreview(reader.result);
+        setFormData(prev => ({ ...prev, mobileImage: '' }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearFileSelection = (type) => {
+    if (type === 'desktop') {
+      setImageFile(null);
+      setImagePreview(null);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    } else {
+      setMobileImageFile(null);
+      setMobileImagePreview(null);
+      if (mobileImageInputRef.current) mobileImageInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
-      // Ensure order is a number and prepare data
-      const submitData = {
-        ...formData,
-        order: Number(formData.order) || 0,
-      };
-      
-      if (editingSlide) {
-        await api.put(`/hero-slides/${editingSlide._id}`, submitData);
-      } else {
-        await api.post('/hero-slides', submitData);
+      // Validate that images are provided
+      const hasDesktopImage = imageFile || formData.image || (editingSlide && editingSlide.image);
+      const hasMobileImage = mobileImageFile || formData.mobileImage || (editingSlide && editingSlide.mobileImage);
+
+      if (!hasDesktopImage) {
+        alert('Please provide a desktop image (upload a file or enter a URL)');
+        setSubmitting(false);
+        return;
       }
+      if (!hasMobileImage) {
+        alert('Please provide a mobile image (upload a file or enter a URL)');
+        setSubmitting(false);
+        return;
+      }
+
+      // Use FormData if files are being uploaded
+      const hasFiles = imageFile || mobileImageFile;
+      
+      if (hasFiles) {
+        const submitFormData = new FormData();
+        
+        // Append text fields
+        submitFormData.append('title', formData.title);
+        submitFormData.append('subtitle', formData.subtitle);
+        submitFormData.append('description', formData.description);
+        submitFormData.append('buttonText', formData.buttonText);
+        submitFormData.append('buttonLink', formData.buttonLink);
+        submitFormData.append('backgroundColor', formData.backgroundColor);
+        submitFormData.append('textColor', formData.textColor);
+        submitFormData.append('isActive', formData.isActive);
+        submitFormData.append('order', Number(formData.order) || 0);
+        submitFormData.append('startDate', formData.startDate);
+        submitFormData.append('endDate', formData.endDate);
+
+        // Append files or URL fallbacks
+        if (imageFile) {
+          submitFormData.append('imageFile', imageFile);
+        } else if (formData.image) {
+          submitFormData.append('image', formData.image);
+        }
+
+        if (mobileImageFile) {
+          submitFormData.append('mobileImageFile', mobileImageFile);
+        } else if (formData.mobileImage) {
+          submitFormData.append('mobileImage', formData.mobileImage);
+        }
+
+        if (editingSlide) {
+          await api.put(`/hero-slides/${editingSlide._id}`, submitFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } else {
+          await api.post('/hero-slides', submitFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        }
+      } else {
+        // No files — send JSON as before
+        const submitData = {
+          ...formData,
+          order: Number(formData.order) || 0,
+        };
+        
+        if (editingSlide) {
+          await api.put(`/hero-slides/${editingSlide._id}`, submitData);
+        } else {
+          await api.post('/hero-slides', submitData);
+        }
+      }
+
       fetchSlides();
       handleCloseModal();
     } catch (error) {
@@ -73,6 +190,8 @@ const HeroSlidesManagement = () => {
       }
       
       alert(errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -103,6 +222,13 @@ const HeroSlidesManagement = () => {
       startDate: new Date(slide.startDate).toISOString().split('T')[0],
       endDate: new Date(slide.endDate).toISOString().split('T')[0],
     });
+    // When editing, default to URL mode showing existing URLs
+    setImageMode('url');
+    setMobileImageMode('url');
+    setImageFile(null);
+    setMobileImageFile(null);
+    setImagePreview(null);
+    setMobileImagePreview(null);
     setShowModal(true);
   };
 
@@ -124,7 +250,132 @@ const HeroSlidesManagement = () => {
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     });
+    // Reset file states
+    setImageMode('upload');
+    setMobileImageMode('upload');
+    setImageFile(null);
+    setMobileImageFile(null);
+    setImagePreview(null);
+    setMobileImagePreview(null);
   };
+
+  // Reusable image input component
+  const ImageInput = ({ label, mode, setMode, file, preview, inputRef, urlValue, type }) => (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-sm font-medium dark:text-gray-300">
+          {label} *
+        </label>
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              setMode('upload');
+              if (type === 'desktop') {
+                setFormData(prev => ({ ...prev, image: '' }));
+              } else {
+                setFormData(prev => ({ ...prev, mobileImage: '' }));
+              }
+            }}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              mode === 'upload'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Upload size={12} />
+            Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('url');
+              clearFileSelection(type);
+            }}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              mode === 'url'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Link size={12} />
+            URL
+          </button>
+        </div>
+      </div>
+
+      {mode === 'upload' ? (
+        <div>
+          {/* Drop zone / file input */}
+          {!file && !preview ? (
+            <label
+              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50 dark:bg-gray-700/50"
+            >
+              <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                <Upload size={24} className="text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">Click to upload</span>
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  JPEG, PNG, GIF (max 5MB)
+                </p>
+              </div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
+                onChange={(e) => handleFileSelect(e, type)}
+                className="hidden"
+              />
+            </label>
+          ) : (
+            <div className="relative group">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+              />
+              <button
+                type="button"
+                onClick={() => clearFileSelection(type)}
+                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+              >
+                <X size={14} />
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                {file?.name}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <input
+            type="text"
+            value={urlValue}
+            onChange={(e) => {
+              if (type === 'desktop') {
+                setFormData(prev => ({ ...prev, image: e.target.value }));
+              } else {
+                setFormData(prev => ({ ...prev, mobileImage: e.target.value }));
+              }
+            }}
+            className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="/image.jpg or https://..."
+          />
+          {urlValue && (
+            <img
+              src={urlValue}
+              alt="URL Preview"
+              className="w-full h-24 object-cover rounded-lg mt-2 border border-gray-300 dark:border-gray-600"
+              onError={(e) => { e.target.style.display = 'none'; }}
+              onLoad={(e) => { e.target.style.display = 'block'; }}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
@@ -243,34 +494,29 @@ const HeroSlidesManagement = () => {
                 />
               </div>
 
+              {/* Image Upload Section */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Desktop Image URL *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    required
-                    placeholder="/image.jpg or https://..."
-                  />
-                </div>
+                <ImageInput
+                  label="Desktop Image"
+                  mode={imageMode}
+                  setMode={setImageMode}
+                  file={imageFile}
+                  preview={imagePreview}
+                  inputRef={imageInputRef}
+                  urlValue={formData.image}
+                  type="desktop"
+                />
 
-                <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Mobile Image URL *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.mobileImage}
-                    onChange={(e) => setFormData({ ...formData, mobileImage: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    required
-                    placeholder="/image-mobile.jpg or https://..."
-                  />
-                </div>
+                <ImageInput
+                  label="Mobile Image"
+                  mode={mobileImageMode}
+                  setMode={setMobileImageMode}
+                  file={mobileImageFile}
+                  preview={mobileImagePreview}
+                  inputRef={mobileImageInputRef}
+                  urlValue={formData.mobileImage}
+                  type="mobile"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -385,14 +631,22 @@ const HeroSlidesManagement = () => {
                   type="button"
                   onClick={handleCloseModal}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={submitting}
                 >
-                  {editingSlide ? 'Update' : 'Create'}
+                  {submitting && (
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  {submitting ? 'Saving...' : (editingSlide ? 'Update' : 'Create')}
                 </button>
               </div>
             </form>

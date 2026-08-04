@@ -2353,55 +2353,15 @@ const CyberCafeLandingPage = () => {
                   {effectiveHeroSlides.map((slide, index) => (
                     <div
                       key={slide._id}
-                      className={`absolute inset-0 flex items-center transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
+                      className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
                         }`}
                       aria-hidden={index !== currentSlide}
                     >
-                      <div className={`absolute inset-0 ${slide.backgroundColor || "bg-black"} bg-opacity-80`}></div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent opacity-70"></div>
                       <img
                         src={slide.image || "/placeholder.svg"}
                         alt={slide.title}
-                        className="absolute object-cover w-full h-full mix-blend-overlay"
+                        className="absolute object-cover w-full h-full"
                       />
-                      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 flex flex-col justify-center h-full">
-                        <div className="max-w-xl">
-                          <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="text-3xl md:text-5xl font-bold text-white mb-2 md:mb-4"
-                          >
-                            {slide.title}
-                          </motion.h1>
-                          <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="text-lg md:text-xl text-white mb-3"
-                          >
-                            {slide.subtitle}
-                          </motion.p>
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                              opacity: index === currentSlide ? 1 : 0,
-                              y: index === currentSlide ? 0 : 20,
-                            }}
-                            transition={{ duration: 0.5, delay: 0.4 }}
-                          >
-                            <button className="mt-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md">
-                              Shop Now
-                            </button>
-                          </motion.div>
-                        </div>
-                      </div>
                     </div>
                   ))}
 

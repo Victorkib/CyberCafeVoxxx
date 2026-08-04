@@ -19,11 +19,11 @@ const heroSlideSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      required: [true, 'Please add an image URL'],
+      required: [true, 'Please add a desktop image'],
     },
     mobileImage: {
       type: String,
-      required: [true, 'Please add a mobile image URL'],
+      required: [true, 'Please add a mobile image'],
     },
     buttonText: {
       type: String,
