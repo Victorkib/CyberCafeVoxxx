@@ -304,26 +304,11 @@ const Header = ({
             {/* Logo */}
             <div className="flex items-center flex-shrink-0">
               <Link to="/" className="flex items-center group">
-                <Coffee
-                  size={28}
-                  className={`${
-                    darkMode ? 'text-blue-400' : 'text-blue-700'
-                  } mr-2 group-hover:scale-110 transition-transform duration-200`}
+                <img
+                  src="/logo.png"
+                  alt="VoxCyber"
+                  className="h-8 md:h-10 w-auto object-contain"
                 />
-                <span
-                  className={`font-bold text-xl sm:text-2xl ${
-                    darkMode ? 'text-white' : 'text-blue-900'
-                  }`}
-                >
-                  Vox
-                  <span
-                    className={`${
-                      darkMode ? 'text-blue-400' : 'text-blue-600'
-                    }`}
-                  >
-                    Cyber
-                  </span>
-                </span>
               </Link>
             </div>
 
@@ -685,26 +670,11 @@ const Header = ({
                 }`}
               >
                 <div className="flex items-center">
-                  <Coffee
-                    size={24}
-                    className={`${
-                      darkMode ? 'text-blue-400' : 'text-blue-700'
-                    } mr-2`}
+                  <img
+                    src="/logo.png"
+                    alt="VoxCyber"
+                    className="h-8 w-auto object-contain"
                   />
-                  <span
-                    className={`font-bold text-lg ${
-                      darkMode ? 'text-white' : 'text-blue-900'
-                    }`}
-                  >
-                    Vox
-                    <span
-                      className={`${
-                        darkMode ? 'text-blue-400' : 'text-blue-600'
-                      }`}
-                    >
-                      Cyber
-                    </span>
-                  </span>
                 </div>
                 <button
                   onClick={() => setIsMenuOpen(false)}

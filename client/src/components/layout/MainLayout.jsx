@@ -6,9 +6,12 @@ import SecurityAlerts from '../security/SecurityAlerts';
 
 const MainLayout = ({ children }) => {
   const { user } = useSelector((state) => state.auth);
+  const { darkMode } = useSelector((state) => state.ui);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
+      darkMode ? 'dark bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'
+    }`}>
       <Navbar />
       
       {/* Security Alerts */}
@@ -27,4 +30,4 @@ const MainLayout = ({ children }) => {
   );
 };
 
-export default MainLayout; 
+export default MainLayout;

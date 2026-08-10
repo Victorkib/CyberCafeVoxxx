@@ -169,7 +169,7 @@ const WebsitesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900">
       {/* Hero Section */}
       <section className="relative py-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10"></div>
@@ -180,13 +180,13 @@ const WebsitesPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
               Professional
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
                 {" "}Web Development
               </span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
               Transform your ideas into stunning, high-performance websites and web applications. 
               From simple landing pages to complex e-commerce platforms, we deliver excellence.
             </p>
@@ -202,7 +202,7 @@ const WebsitesPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                className="border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
               >
                 View Our Work
               </motion.button>
@@ -220,8 +220,8 @@ const WebsitesPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Web Development Services</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Web Development Services</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               We offer comprehensive web development solutions tailored to your business needs
             </p>
           </motion.div>
@@ -233,22 +233,22 @@ const WebsitesPage = () => {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 }}
-                className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
               >
                 <div className={`${service.color} w-16 h-16 rounded-lg flex items-center justify-center text-white mb-4`}>
                   {service.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{service.title}</h3>
-                <p className="text-gray-600 mb-4">{service.description}</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{service.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">{service.description}</p>
                 <ul className="space-y-2 mb-4">
                   {service.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                    <li key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <div className="text-lg font-bold text-blue-600">{service.price}</div>
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{service.price}</div>
               </motion.div>
             ))}
           </div>
@@ -256,7 +256,7 @@ const WebsitesPage = () => {
       </section>
 
       {/* Sample Works Section */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900/40">
         <div className="container mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -264,8 +264,8 @@ const WebsitesPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Recent Work</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Recent Work</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Explore our portfolio of successful web development projects
             </p>
           </motion.div>
@@ -277,7 +277,7 @@ const WebsitesPage = () => {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 }}
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
@@ -294,12 +294,12 @@ const WebsitesPage = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{work.title}</h3>
-                  <p className="text-gray-600 mb-4">{work.description}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{work.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{work.description}</p>
                   
                   <div className="flex flex-wrap gap-2 mb-4">
                     {work.technologies.map((tech, idx) => (
-                      <span key={idx} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                      <span key={idx} className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">
                         {tech}
                       </span>
                     ))}
@@ -307,7 +307,7 @@ const WebsitesPage = () => {
 
                   <div className="space-y-2 mb-4">
                     {work.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Check className="w-4 h-4 text-green-500" />
                         {feature}
                       </div>
@@ -326,7 +326,7 @@ const WebsitesPage = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                      className="flex-1 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <Github className="w-4 h-4" />
                       Code
@@ -348,8 +348,8 @@ const WebsitesPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Technologies We Use</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Technologies We Use</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               We stay up-to-date with the latest technologies to deliver cutting-edge solutions
             </p>
           </motion.div>
@@ -361,10 +361,10 @@ const WebsitesPage = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow text-center"
+                className="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow text-center"
               >
                 <div className="text-3xl mb-2">{tech.icon}</div>
-                <div className="text-sm font-medium text-gray-700">{tech.name}</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{tech.name}</div>
               </motion.div>
             ))}
           </div>
@@ -372,7 +372,7 @@ const WebsitesPage = () => {
       </section>
 
       {/* Process Section */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900/40">
         <div className="container mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -380,8 +380,8 @@ const WebsitesPage = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Development Process</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Our Development Process</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               We follow a proven process to ensure your project is delivered on time and exceeds expectations
             </p>
           </motion.div>
@@ -398,8 +398,8 @@ const WebsitesPage = () => {
                 <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   {step.step}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
               </motion.div>
             ))}
           </div>
@@ -443,4 +443,3 @@ const WebsitesPage = () => {
 };
 
 export default WebsitesPage;
-

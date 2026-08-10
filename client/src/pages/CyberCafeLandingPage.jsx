@@ -784,7 +784,7 @@ const QuickViewModal = ({ product, isOpen, onClose, onAddToCart, onBuyNow }) => 
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-0 overflow-hidden"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-0 overflow-hidden"
       initial={{ backgroundColor: "rgba(0, 0, 0, 0)" }}
       animate={{
         backgroundColor: isClosing ? "rgba(0, 0, 0, 0)" : "rgba(0, 0, 0, 0.75)",
@@ -1552,6 +1552,9 @@ const CyberCafeLandingPage = () => {
     offers: true,
   })
   const [areFiltersShown, setAreFiltersShown] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState({})
+
+  const CATEGORY_ROW_SIZE = 4
 
   // Refs for intersection observer
   const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 })
@@ -1572,6 +1575,53 @@ const CyberCafeLandingPage = () => {
       return categoryName === selectedCategory
     })
   }, [allProducts, selectedCategory])
+
+  // Group all products by category so the featured section can show every category as its own row
+  const productsByCategory = useMemo(() => {
+    const sortFn = (a, b) => {
+      switch (selectedSort) {
+        case "price-low":
+          return (a.salePrice || a.price || 0) - (b.salePrice || b.price || 0)
+        case "price-high":
+          return (b.salePrice || b.price || 0) - (a.salePrice || a.price || 0)
+        case "rating":
+          return (b.rating || 0) - (a.rating || 0)
+        case "newest":
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        default:
+          return 0
+      }
+    }
+
+    const groups = new Map()
+    if (Array.isArray(allProducts)) {
+      for (const product of allProducts) {
+        const categoryName = product.category?.name || product.categoryName || "Uncategorized"
+        if (!groups.has(categoryName)) groups.set(categoryName, [])
+        groups.get(categoryName).push(product)
+      }
+    }
+
+    // Order groups by the categories list first, then any remaining groups
+    const ordered = []
+    const seen = new Set()
+    if (Array.isArray(effectiveCategories)) {
+      for (const cat of effectiveCategories) {
+        if (groups.has(cat.name)) {
+          ordered.push({ name: cat.name, products: [...groups.get(cat.name)].sort(sortFn) })
+          seen.add(cat.name)
+        }
+      }
+    }
+    for (const [name, products] of groups) {
+      if (!seen.has(name)) ordered.push({ name, products: [...products].sort(sortFn) })
+    }
+    return ordered
+  }, [allProducts, effectiveCategories, selectedSort])
+
+  const toggleCategoryExpanded = (name) => {
+    setExpandedCategories((prev) => ({ ...prev, [name]: !prev[name] }))
+  }
   const [productsRef, productsVisible] = useIntersectionObserver({
     threshold: 0.1,
   })
@@ -1870,6 +1920,126 @@ const CyberCafeLandingPage = () => {
     })
   }
 
+  // Reusable product card used by the per-category featured rows
+  const renderProductCard = (product) => (
+    <motion.div
+      key={product._id}
+      whileHover={{ y: -5 }}
+      className={`${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
+        } rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group`}
+    >
+      <div className="relative">
+        <img
+          src={product.images?.[0] || product.image || "/Techsetup.jpg"}
+          alt={product.name}
+          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+          onClick={() => handleQuickView(product)}
+          onError={(e) => {
+            e.target.src = "/Techsetup.jpg";
+          }}
+        />
+        {/* Product badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-2">
+          {product.onSale && (
+            <div className="px-2 py-1 text-xs font-bold rounded-md bg-red-600 text-white">Sale</div>
+          )}
+          {product.isNewProduct && (
+            <div className="px-2 py-1 text-xs font-bold rounded-md bg-green-600 text-white">New</div>
+          )}
+          {product.featured && (
+            <div className="px-2 py-1 text-xs font-bold rounded-md bg-yellow-500 text-white">
+              Featured
+            </div>
+          )}
+        </div>
+        <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <button
+            onClick={() => handleQuickView(product)}
+            className="px-4 py-2 bg-white text-gray-900 rounded-full font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform"
+          >
+            Quick View
+          </button>
+        </div>
+        <button
+          className="absolute bottom-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+          aria-label="Add to wishlist"
+        >
+          <Heart size={18} />
+        </button>
+      </div>
+      <div className="p-4">
+        <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} mb-1`}>
+          {product.category?.name || "Uncategorized"}
+        </div>
+        <h3
+          className={`font-medium ${darkMode ? "text-white" : "text-gray-900"
+            } mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer`}
+          onClick={() => handleQuickView(product)}
+        >
+          {product.name}
+        </h3>
+        <div className="flex items-center mb-2">
+          {[...Array(5)].map((_, i) => (
+            <Star
+              key={i}
+              size={14}
+              className={
+                i < Math.floor(product.rating || 0)
+                  ? "text-yellow-400 fill-yellow-400"
+                  : darkMode
+                    ? "text-gray-600"
+                    : "text-gray-300"
+              }
+            />
+          ))}
+          <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} ml-1`}>
+            {product.rating?.toFixed(1) || "0.0"}
+          </span>
+        </div>
+        <div className="flex justify-between items-center mb-3">
+          {product.salePrice ? (
+            <div>
+              <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                {formatCurrency(product.salePrice)}
+              </span>
+              <span className="ml-2 text-sm text-gray-500 line-through">
+                {formatCurrency(product.price)}
+              </span>
+            </div>
+          ) : (
+            <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+              {formatCurrency(product.price)}
+            </span>
+          )}
+          <button
+            className={`p-2 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
+              } text-white rounded-full transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            onClick={() => handleAddToCart(product)}
+            disabled={product.stock <= 0}
+            aria-label="Add to cart"
+          >
+            <ShoppingCart size={16} />
+          </button>
+        </div>
+        <button
+          onClick={() => handleBuyNow(product)}
+          className={`w-full py-1.5 text-center text-sm font-medium ${darkMode
+            ? "text-blue-400 border-blue-400 hover:bg-blue-900/20"
+            : "text-blue-600 border-blue-600 hover:bg-blue-50"
+            } border rounded-lg transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          disabled={product.stock <= 0}
+        >
+          {product.stock <= 0 ? "Out of Stock" : "Buy Now"}
+        </button>
+      </div>
+    </motion.div>
+  )
+
   // If initial loading, show loading screen
   if (isInitialLoading) {
     return <LoadingScreen message="Loading VoxCyber..." />
@@ -1976,11 +2146,11 @@ const CyberCafeLandingPage = () => {
             {/* Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
-                <Coffee size={28} className={`${darkMode ? "text-blue-400" : "text-blue-700"} mr-2`} />
-                <span className={`font-bold text-2xl ${darkMode ? "text-white" : "text-blue-900"}`}>
-                  Vox
-                  <span className={darkMode ? "text-blue-400" : "text-blue-600"}>Cyber</span>
-                </span>
+                <img
+                  src="/logo.png"
+                  alt="VoxCyber"
+                  className="h-8 md:h-10 w-auto object-contain"
+                />
               </Link>
             </div>
 
@@ -2690,7 +2860,10 @@ const CyberCafeLandingPage = () => {
                           className="group relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10"
                         >
                           {/* Product Image */}
-                          <div className="relative h-48 overflow-hidden">
+                          <div
+                            className="relative h-48 overflow-hidden cursor-pointer"
+                            onClick={() => handleQuickView(product)}
+                          >
                             <img
                               src={product.images?.[0] || '/Techsetup.jpg'}
                               alt={product.name}
@@ -2699,6 +2872,13 @@ const CyberCafeLandingPage = () => {
                                 e.target.src = "/Techsetup.jpg";
                               }}
                             />
+
+                            {/* View Details overlay */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="px-4 py-2 bg-white/90 text-gray-900 rounded-full text-sm font-medium">
+                                View Details
+                              </span>
+                            </div>
 
                             {/* Sale Badge */}
                             {product.salePrice && product.salePrice < product.price && (
@@ -2721,7 +2901,10 @@ const CyberCafeLandingPage = () => {
 
                           {/* Product Content */}
                           <div className="p-6">
-                            <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-2">
+                            <h3
+                              className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-2 cursor-pointer"
+                              onClick={() => handleQuickView(product)}
+                            >
                               {product.name}
                             </h3>
 
@@ -2886,10 +3069,10 @@ const CyberCafeLandingPage = () => {
               >
                 <div>
                   <h2 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
-                    {selectedCategory === 'All' ? 'Featured Products' : `${selectedCategory} Collection`}
+                    Shop by Category
                   </h2>
                   <p className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    {selectedCategory === 'All' ? 'Hand-picked products for your tech needs' : `Discover the best products in ${selectedCategory}`}
+                    Explore our full range of products across every category
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
@@ -3025,164 +3208,80 @@ const CyberCafeLandingPage = () => {
                 )}
               </AnimatePresence>
 
-              {/* Products Grid */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: productsVisible ? 1 : 0,
-                  y: productsVisible ? 0 : 20,
-                }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-              >
-                {effectiveProducts.length > 0 ? (
-                  effectiveProducts.map((product) => (
-                    <motion.div
-                      key={product._id}
-                      whileHover={{ y: -5 }}
-                      className={`${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-200"
-                        } rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group`}
-                    >
-                      <div className="relative">
-                        <img
-                          src={product.images?.[0] || product.image || "/Techsetup.jpg"}
-                          alt={product.name}
-                          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => {
-                            e.target.src = "/Techsetup.jpg";
-                          }}
-                        />
-                        {/* Product badges */}
-                        <div className="absolute top-2 left-2 flex flex-col gap-2">
-                          {product.onSale && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-red-600 text-white">Sale</div>
-                          )}
-                          {product.isNewProduct && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-green-600 text-white">New</div>
-                          )}
-                          {product.featured && (
-                            <div className="px-2 py-1 text-xs font-bold rounded-md bg-yellow-500 text-white">
-                              Featured
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            onClick={() => handleQuickView(product)}
-                            className="px-4 py-2 bg-white text-gray-900 rounded-full font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform"
-                          >
-                            Quick View
-                          </button>
-                        </div>
-                        <button
-                          className="absolute bottom-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            // Add to wishlist functionality
-                          }}
-                          aria-label="Add to wishlist"
-                        >
-                          <Heart size={18} />
-                        </button>
-                      </div>
-                      <div className="p-4">
-                        <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} mb-1`}>
-                          {product.category?.name || "Uncategorized"}
-                        </div>
-                        <h3
-                          className={`font-medium ${darkMode ? "text-white" : "text-gray-900"
-                            } mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer`}
-                          onClick={() => handleQuickView(product)}
-                        >
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={14}
-                              className={
-                                i < Math.floor(product.rating || 0)
-                                  ? "text-yellow-400 fill-yellow-400"
-                                  : darkMode
-                                    ? "text-gray-600"
-                                    : "text-gray-300"
-                              }
-                            />
-                          ))}
-                          <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} ml-1`}>
-                            {product.rating?.toFixed(1) || "0.0"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-3">
-                          {product.salePrice ? (
-                            <div>
-                              <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                                {formatCurrency(product.salePrice)}
-                              </span>
-                              <span className="ml-2 text-sm text-gray-500 line-through">
-                                {formatCurrency(product.price)}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                              {formatCurrency(product.price)}
-                            </span>
-                          )}
-                          <button
-                            className={`p-2 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                              } text-white rounded-full transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                            onClick={() => handleAddToCart(product)}
-                            disabled={product.stock <= 0}
-                            aria-label="Add to cart"
-                          >
-                            <ShoppingCart size={16} />
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => handleBuyNow(product)}
-                          className={`w-full py-1.5 text-center text-sm font-medium ${darkMode
-                            ? "text-blue-400 border-blue-400 hover:bg-blue-900/20"
-                            : "text-blue-600 border-blue-600 hover:bg-blue-50"
-                            } border rounded-lg transition-colors ${product.stock <= 0 ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                          disabled={product.stock <= 0}
-                        >
-                          {product.stock <= 0 ? "Out of Stock" : "Buy Now"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className={`col-span-full text-center py-12 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
-                    <h3 className={`text-xl font-medium ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
-                      No products found
-                    </h3>
-                    <p>Try adjusting your search or filter criteria</p>
-                    <button
-                      onClick={() => {
-                        setSelectedCategory("All")
-                        setSearchQuery("")
-                      }}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Reset Filters
-                    </button>
-                  </div>
-                )}
-              </motion.div>
+              {/* Products grouped by category (each category shown as its own row) */}
+              {productsByCategory.length > 0 ? (
+                <div className="space-y-14">
+                  {productsByCategory.map((group, gIdx) => {
+                    const isExpanded = !!expandedCategories[group.name]
+                    const visibleProducts = isExpanded
+                      ? group.products
+                      : group.products.slice(0, CATEGORY_ROW_SIZE)
+                    const hasMore = group.products.length > CATEGORY_ROW_SIZE
 
-              {effectiveProducts.length > 0 && (
-                <div className="mt-8 text-center">
-                  <button
-                    className={`inline-flex items-center px-6 py-3 ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"
-                      } text-white font-medium rounded-lg transition-colors shadow-md`}
-                  >
-                    Load More Products
-                    <ChevronDown size={20} className="ml-2" />
-                  </button>
+                    return (
+                      <div key={group.name}>
+                        <div className="flex items-center justify-between mb-5">
+                          <div>
+                            <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                              {group.name}
+                            </h3>
+                            <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                              {group.products.length} product{group.products.length === 1 ? "" : "s"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedCategory(group.name)
+                              setShowCategoryView(true)
+                            }}
+                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+                          >
+                            View all
+                          </button>
+                        </div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{
+                            opacity: productsVisible ? 1 : 0,
+                            y: productsVisible ? 0 : 20,
+                          }}
+                          transition={{ duration: 0.5, delay: 0.1 + gIdx * 0.05 }}
+                          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                        >
+                          {visibleProducts.map((product) => renderProductCard(product))}
+                        </motion.div>
+
+                        {hasMore && (
+                          <div className="mt-6 text-center">
+                            <button
+                              onClick={() => toggleCategoryExpanded(group.name)}
+                              className={`inline-flex items-center px-6 py-3 font-medium rounded-lg transition-colors shadow-sm ${darkMode
+                                ? "bg-gray-700 hover:bg-gray-600 text-white"
+                                : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-300"
+                                }`}
+                            >
+                              {isExpanded
+                                ? "Show Less"
+                                : `Load More (${group.products.length - CATEGORY_ROW_SIZE})`}
+                              <ChevronDown
+                                size={20}
+                                className={`ml-2 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className={`text-center py-12 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  <ShoppingBag size={48} className="mx-auto mb-4 opacity-30" />
+                  <h3 className={`text-xl font-medium ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
+                    No products found
+                  </h3>
+                  <p>Please check back later for new products.</p>
                 </div>
               )}
             </div>
@@ -3482,10 +3581,11 @@ const CyberCafeLandingPage = () => {
             {/* Company Info */}
             <div>
               <div className="flex items-center mb-4">
-                <Coffee size={28} className="text-blue-300 mr-2" />
-                <span className="font-bold text-2xl text-white">
-                  Vox<span className="text-blue-300">Cyber</span>
-                </span>
+                <img
+                  src="/logo.png"
+                  alt="VoxCyber"
+                  className="h-8 w-auto object-contain"
+                />
               </div>
               <p className="text-blue-100 mb-6">
                 Your one-stop shop for all things tech, stationery, and digital services. Serving both online and
