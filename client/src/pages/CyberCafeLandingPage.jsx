@@ -2104,7 +2104,7 @@ const CyberCafeLandingPage = () => {
           className="text-white py-2 px-4"
           style={{ backgroundColor: promotionBanner.backgroundColor || '#1e3a8a' }}
         >
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
+          <div className="max-w-screen-2xl mx-auto flex flex-col sm:flex-row justify-between items-center">
             <p 
               className="text-sm font-medium text-center sm:text-left mb-2 sm:mb-0"
               style={{ color: promotionBanner.textColor || '#ffffff' }}
@@ -2141,7 +2141,7 @@ const CyberCafeLandingPage = () => {
         className={`sticky top-0 z-40 ${darkMode ? "bg-gray-800" : "bg-white"
           } shadow-md transition-colors duration-300`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between items-center py-4">
             {/* Logo */}
             <div className="flex items-center">
@@ -2152,36 +2152,6 @@ const CyberCafeLandingPage = () => {
                   className="h-8 md:h-10 w-auto object-contain"
                 />
               </Link>
-            </div>
-
-            {/* Search Bar */}
-            <div
-              className={`hidden md:block relative flex-1 mx-10 max-w-2xl transition-all ${isSearchFocused ? "scale-105" : ""
-                }`}
-            >
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for products, categories, brands..."
-                  className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${darkMode
-                    ? "border-gray-600 bg-gray-700 text-white focus:border-blue-500"
-                    : "border-gray-200 bg-white text-gray-900 focus:border-blue-500"
-                    } focus:outline-none transition-all`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  aria-label="Search"
-                />
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1 bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700 transition-colors"
-                  aria-label="Submit search"
-                >
-                  <Search size={16} />
-                </button>
-              </form>
             </div>
 
             {/* Desktop Navigation Links */}
@@ -2308,28 +2278,6 @@ const CyberCafeLandingPage = () => {
             </div>
           </div>
 
-          {/* Mobile Search (Only visible on mobile) */}
-          <div className="md:hidden pb-4">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                className={`w-full py-2 pl-10 pr-4 rounded-full border-2 ${darkMode ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-white text-gray-900"
-                  } focus:border-blue-500 focus:outline-none`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                aria-label="Search"
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-              <button
-                type="submit"
-                className="absolute right-2 top-1 bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700 transition-colors"
-                aria-label="Submit search"
-              >
-                <Search size={16} />
-              </button>
-            </form>
-          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -2579,7 +2527,7 @@ const CyberCafeLandingPage = () => {
           className={`py-6 ${darkMode ? "bg-gray-800" : "bg-white"} border-b ${darkMode ? "border-gray-700" : "border-gray-200"
             }`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {services.slice(0, 4).map((service) => (
                 <div key={service.id} className="flex items-center justify-center md:justify-start">
@@ -2653,7 +2601,7 @@ const CyberCafeLandingPage = () => {
               />
             </div>
           ) : (
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
@@ -2681,7 +2629,7 @@ const CyberCafeLandingPage = () => {
                   y: categoriesVisible ? 0 : 20,
                 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8"
               >
                 {effectiveCategories.map((category, index) => (
                   <motion.button
@@ -2784,7 +2732,7 @@ const CyberCafeLandingPage = () => {
             >
               {/* Header */}
               <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4">
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => setShowCategoryView(false)}
@@ -2810,7 +2758,7 @@ const CyberCafeLandingPage = () => {
 
               {/* Category Hero */}
               <div className="relative py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2843,13 +2791,13 @@ const CyberCafeLandingPage = () => {
 
               {/* Products Grid */}
               <div className="pb-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
                   {effectiveProducts.length > 0 ? (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.4 }}
-                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                      className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8"
                     >
                       {effectiveProducts.map((product, index) => (
                         <motion.div
@@ -3057,7 +3005,7 @@ const CyberCafeLandingPage = () => {
               />
             </div>
           ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
@@ -3247,7 +3195,7 @@ const CyberCafeLandingPage = () => {
                             y: productsVisible ? 0 : 20,
                           }}
                           transition={{ duration: 0.5, delay: 0.1 + gIdx * 0.05 }}
-                          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                          className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
                         >
                           {visibleProducts.map((product) => renderProductCard(product))}
                         </motion.div>
@@ -3308,7 +3256,7 @@ const CyberCafeLandingPage = () => {
               />
             </div>
           ) : (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{
@@ -3441,7 +3389,7 @@ const CyberCafeLandingPage = () => {
 
         {/* Testimonials Section */}
         <section className={`py-12 ${darkMode ? "bg-gray-800" : "bg-gray-50"}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
               <h2 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>
                 What Our Customers Say
@@ -3493,7 +3441,7 @@ const CyberCafeLandingPage = () => {
 
         {/* Call To Action Section */}
         <section ref={ctaRef} className={`py-16 ${darkMode ? "bg-gray-900" : "bg-blue-50"}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: ctaVisible ? 1 : 0, y: ctaVisible ? 0 : 20 }}
@@ -3576,7 +3524,7 @@ const CyberCafeLandingPage = () => {
       {/* Footer */}
       <footer className={`${darkMode ? "bg-gray-900 text-white" : "bg-blue-900 text-white"}`}>
         {/* Main Footer */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 pt-16 pb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Company Info */}
             <div>
@@ -3667,11 +3615,13 @@ const CyberCafeLandingPage = () => {
                 </li>
                 <li className="flex items-center">
                   <Phone size={20} className="text-blue-300 mr-2 flex-shrink-0" />
-                  <span className="text-blue-100">+254 710 345 787</span>
+                  <a href="https://wa.me/254710345787" target="_blank" rel="noopener noreferrer" className="text-blue-100 hover:text-green-300 transition-colors">
+                    +254 710 345 787
+                  </a>
                 </li>
                 <li className="flex items-center">
                   <Mail size={20} className="text-blue-300 mr-2 flex-shrink-0" />
-                  <span className="text-blue-100">info@voxcyber.co.ke/voxcyber254@gmail.com</span>
+                  <span className="text-blue-100">info@voxcyber.co.ke</span>
                 </li>
                 <li className="flex items-center">
                   <Clock1 size={20} className="text-blue-300 mr-2 flex-shrink-0" />

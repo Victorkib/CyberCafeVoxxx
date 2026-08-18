@@ -159,7 +159,15 @@ const Navbar = () => {
 
             {/* Get a Quote CTA */}
             <button
-              onClick={() => navigate('/websites')}
+              onClick={() =>
+                window.open(
+                  `https://wa.me/254710345787?text=${encodeURIComponent(
+                    "Hi VoxCyber! I'd like to request a quote."
+                  )}`,
+                  '_blank',
+                  'noopener,noreferrer'
+                )
+              }
               className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-sm hover:shadow-md transition-all"
             >
               <MessageCircle size={14} />
@@ -295,7 +303,16 @@ const Navbar = () => {
             </Link>
 
             <button
-              onClick={() => navigate('/websites')}
+              onClick={() => {
+                setIsMobileMenuOpen(false)
+                window.open(
+                  `https://wa.me/254710345787?text=${encodeURIComponent(
+                    "Hi VoxCyber! I'd like to request a quote."
+                  )}`,
+                  '_blank',
+                  'noopener,noreferrer'
+                )
+              }}
               className="mt-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all"
             >
               <MessageCircle size={16} />

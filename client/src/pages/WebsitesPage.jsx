@@ -13,12 +13,21 @@ import {
   Check,
   Star,
   ExternalLink,
-  Github,
   Eye
 } from 'lucide-react';
 
+const WHATSAPP_NUMBER = '254710345787';
+
 const WebsitesPage = () => {
   const [activeTab, setActiveTab] = useState('websites');
+
+  const openWhatsApp = (message = "Hi VoxCyber! I'd like to request a quote for a website / web app project.") => {
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
 
   const websiteServices = [
     {
@@ -62,75 +71,91 @@ const WebsitesPage = () => {
   const sampleWorks = [
     {
       id: 1,
-      title: "TechCorp Solutions",
-      description: "Modern corporate website with advanced animations and responsive design",
+      title: "Ruth Lengalei Portfolio",
+      description: "A sleek personal portfolio showcasing projects, skills and experience with smooth animations.",
+      image: "/GamingMonitor.avif",
+      category: "Portfolio",
+      technologies: ["React", "Tailwind CSS", "Framer Motion"],
+      liveUrl: "https://ruthlengalei.lovable.app/",
+      rating: 5,
+      features: ["Responsive Design", "Modern UI", "Fast Loading"]
+    },
+    {
+      id: 2,
+      title: "Naid Solutions",
+      description: "Corporate website for a modern solutions company with clean design and clear service pages.",
       image: "/Techsetup.jpg",
       category: "Corporate",
-      technologies: ["React", "Tailwind CSS", "Framer Motion"],
-      liveUrl: "#",
-      githubUrl: "#",
+      technologies: ["React", "Tailwind CSS", "SEO"],
+      liveUrl: "https://naidsolutions.com/",
       rating: 5,
       features: ["Responsive Design", "SEO Optimized", "Fast Loading"]
     },
     {
-      id: 2,
-      title: "E-Shop Pro",
-      description: "Complete e-commerce solution with payment integration and admin dashboard",
-      image: "/GamingGearSpectacular.avif",
-      category: "E-commerce",
-      technologies: ["Next.js", "Stripe", "MongoDB"],
-      liveUrl: "#",
-      githubUrl: "#",
-      rating: 5,
-      features: ["Payment Processing", "Inventory Management", "User Dashboard"]
-    },
-    {
       id: 3,
-      title: "CyberCafe Portal",
-      description: "Interactive web application for cyber cafe management and booking system",
-      image: "/FutureCyberCafes.avif",
-      category: "Web App",
-      technologies: ["React", "Node.js", "Socket.io"],
-      liveUrl: "#",
-      githubUrl: "#",
+      title: "Eunitex",
+      description: "Business website delivering a professional online presence with a polished, responsive layout.",
+      image: "/GamingGearSpectacular.avif",
+      category: "Business",
+      technologies: ["React", "Tailwind CSS", "Framer Motion"],
+      liveUrl: "https://eunitex.com",
       rating: 5,
-      features: ["Real-time Updates", "Booking System", "Admin Panel"]
+      features: ["Responsive Design", "Modern UI", "SEO Optimized"]
     },
     {
       id: 4,
-      title: "Portfolio Showcase",
-      description: "Creative portfolio website with smooth animations and modern design",
-      image: "/GamingMonitor.avif",
-      category: "Portfolio",
-      technologies: ["Vue.js", "GSAP", "Three.js"],
-      liveUrl: "#",
-      githubUrl: "#",
+      title: "Timex Automations",
+      description: "Automation company website highlighting smart solutions with a bold, modern interface.",
+      image: "/FutureCyberCafes.avif",
+      category: "Corporate",
+      technologies: ["React", "Node.js", "Tailwind CSS"],
+      liveUrl: "https://timexautomations.com/",
       rating: 5,
-      features: ["3D Animations", "Interactive Elements", "Modern Design"]
+      features: ["Responsive Design", "Service Showcase", "Fast Loading"]
     },
     {
       id: 5,
-      title: "Restaurant Booking",
-      description: "Mobile-first restaurant booking system with real-time availability",
+      title: "VoxCyber Cafe",
+      description: "Interactive web app for cyber cafe services, products and online ordering.",
       image: "/notebook.webp",
-      category: "Mobile App",
-      technologies: ["React Native", "Firebase", "Stripe"],
-      liveUrl: "#",
-      githubUrl: "#",
+      category: "Web App",
+      technologies: ["React", "Redux", "Node.js"],
+      liveUrl: "https://voxcybercafe.netlify.app/",
       rating: 5,
-      features: ["Mobile Optimized", "Real-time Booking", "Payment Integration"]
+      features: ["E-commerce", "User Accounts", "Admin Panel"]
     },
     {
       id: 6,
-      title: "Learning Platform",
-      description: "Educational platform with video streaming and progress tracking",
+      title: "The Nairobi Daily News",
+      description: "A fast, content-rich news platform with categories, articles and a clean reading experience.",
       image: "/Productivity Pack.webp",
-      category: "Education",
-      technologies: ["React", "Node.js", "AWS"],
-      liveUrl: "#",
-      githubUrl: "#",
+      category: "News & Media",
+      technologies: ["React", "Node.js", "MongoDB"],
+      liveUrl: "https://thenairobidailynews.com/",
       rating: 5,
-      features: ["Video Streaming", "Progress Tracking", "Certificates"]
+      features: ["Content Management", "Categories", "Fast Loading"]
+    },
+    {
+      id: 7,
+      title: "KejaLink Future Homes",
+      description: "A real estate platform for discovering and listing modern homes with rich property pages.",
+      image: "/David.jpg",
+      category: "Real Estate",
+      technologies: ["Cloudflare Workers", "React", "Tailwind CSS"],
+      liveUrl: "https://kejalink-future-homes.ruthlengalei.workers.dev/",
+      rating: 5,
+      features: ["Property Listings", "Responsive Design", "Fast Loading"]
+    },
+    {
+      id: 8,
+      title: "Kindergarten",
+      description: "A bright, playful website for a kindergarten with programs, gallery and enrollment info.",
+      image: "/voxhero.png",
+      category: "Education",
+      technologies: ["React", "Vite", "Tailwind CSS"],
+      liveUrl: "https://kindergarten-rouge.vercel.app/",
+      rating: 5,
+      features: ["Modern UI", "Responsive Design", "Engaging Layout"]
     }
   ];
 
@@ -192,6 +217,7 @@ const WebsitesPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
+                onClick={() => openWhatsApp("Hi VoxCyber! I'd like to start a website / web app project. Please share a quote.")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors"
@@ -200,6 +226,7 @@ const WebsitesPage = () => {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
               <motion.button
+                onClick={() => document.getElementById('portfolio')?.scrollIntoView({ behavior: 'smooth' })}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
@@ -256,7 +283,7 @@ const WebsitesPage = () => {
       </section>
 
       {/* Sample Works Section */}
-      <section className="py-20 px-4 bg-gray-50 dark:bg-gray-900/40">
+      <section id="portfolio" className="py-20 px-4 bg-gray-50 dark:bg-gray-900/40 scroll-mt-24">
         <div className="container mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -270,7 +297,7 @@ const WebsitesPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {sampleWorks.map((work, index) => (
               <motion.div
                 key={work.id}
@@ -315,22 +342,17 @@ const WebsitesPage = () => {
                   </div>
 
                   <div className="flex gap-3">
-                    <motion.button
+                    <motion.a
+                      href={work.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                       View Live
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex-1 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <Github className="w-4 h-4" />
-                      Code
-                    </motion.button>
+                    </motion.a>
                   </div>
                 </div>
               </motion.div>
@@ -421,6 +443,7 @@ const WebsitesPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
+                onClick={() => openWhatsApp("Hi VoxCyber! I'd like to get a free quote for a website / web app project.")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
@@ -428,6 +451,7 @@ const WebsitesPage = () => {
                 Get Free Quote
               </motion.button>
               <motion.button
+                onClick={() => openWhatsApp("Hi VoxCyber! I'd like to schedule a consultation about my project.")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-colors"

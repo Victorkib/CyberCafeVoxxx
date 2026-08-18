@@ -78,7 +78,7 @@ export const createApi = (dispatch) => {
 
         try {
           // Try to refresh the token
-          const response = await api.post("/auth/refresh-token")
+          const response = await api.post("/auth/refresh-access-token")
           const { token } = response.data
 
           if (token) {
@@ -123,7 +123,7 @@ export const endpoints = {
     login: "/auth/login",
     register: "/auth/register",
     logout: "/auth/logout",
-    refreshToken: "/auth/refresh-token",
+    refreshToken: "/auth/refresh-access-token",
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
   },

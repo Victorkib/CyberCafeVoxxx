@@ -237,8 +237,9 @@ export const checkAuthState = createAsyncThunk(
           withCredentials: true,
         }
       );
-      // Only store the necessary data from the response
-      const { user } = response.data;
+      // /auth/me returns the user object directly (res.json(user)),
+      // but stay compatible if it's ever wrapped as { user }.
+      const user = response.data?.user || response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       return { token, user };
@@ -305,10 +306,25 @@ export const validatePasswordHistory = createAsyncThunk(
   }
 );
 
+// Restore the cached user so a valid session is not shown as logged-out
+// on reload while checkAuthState re-validates the token in the background.
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw || raw === 'undefined') return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const storedToken = localStorage.getItem('token');
+const storedUser = getStoredUser();
+
 const initialState = {
-  user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: false,
+  user: storedUser,
+  token: storedToken,
+  isAuthenticated: Boolean(storedToken && storedUser),
   error: null,
   loading: false,
   registrationEmail: null,

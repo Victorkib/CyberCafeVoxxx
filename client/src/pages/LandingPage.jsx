@@ -185,15 +185,15 @@ export default function LandingPage() {
         darkMode ? "dark bg-gray-950 text-white" : "bg-gray-50 text-gray-900"
       }`}
     >
+      {/* Page-wide animated particle background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <AnimatedBackground variant="particles" intensity="medium" />
+      </div>
+
       <Navbar />
 
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <AnimatedBackground variant="particles" intensity="medium" />
-        </div>
-
         {/* Parallax Background Glows */}
         <div
           className="absolute top-[-10%] right-[-5%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-blue-500/5 dark:bg-blue-500/10 blur-[80px] sm:blur-[120px] z-[1] pointer-events-none"
@@ -206,7 +206,7 @@ export default function LandingPage() {
 
         <FloatingShapes count={6} className="z-[2] pointer-events-none opacity-40" />
 
-        <div className="relative z-[5] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
+        <div className="relative z-[5] max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             {/* Left: copy */}
             <div className="text-center lg:text-left">
@@ -327,7 +327,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= OFFERING CARDS ================= */}
-      <section className="relative z-[5] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <section className="relative z-[5] max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {cards.map((card, index) => (
             <motion.div
@@ -384,7 +384,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= TRUST STRIP ================= */}
-      <section className="relative z-[5] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-4">
+      <section className="relative z-[5] max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-4">
         <div
           className={`rounded-2xl border px-4 sm:px-8 py-5 ${
             darkMode ? "bg-gray-900/60 border-gray-800" : "bg-white/70 border-gray-200"
@@ -402,7 +402,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= WHY CHOOSE US ================= */}
-      <section className="relative z-[5] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+      <section className="relative z-[5] max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -445,7 +445,7 @@ export default function LandingPage() {
 
           {/* Right: image */}
           <div className="relative min-h-[240px] lg:min-h-full">
-            <img src="/David.jpg" alt="Dedicated customer support" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/voxceo.png" alt="VoxCyber CEO - Dedicated customer support" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-l from-gray-950/80 via-gray-950/30 to-transparent"></div>
             <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3 rounded-2xl bg-gray-950/70 backdrop-blur-md border border-white/10 p-3.5">
               <Headphones className="w-6 h-6 text-blue-400 flex-shrink-0" />
@@ -459,7 +459,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= TESTIMONIALS + CTA ================= */}
-      <section className="relative z-[5] max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24">
+      <section className="relative z-[5] max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-16 sm:pb-24">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
           {/* Left: testimonials */}
           <motion.div
@@ -542,7 +542,7 @@ export default function LandingPage() {
                   WhatsApp Us
                 </button>
                 <button
-                  onClick={() => navigate("/websites")}
+                  onClick={openWhatsApp}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold border border-white/40 text-white hover:bg-white/10 transition-all hover:-translate-y-0.5"
                 >
                   Get a Free Quote

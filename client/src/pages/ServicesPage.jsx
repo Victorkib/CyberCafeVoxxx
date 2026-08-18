@@ -133,12 +133,12 @@ export default function ServicesPage() {
 
   const handleSelectPackage = (packageName) => {
     const message = `Hello VoxCyber! I'm interested in inquiring about the "${packageName}" Social Media Management package for my business.`
-    window.open(`https://wa.me/+254700000000?text=${encodeURIComponent(message)}`, "_blank")
+    window.open(`https://wa.me/254710345787?text=${encodeURIComponent(message)}`, "_blank")
   }
 
   const handleCustomInquiry = () => {
     const message = `Hello VoxCyber! I would like to request a custom quote for Social Media Management/Ad campaigns for my brand.`
-    window.open(`https://wa.me/+254700000000?text=${encodeURIComponent(message)}`, "_blank")
+    window.open(`https://wa.me/254710345787?text=${encodeURIComponent(message)}`, "_blank")
   }
 
   return (
