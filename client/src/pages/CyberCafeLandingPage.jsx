@@ -2443,7 +2443,7 @@ const CyberCafeLandingPage = () => {
         {/* Hero Slider Section */}
         <section ref={heroRef} className="relative">
           {sectionLoadingStates.hero ? (
-            <div className="flex items-center justify-center h-[500px] bg-gray-100 dark:bg-gray-800">
+            <div className="flex items-center justify-center h-[62vw] min-h-[300px] sm:h-[48vw] md:h-[40vw] max-h-[760px] bg-gray-100 dark:bg-gray-800">
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
                 <p className="text-gray-600 dark:text-gray-300">Loading hero content...</p>
@@ -2464,22 +2464,28 @@ const CyberCafeLandingPage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: heroVisible ? 1 : 0 }}
               transition={{ duration: 0.5 }}
-              className="relative h-[400px] sm:h-[500px] md:h-[600px] overflow-hidden"
+              className="relative w-full h-[62vw] min-h-[300px] sm:h-[48vw] md:h-[40vw] max-h-[760px] overflow-hidden bg-gray-950"
             >
               {Array.isArray(effectiveHeroSlides) && effectiveHeroSlides.length > 0 ? (
                 <>
                   {effectiveHeroSlides.map((slide, index) => (
                     <div
                       key={slide._id}
-                      className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? "opacity-100" : "opacity-0"
-                        }`}
+                      className="absolute inset-0 transition-transform duration-700 ease-in-out will-change-transform"
+                      style={{ transform: `translateX(${(index - currentSlide) * 100}%)` }}
                       aria-hidden={index !== currentSlide}
                     >
+                      {/* Full-bleed banner that fills the whole hero section */}
                       <img
                         src={slide.image || "/placeholder.svg"}
                         alt={slide.title}
-                        className="absolute object-cover w-full h-full"
+                        draggable="false"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover object-center select-none"
                       />
+                      {/* Subtle gradient for control/indicator contrast */}
+                      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none"></div>
                     </div>
                   ))}
 
@@ -2550,7 +2556,7 @@ const CyberCafeLandingPage = () => {
         </section>
 
         {/* Categories Section */}
-        <section ref={categoriesRef} className="py-20 relative overflow-hidden">
+        <section ref={categoriesRef} className="pt-8 md:pt-12 pb-20 relative overflow-hidden">
           {/* Gradient Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -2609,7 +2615,7 @@ const CyberCafeLandingPage = () => {
                   y: categoriesVisible ? 0 : 20,
                 }}
                 transition={{ duration: 0.5 }}
-                className="text-center mb-16"
+                className="text-center mb-10"
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-4">
                   <div className="w-6 h-6 bg-blue-500 rounded-full"></div>

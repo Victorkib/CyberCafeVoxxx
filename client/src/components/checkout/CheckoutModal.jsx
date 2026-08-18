@@ -39,7 +39,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     city: '',
     state: '',
     zipCode: '',
-    country: '',
+    country: 'Kenya',
     phone: '',
   });
   const [cardInfo, setCardInfo] = useState({
@@ -170,7 +170,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             city: '',
             state: '',
             zipCode: '',
-            country: '',
+            country: 'Kenya',
             phone: '',
           });
           setCardInfo({
@@ -459,7 +459,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       ? 'border-red-500'
                       : 'border-gray-300 dark:border-gray-600'
                   } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="John Doe"
+                  placeholder="e.g. Jane Wanjiku"
                 />
                 {errors.fullName && (
                   <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>
@@ -480,7 +480,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       ? 'border-red-500'
                       : 'border-gray-300 dark:border-gray-600'
                   } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  placeholder="123 Main St"
+                  placeholder="e.g. Moi Avenue, Bihi Towers"
                 />
                 {errors.address && (
                   <p className="mt-1 text-sm text-red-500">{errors.address}</p>
@@ -502,7 +502,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         ? 'border-red-500'
                         : 'border-gray-300 dark:border-gray-600'
                     } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="New York"
+                    placeholder="e.g. Nairobi"
                   />
                   {errors.city && (
                     <p className="mt-1 text-sm text-red-500">{errors.city}</p>
@@ -510,7 +510,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    State/Province
+                    County
                   </label>
                   <input
                     type="text"
@@ -518,7 +518,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     value={shippingInfo.state}
                     onChange={handleShippingInfoChange}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="NY"
+                    placeholder="e.g. Nairobi County"
                   />
                 </div>
               </div>
@@ -526,7 +526,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    ZIP/Postal Code
+                    Postal Code
                   </label>
                   <input
                     type="text"
@@ -538,7 +538,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         ? 'border-red-500'
                         : 'border-gray-300 dark:border-gray-600'
                     } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="10001"
+                    placeholder="e.g. 00100"
                   />
                   {errors.zipCode && (
                     <p className="mt-1 text-sm text-red-500">
@@ -560,7 +560,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         ? 'border-red-500'
                         : 'border-gray-300 dark:border-gray-600'
                     } rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                    placeholder="United States"
+                    placeholder="Kenya"
                   />
                   {errors.country && (
                     <p className="mt-1 text-sm text-red-500">
@@ -580,7 +580,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   value={shippingInfo.phone}
                   onChange={handleShippingInfoChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="(123) 456-7890"
+                  placeholder="e.g. 0712 345 678"
                 />
               </div>
             </form>

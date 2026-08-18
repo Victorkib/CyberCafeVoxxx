@@ -8,7 +8,7 @@ export const fallbackHeroSlides = [
     _id: "fallback-slide-1",
     title: "Welcome to VoxCyber",
     subtitle: "Your one-stop destination for all tech needs",
-    image: "/FutureCyberCafes.avif",
+    image: "/BackToSchool.jpg",
     backgroundColor: "bg-blue-900",
   },
   {
